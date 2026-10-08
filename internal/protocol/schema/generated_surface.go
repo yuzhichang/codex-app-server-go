@@ -207,6 +207,9 @@ const (
 	CliAuthCredentialsStoreModeEphemeral CliAuthCredentialsStoreMode = "ephemeral"
 )
 
+// CodexErrorInfo mirrors the upstream `CodexErrorInfo` definition.
+type CodexErrorInfo = json.RawMessage
+
 // CollaborationMode mirrors the upstream `CollaborationMode` definition.
 type CollaborationMode struct {
 	Mode     ModeKind `json:"mode"`
@@ -1282,6 +1285,19 @@ type MigrationDetails struct {
 	Subagents  []SubagentMigration  `json:"subagents,omitempty"`
 }
 
+// MisalignmentErrorDetails mirrors the upstream `MisalignmentErrorDetails` definition.
+type MisalignmentErrorDetails struct {
+	DetailedExplanation string             `json:"detailedExplanation,omitempty"`
+	ErrorType           string             `json:"errorType,omitempty"`
+	ReviewTarget        string             `json:"reviewTarget,omitempty"`
+	Steer               *MisalignmentSteer `json:"steer,omitempty"`
+}
+
+// MisalignmentSteer mirrors the upstream `MisalignmentSteer` definition.
+type MisalignmentSteer struct {
+	Message string `json:"message"`
+}
+
 // ModeKind mirrors the upstream `ModeKind` enum.
 type ModeKind string
 
@@ -1440,6 +1456,14 @@ type NewThreadModelDefaults struct {
 	ModelReasoningEffort *ReasoningEffort `json:"modelReasoningEffort,omitempty"`
 	ServiceTier          string           `json:"serviceTier,omitempty"`
 }
+
+// NonSteerableTurnKind mirrors the upstream `NonSteerableTurnKind` enum.
+type NonSteerableTurnKind string
+
+const (
+	NonSteerableTurnKindReview  NonSteerableTurnKind = "review"
+	NonSteerableTurnKindCompact NonSteerableTurnKind = "compact"
+)
 
 // NullableGetAccountRateLimitsParams mirrors the upstream `NullableGetAccountRateLimitsParams` definition.
 type NullableGetAccountRateLimitsParams = *GetAccountRateLimitsParams
@@ -2240,6 +2264,14 @@ type TurnDiffUpdatedNotification struct {
 	Diff     string `json:"diff"`
 	ThreadID string `json:"threadId"`
 	TurnID   string `json:"turnId"`
+}
+
+// TurnError mirrors the upstream `TurnError` definition.
+type TurnError struct {
+	AdditionalDetails string                    `json:"additionalDetails,omitempty"`
+	CodexErrorInfo    *CodexErrorInfo           `json:"codexErrorInfo,omitempty"`
+	Message           string                    `json:"message"`
+	Misalignment      *MisalignmentErrorDetails `json:"misalignment,omitempty"`
 }
 
 // TurnInterruptResponse mirrors the upstream `TurnInterruptResponse` definition.

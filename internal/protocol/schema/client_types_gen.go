@@ -106,12 +106,6 @@ const (
 
 // --- Shared data types ---
 
-type TurnError struct {
-	Message string          `json:"message,omitempty"`
-	Code    string          `json:"code,omitempty"`
-	Data    json.RawMessage `json:"data,omitempty"`
-}
-
 type GitInfo struct {
 	Root     string `json:"root,omitempty"`
 	Branch   string `json:"branch,omitempty"`

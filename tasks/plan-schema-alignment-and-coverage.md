@@ -343,10 +343,14 @@
 ### 5.1 reconnect（会话监督器）
 
 - **T2.1 transport**：WS keepalive（`conn.Ping` + 超时）；`ReconnectingWS` 修复重拨窗口期内 `Call` 打到死连接。
-- **T2.2 会话重建**：新增 `SessionSupervisor` —— 监听 `Done()` → 重拨 → **重跑 `initialize`+`initialized`** → 对活跃 thread 调 `thread/resume`；维护"期望订阅集"；事件回填用 `thread/read` + `thread/turns/list` + `thread/items/list`；提供 `WithAutoReconnect`。
+- ✅ **T2.2 会话重建（已实施，含一处与原设计的偏离）**：新增 `sessionSupervisor`（`supervisor.go`）—— 监听**传输层重连信号** → **重跑 `initialize`+`initialized`** → 对**期望订阅集**内每个 thread 调 `thread/resume`；提供 `WithAutoReconnect`。
+  - ⚠️ **偏离原设计**：原计划写"监听 `Done()` → 重拨"，但 `ReconnectingWS.Done()` **只在永久关闭时关闭**，连接掉线时并不关闭（重拨是透明的）。故改为在传输层新增 **`Reconnects() <-chan struct{}`**（每次重拨成功后触发一次，cap=1 合并），supervisor 消费它。这也修正了一个概念错误：**"重拨"≠"会话恢复"** —— 重拨只恢复 socket，而 app-server 把新连接视为**全新客户端**；不重跑握手就会在服务端没有会话的连接上继续发请求（更糟的是可能"看起来成功"，实际打在空会话上）。
+  - ✅ `WithAutoReconnect` 在传输**无法报告重连**时**显式报错**（而非静默无效），否则调用方会误以为会话在被恢复。
+  - ⏳ **未实施**：事件缺口回填（`thread/turns/list` + `thread/items/list`）。重连后**不重放**丢失的通知，只恢复握手与 thread 订阅；上游无重放，回填需自行拉取历史。
 - **T2.3 在途操作**：修正 `retry.go:125-127`（`ErrClosed` 不可重试导致掉线瞬间全硬失败）；区分只读可重试 / 写不重试；`Notify` 与 server-request 回包不重试。
-- **T2.4 审批跨重连**：新增 `PendingApprovalLostEvent{ThreadID, TurnID, Method}`；approval 可配置超时。
-- **T2.5 可观测性事件**：`ReconnectStarted/Succeeded/Failed`、`SessionRecovered{ThreadsResumed}`、`EventsLost{GapFrom, GapTo}`、`PendingApprovalLost`、`UnhandledServerRequest`。
+- ⏳ **T2.4 审批跨重连（未实施）**：`PendingApprovalLostEvent{ThreadID, TurnID, Method}` 的**类型已定义**（`supervisor.go`），但**尚未接线** —— 还没有代码检测"在途 server-request 因连接消失而永远无法应答"。需与 §5.8 的 `UnhandledServerRequestEvent` 一起做（两者都是"请求落空"的可观测性）。approval 可配置超时亦未做。
+- ✅ **T2.5 可观测性事件（部分已实施）**：已实现 `ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**（`sdk/reconnectStarted` 等）投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
+  - ⏳ 未实施：`EventsLost{GapFrom, GapTo}`（丢失量目前由 `EventsLostError.LostCount` 报告，但无"缺口区间"语义）、`PendingApprovalLost`、`UnhandledServerRequest`。
 
 - **T2.6 事件投递：不静默丢、关闭有界、可观测（超时默认 5s）— 按 A2/A3/A8 重设计**
 

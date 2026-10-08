@@ -333,8 +333,13 @@ func (t *SessionThread) Revert(ctx context.Context, beforeTurnID string) error {
 
 // --- thread/metadata/update ---
 
-// ThreadMetadataGitInfo patches stored Git metadata for a thread. A nil field is
-// left unchanged; set a pointer to an empty string to clear it.
+// ThreadMetadataGitInfo patches stored Git metadata for a thread. A nil field is left
+// unchanged; set a pointer to an empty string to clear it.
+//
+// Deliberately not an alias of schema.GitInfo, even though the wire shape is the same: the
+// read type uses plain strings, which cannot distinguish "absent" from "empty", while this
+// patch direction needs exactly that distinction. The two are the same on the wire and
+// different in Go on purpose.
 type ThreadMetadataGitInfo struct {
 	Branch    *string `json:"branch,omitempty"`
 	OriginURL *string `json:"originUrl,omitempty"`

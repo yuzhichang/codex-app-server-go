@@ -106,13 +106,24 @@ const (
 
 // --- Shared data types ---
 
+// GitInfo is the Git metadata stored on a thread.
+//
+// Upstream is {sha?, branch?, originUrl?}. This previously declared Root/Commit/Remote/
+// Dirty/Detached instead -- five invented fields, only `branch` matching -- so every real
+// value was dropped on decode and the read shape disagreed with the patch shape used by
+// thread/metadata/update.
+//
+// It is not generated because nothing reachable from a method's params/response references
+// it: its only parent is Thread, which is itself hand-written.
+//
+// Optional strings use plain `string` with omitempty, matching the generator's convention
+// for every other optional string in this package. That cannot distinguish "absent" from
+// "present but empty"; ThreadMetadataGitInfo uses pointers precisely because the *patch*
+// direction needs to tell those apart (nil leaves the field unchanged, "" clears it).
 type GitInfo struct {
-	Root     string `json:"root,omitempty"`
-	Branch   string `json:"branch,omitempty"`
-	Commit   string `json:"commit,omitempty"`
-	Remote   string `json:"remote,omitempty"`
-	Dirty    bool   `json:"dirty,omitempty"`
-	Detached bool   `json:"detached,omitempty"`
+	Branch    string `json:"branch,omitempty"`
+	OriginURL string `json:"originUrl,omitempty"`
+	Sha       string `json:"sha,omitempty"`
 }
 
 // --- Core data models (schema-faithful; runtime types with custom decoders live in protocol) ---

@@ -174,18 +174,6 @@ type ThreadItem struct {
 // There is deliberately no Usage field: upstream Turn carries none, and turn/completed
 // sends only {threadId, turn}. Usage arrives on thread/tokenUsage/updated as
 // ThreadTokenUsage.
-type Turn struct {
-	ID          string        `json:"id,omitempty"`
-	RootTurnID  *string       `json:"rootTurnId,omitempty"`
-	Items       []ThreadItem  `json:"items,omitempty"`
-	ItemsView   TurnItemsView `json:"itemsView,omitempty"`
-	Status      TurnStatus    `json:"status,omitempty"`
-	Error       *TurnError    `json:"error,omitempty"`
-	StartedAt   *time.Time    `json:"startedAt,omitempty"`
-	CompletedAt *time.Time    `json:"completedAt,omitempty"`
-	DurationMS  int64         `json:"durationMs,omitempty"`
-}
-
 // Thread mirrors the Thread definition from the schema.
 // For the full runtime type with flexible status decoding, see protocol.Thread.
 type Thread struct {

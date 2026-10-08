@@ -2345,6 +2345,19 @@ type ToolsV2 struct {
 	WebSearch *WebSearchToolConfig `json:"web_search,omitempty"`
 }
 
+// Turn mirrors the upstream `Turn` definition.
+type Turn struct {
+	CompletedAt int64         `json:"completedAt,omitempty"`
+	DurationMs  int64         `json:"durationMs,omitempty"`
+	Error       *TurnError    `json:"error,omitempty"`
+	ID          string        `json:"id"`
+	Items       []ThreadItem  `json:"items"`
+	ItemsView   TurnItemsView `json:"itemsView,omitempty"`
+	RootTurnID  string        `json:"rootTurnId,omitempty"`
+	StartedAt   int64         `json:"startedAt,omitempty"`
+	Status      TurnStatus    `json:"status"`
+}
+
 // TurnCompletedNotification mirrors the upstream `TurnCompletedNotification` definition.
 type TurnCompletedNotification struct {
 	ThreadID string `json:"threadId"`

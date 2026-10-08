@@ -86,7 +86,13 @@ func (s *supervisorTransport) Call(_ context.Context, method string, _ any, resu
 		s.mu.Lock()
 		s.turnsListed++
 		s.mu.Unlock()
-		_ = json.Unmarshal([]byte(`{"data":[{"id":"turn-old","status":"completed"}],"nextCursor":"more"}`), result)
+		// Timestamps are Unix SECONDS as numbers upstream, not RFC3339 strings. The first
+		// version of this fixture omitted them entirely, which hid a decode failure: the
+		// schema package's Turn typed them as *time.Time, so any turn carrying one failed
+		// to decode and the backfill never fired.
+		_ = json.Unmarshal([]byte(`{"data":[{"id":"turn-old","status":"completed",`+
+			`"startedAt":1735689600,"completedAt":1735689660,"durationMs":60000}],`+
+			`"nextCursor":"more"}`), result)
 		return nil
 	}
 
@@ -379,6 +385,14 @@ func TestReconnectBackfillsResumedThreads(t *testing.T) {
 	// The turns come across as the runtime Turn type, not the generated one.
 	if len(backfilled.Turns) != 1 || backfilled.Turns[0].ID != "turn-old" {
 		t.Fatalf("turns = %+v, want the one listed turn", backfilled.Turns)
+	}
+	// And the numeric timestamps survived the conversion, which is the part that used to
+	// fail: the schema type must keep them raw for protocol.Turn to parse.
+	if backfilled.Turns[0].StartedAt == nil {
+		t.Fatal("startedAt was dropped in conversion; a real turn would not decode")
+	}
+	if got := backfilled.Turns[0].StartedAt.Unix(); got != 1735689600 {
+		t.Errorf("startedAt = %d, want 1735689600", got)
 	}
 	// A non-empty next cursor means older turns exist and were not re-read.
 	if !backfilled.Truncated {

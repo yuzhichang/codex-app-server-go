@@ -50,11 +50,6 @@
     "reason": "Hand-written marshaller owns the wire shape; the differences are the SDK's ergonomic field types on input fields."
   },
   {
-    "name": "Turn",
-    "status": "deliberate",
-    "reason": "Not reachable: the runtime type is protocol.Turn, for the same reason as Thread."
-  },
-  {
     "name": "TurnStartParams",
     "status": "deliberate",
     "reason": "Input is a string encoded by the hand-written wireInput marshaller, which emits the required [{\"type\":\"text\",...}] array."

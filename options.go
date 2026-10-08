@@ -83,8 +83,9 @@ type clientConfig struct {
 // so without this the SDK keeps issuing calls on a connection the server has no session for
 // -- which can look like success against a fresh, empty session rather than failing cleanly.
 //
-// Requires a transport that reports its own reconnections, such as NewReconnectingWS;
-// New() returns an error otherwise rather than silently doing nothing.
+// Requires a transport that reports its own reconnections -- use
+// WithReconnectingWSTransport (or a custom Transport implementing Reconnects). New()
+// returns an error otherwise rather than silently doing nothing.
 //
 // Recovery progress is reported as events on Events(): sdk/reconnectStarted,
 // sdk/sessionRecovered, sdk/reconnectSucceeded and sdk/reconnectFailed.

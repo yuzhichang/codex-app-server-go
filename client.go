@@ -50,6 +50,22 @@ func New(opts ...Option) (*Client, error) {
 		}
 	}
 
+	// Resolve the reconnect signal from the transport that actually provides it, *before*
+	// wrapping.
+	//
+	// The wrappers below -- transport.NewRetryTransport and newChannelTransport -- expose
+	// Call/Notify/Notifications/Done but do not forward Reconnects(), so type-asserting on
+	// the wrapped value fails. That silently disabled WithAutoReconnect for every transport
+	// built from a With...Transport option, which is the only way an external caller can
+	// obtain a reconnecting transport.
+	var reconnectSignals <-chan struct{}
+	for _, candidate := range []any{cfg.innerTransport, cfg.transport} {
+		if rn, ok := candidate.(reconnectNotify); ok {
+			reconnectSignals = rn.Reconnects()
+			break
+		}
+	}
+
 	// Build the HTTP/WS transport now that all options are processed, so the
 	// retry policy applies regardless of where WithRetry sits in the list.
 	if cfg.innerTransport != nil {
@@ -108,16 +124,15 @@ func New(opts ...Option) (*Client, error) {
 		// Fail loudly rather than silently doing nothing: without a transport that reports
 		// its own reconnections there is no signal to act on, and the caller would believe
 		// sessions were being recovered when they were not.
-		signals, ok := cfg.transport.(reconnectNotify)
-		if !ok {
+		if reconnectSignals == nil {
 			return nil, fmt.Errorf(
 				"WithAutoReconnect requires a transport that can re-establish itself "+
-					"(such as NewReconnectingWS); %T cannot", cfg.transport)
+					"(such as WithReconnectingWSTransport); %T cannot", cfg.transport)
 		}
 		client.supervisor = newSessionSupervisor(client)
 		supCtx, supCancel := context.WithCancel(context.Background())
 		client.supervisorCancel = supCancel
-		go client.supervisor.run(supCtx, signals.Reconnects())
+		go client.supervisor.run(supCtx, reconnectSignals)
 	}
 
 	maxThreads := cfg.maxThreads

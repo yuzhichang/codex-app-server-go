@@ -97,9 +97,9 @@ func New(opts ...Option) (*Client, error) {
 		if info.Version == "" {
 			info.Version = Version
 		}
-		initReq := InitializeRequest{
-			ClientInfo:   info,
-			Capabilities: cfg.initCapabilities,
+		initReq := InitializeParams{
+			ClientInfo:             info,
+			InitializeCapabilities: cfg.initCapabilities,
 		}
 		if _, err := client.Initialize(initCtx, initReq); err != nil {
 			_ = client.Close()
@@ -119,7 +119,7 @@ func New(opts ...Option) (*Client, error) {
 // Ping verifies the transport is responsive by listing threads with a limit of 1.
 // Returns nil if the server responds within ctx's deadline, or an error otherwise.
 func (c *Client) Ping(ctx context.Context) error {
-	_, err := c.ThreadList(ctx, ThreadListRequest{Limit: 1})
+	_, err := c.ThreadList(ctx, ThreadListParams{Limit: 1})
 	return err
 }
 
@@ -211,18 +211,18 @@ func (c *Client) Close() error {
 	return err
 }
 
-func (c *Client) Initialize(ctx context.Context, req InitializeRequest) (InitializeResult, error) {
-	var result InitializeResult
+func (c *Client) Initialize(ctx context.Context, req InitializeParams) (InitializeResponse, error) {
+	var result InitializeResponse
 	if err := c.transport.Call(ctx, protocol.MethodInitialize, req, &result); err != nil {
-		return InitializeResult{}, err
+		return InitializeResponse{}, err
 	}
 	if err := c.transport.Notify(ctx, protocol.MethodInitialized, nil); err != nil {
-		return InitializeResult{}, err
+		return InitializeResponse{}, err
 	}
 	return result, nil
 }
 
-func (c *Client) ThreadStart(ctx context.Context, req ThreadStartRequest) (Thread, error) {
+func (c *Client) ThreadStart(ctx context.Context, req ThreadStartParams) (Thread, error) {
 	var resp struct {
 		Thread Thread `json:"thread"`
 	}
@@ -232,7 +232,7 @@ func (c *Client) ThreadStart(ctx context.Context, req ThreadStartRequest) (Threa
 	return resp.Thread, nil
 }
 
-func (c *Client) ThreadResume(ctx context.Context, req ThreadResumeRequest) (Thread, error) {
+func (c *Client) ThreadResume(ctx context.Context, req ThreadResumeParams) (Thread, error) {
 	var resp struct {
 		Thread Thread `json:"thread"`
 	}
@@ -242,7 +242,7 @@ func (c *Client) ThreadResume(ctx context.Context, req ThreadResumeRequest) (Thr
 	return resp.Thread, nil
 }
 
-func (c *Client) ThreadRead(ctx context.Context, req ThreadReadRequest) (Thread, error) {
+func (c *Client) ThreadRead(ctx context.Context, req ThreadReadParams) (Thread, error) {
 	var resp struct {
 		Thread Thread `json:"thread"`
 	}
@@ -252,7 +252,7 @@ func (c *Client) ThreadRead(ctx context.Context, req ThreadReadRequest) (Thread,
 	return resp.Thread, nil
 }
 
-func (c *Client) ThreadFork(ctx context.Context, req ThreadForkRequest) (Thread, error) {
+func (c *Client) ThreadFork(ctx context.Context, req ThreadForkParams) (Thread, error) {
 	var resp struct {
 		Thread Thread `json:"thread"`
 	}
@@ -262,7 +262,7 @@ func (c *Client) ThreadFork(ctx context.Context, req ThreadForkRequest) (Thread,
 	return resp.Thread, nil
 }
 
-func (c *Client) ThreadList(ctx context.Context, req ThreadListRequest) ([]Thread, error) {
+func (c *Client) ThreadList(ctx context.Context, req ThreadListParams) ([]Thread, error) {
 	// The binary returns {"data":[...]} for persistent (on-disk) threads.
 	var resp struct {
 		Data []Thread `json:"data"`
@@ -285,31 +285,42 @@ func (c *Client) ThreadLoadedList(ctx context.Context) ([]string, error) {
 	return resp.Data, nil
 }
 
-func (c *Client) ThreadArchive(ctx context.Context, req ThreadArchiveRequest) error {
+func (c *Client) ThreadArchive(ctx context.Context, req ThreadArchiveParams) error {
 	return c.transport.Call(ctx, protocol.MethodThreadArchive, req, nil)
 }
 
-func (c *Client) ThreadUnarchive(ctx context.Context, req ThreadUnarchiveRequest) error {
+func (c *Client) ThreadUnarchive(ctx context.Context, req ThreadUnarchiveParams) error {
 	return c.transport.Call(ctx, protocol.MethodThreadUnarchive, req, nil)
 }
 
-func (c *Client) ThreadSetName(ctx context.Context, req ThreadSetNameRequest) error {
+func (c *Client) ThreadSetName(ctx context.Context, req ThreadSetNameParams) error {
 	return c.transport.Call(ctx, protocol.MethodThreadSetName, req, nil)
 }
 
-func (c *Client) ThreadRollback(ctx context.Context, req ThreadRollbackRequest) error {
-	return c.transport.Call(ctx, protocol.MethodThreadRollback, req, nil)
+// ThreadRevert excludes BeforeTurnID and every later turn from the thread's history.
+//
+// This replaces the removed ThreadRollback API: upstream `thread/revert` takes a single
+// turn boundary and truncates forward, rather than accepting a list of turn ids.
+//
+// The returned Thread.Turns is always empty; hydrate the retained history with
+// thread/turns/list using TurnsBackwardsCursor.
+func (c *Client) ThreadRevert(ctx context.Context, req ThreadRevertParams) (ThreadRevertResponse, error) {
+	var resp ThreadRevertResponse
+	if err := c.transport.Call(ctx, protocol.MethodThreadRevert, req, &resp); err != nil {
+		return ThreadRevertResponse{}, err
+	}
+	return resp, nil
 }
 
-func (c *Client) TurnSteer(ctx context.Context, req TurnSteerRequest) error {
+func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) error {
 	return c.transport.Call(ctx, protocol.MethodTurnSteer, req, nil)
 }
 
-func (c *Client) ReviewStart(ctx context.Context, req ReviewStartRequest) error {
+func (c *Client) ReviewStart(ctx context.Context, req ReviewStartParams) error {
 	return c.transport.Call(ctx, protocol.MethodReviewStart, req, nil)
 }
 
-func (c *Client) TurnStart(ctx context.Context, req TurnStartRequest) (Turn, error) {
+func (c *Client) TurnStart(ctx context.Context, req TurnStartParams) (Turn, error) {
 	var resp struct {
 		Turn Turn `json:"turn"`
 	}
@@ -319,7 +330,7 @@ func (c *Client) TurnStart(ctx context.Context, req TurnStartRequest) (Turn, err
 	return resp.Turn, nil
 }
 
-func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptRequest) error {
+func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptParams) error {
 	return c.transport.Call(ctx, protocol.MethodTurnInterrupt, req, nil)
 }
 
@@ -365,7 +376,7 @@ func (c *Client) ResumeThread(ctx context.Context, threadID string, opts ...Thre
 		return nil, err
 	}
 	cfg := applyThreadOptions(opts)
-	_, err = c.ThreadResume(ctx, ThreadResumeRequest{ThreadID: threadID})
+	_, err = c.ThreadResume(ctx, ThreadResumeParams{ThreadID: threadID})
 	if err != nil {
 		release()
 		return nil, err

@@ -32,9 +32,9 @@ Requires Go 1.25+.
     defer client.Close()
 
     ctx := context.Background()
-    _, err = client.Initialize(ctx, codexgo.InitializeRequest{
+    _, err = client.Initialize(ctx, codexgo.InitializeParams{
         ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-        Capabilities: codexgo.Capabilities{ExperimentalAPI: true},
+        InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
     })
 
     thread, _ := client.StartThread(ctx, codexgo.WithThreadModel("gpt-5.4"))
@@ -55,9 +55,9 @@ Requires Go 1.25+.
     if err != nil { log.Fatal(err) }
     defer client.Close()
 
-    _, err = client.Initialize(ctx, codexgo.InitializeRequest{
+    _, err = client.Initialize(ctx, codexgo.InitializeParams{
         ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-        Capabilities: codexgo.Capabilities{ExperimentalAPI: true},
+        InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
     })
 
 ## Client Options
@@ -173,7 +173,8 @@ TurnOption values:
     err := thread.Archive(ctx context.Context) error
     err := thread.Unarchive(ctx context.Context) error
     err := thread.SetName(ctx context.Context, name string) error
-    err := thread.Rollback(ctx context.Context, turnIDs []string) error
+    err := thread.Revert(ctx context.Context, beforeTurnID string) error
+        Excludes beforeTurnID and every later turn from the history.
     err := thread.Compact(ctx context.Context) error
         Triggers async context compaction (background LLM call on server).
 
@@ -209,28 +210,28 @@ All methods take context.Context as the first argument.
 
 ### Initialization
 
-    (c *Client) Initialize(ctx, InitializeRequest) (InitializeResult, error)
+    (c *Client) Initialize(ctx, InitializeParams) (InitializeResponse, error)
     (c *Client) Ping(ctx) error
     (c *Client) Close() error
 
 ### Thread lifecycle
 
-    (c *Client) ThreadStart(ctx, ThreadStartRequest) (Thread, error)
-    (c *Client) ThreadResume(ctx, ThreadResumeRequest) (Thread, error)
-    (c *Client) ThreadRead(ctx, ThreadReadRequest) (Thread, error)
-    (c *Client) ThreadFork(ctx, ThreadForkRequest) (Thread, error)
-    (c *Client) ThreadList(ctx, ThreadListRequest) ([]Thread, error)
+    (c *Client) ThreadStart(ctx, ThreadStartParams) (Thread, error)
+    (c *Client) ThreadResume(ctx, ThreadResumeParams) (Thread, error)
+    (c *Client) ThreadRead(ctx, ThreadReadParams) (Thread, error)
+    (c *Client) ThreadFork(ctx, ThreadForkParams) (Thread, error)
+    (c *Client) ThreadList(ctx, ThreadListParams) ([]Thread, error)
     (c *Client) ThreadLoadedList(ctx) ([]string, error)
-    (c *Client) ThreadArchive(ctx, ThreadArchiveRequest) error
-    (c *Client) ThreadUnarchive(ctx, ThreadUnarchiveRequest) error
-    (c *Client) ThreadSetName(ctx, ThreadSetNameRequest) error
-    (c *Client) ThreadRollback(ctx, ThreadRollbackRequest) error
+    (c *Client) ThreadArchive(ctx, ThreadArchiveParams) error
+    (c *Client) ThreadUnarchive(ctx, ThreadUnarchiveParams) error
+    (c *Client) ThreadSetName(ctx, ThreadSetNameParams) error
+    (c *Client) ThreadRevert(ctx, ThreadRevertParams) (ThreadRevertResponse, error)
 
 ### Turn lifecycle
 
-    (c *Client) TurnStart(ctx, TurnStartRequest) (Turn, error)
-    (c *Client) TurnInterrupt(ctx, TurnInterruptRequest) error
-    (c *Client) TurnSteer(ctx, TurnSteerRequest) error
+    (c *Client) TurnStart(ctx, TurnStartParams) (Turn, error)
+    (c *Client) TurnInterrupt(ctx, TurnInterruptParams) error
+    (c *Client) TurnSteer(ctx, TurnSteerParams) error
     (c *Client) TurnRead(ctx, threadID, turnID string) (Turn, error)
 
 ### Thread goals

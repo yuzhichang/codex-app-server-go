@@ -98,7 +98,7 @@ func TestMockServerInitialize(t *testing.T) {
 	defer mock.Close()
 
 	mock.Handle("initialize", func(params json.RawMessage) (any, error) {
-		var req codexgo.InitializeRequest
+		var req codexgo.InitializeParams
 		testutil.MustReadParams(params, &req)
 		return map[string]any{
 			"userAgent":      "mock-server/1.0",
@@ -120,7 +120,7 @@ func TestMockServerInitialize(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result, err := client.Initialize(ctx, codexgo.InitializeRequest{
+	result, err := client.Initialize(ctx, codexgo.InitializeParams{
 		ClientInfo: codexgo.ClientInfo{
 			Name:    "test-sdk",
 			Version: "0.0.1",
@@ -143,7 +143,7 @@ func TestMockServerThreadStart(t *testing.T) {
 	client, mock := newClientFromMock(t)
 
 	mock.Handle("thread/start", func(params json.RawMessage) (any, error) {
-		var req codexgo.ThreadStartRequest
+		var req codexgo.ThreadStartParams
 		testutil.MustReadParams(params, &req)
 		return map[string]any{
 			"thread": map[string]any{
@@ -156,7 +156,7 @@ func TestMockServerThreadStart(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartRequest{
+	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{
 		Model:          "gpt-5.1",
 		ApprovalPolicy: "on-request",
 	})
@@ -191,7 +191,7 @@ func TestMockServerThreadResume(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadResume(ctx, codexgo.ThreadResumeRequest{ThreadID: "thread-xyz"})
+	thread, err := client.ThreadResume(ctx, codexgo.ThreadResumeParams{ThreadID: "thread-xyz"})
 	if err != nil {
 		t.Fatalf("ThreadResume(): %v", err)
 	}
@@ -229,7 +229,7 @@ func TestMockServerThreadRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+	thread, err := client.ThreadRead(ctx, codexgo.ThreadReadParams{
 		ThreadID:     "thread-read-test",
 		IncludeTurns: true,
 	})
@@ -251,7 +251,7 @@ func TestMockServerTurnStart(t *testing.T) {
 
 	var capturedText string
 	mock.Handle("turn/start", func(params json.RawMessage) (any, error) {
-		// TurnStartRequest.MarshalJSON converts Input string to
+		// TurnStartParams.MarshalJSON converts Input string to
 		// [{"type":"text","text":"..."}] per the server protocol.
 		var wire struct {
 			ThreadID string `json:"threadId"`
@@ -275,7 +275,7 @@ func TestMockServerTurnStart(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	turn, err := client.TurnStart(ctx, codexgo.TurnStartRequest{
+	turn, err := client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: "thread-1",
 		Input:    "hello world",
 	})
@@ -307,7 +307,7 @@ func TestMockServerTurnInterrupt(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	if err := client.TurnInterrupt(ctx, codexgo.TurnInterruptRequest{
+	if err := client.TurnInterrupt(ctx, codexgo.TurnInterruptParams{
 		ThreadID: "thread-1",
 		TurnID:   "turn-1",
 	}); err != nil {
@@ -761,7 +761,7 @@ func TestMockServerConcurrentThreadStarts(t *testing.T) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			_, err := client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+			_, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 			if err != nil {
 				errs <- err
 			}
@@ -1914,7 +1914,7 @@ func TestThreadList(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	threads, err := client.ThreadList(ctx, codexgo.ThreadListRequest{Limit: 10})
+	threads, err := client.ThreadList(ctx, codexgo.ThreadListParams{Limit: 10})
 	if err != nil {
 		t.Fatalf("ThreadList(): %v", err)
 	}
@@ -1950,7 +1950,7 @@ func TestThreadArchive(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	if err := client.ThreadArchive(ctx, codexgo.ThreadArchiveRequest{ThreadID: "t-archive"}); err != nil {
+	if err := client.ThreadArchive(ctx, codexgo.ThreadArchiveParams{ThreadID: "t-archive"}); err != nil {
 		t.Fatalf("ThreadArchive(): %v", err)
 	}
 
@@ -2023,30 +2023,34 @@ func TestSessionThreadSteer(t *testing.T) {
 	}
 }
 
-// ---- TestSessionThreadRollback ----
+// ---- TestSessionThreadRevert ----
 
-func TestSessionThreadRollback(t *testing.T) {
+func TestSessionThreadRevert(t *testing.T) {
 	client, mock := newClientFromMock(t)
 
 	mock.Handle("thread/start", func(_ json.RawMessage) (any, error) {
 		return map[string]any{
-			"thread": map[string]any{"id": "thread-rollback", "status": "idle"},
+			"thread": map[string]any{"id": "thread-revert", "status": "idle"},
 		}, nil
 	})
 
-	type rollbackParams struct {
-		ThreadID string   `json:"threadId"`
-		TurnIDs  []string `json:"turnIds"`
+	type revertParams struct {
+		ThreadID     string `json:"threadId"`
+		BeforeTurnID string `json:"beforeTurnId"`
 	}
-	rolled := make(chan rollbackParams, 1)
-	mock.Handle("thread/rollback", func(params json.RawMessage) (any, error) {
-		var req rollbackParams
+	reverted := make(chan revertParams, 1)
+	mock.Handle("thread/revert", func(params json.RawMessage) (any, error) {
+		var req revertParams
 		testutil.MustReadParams(params, &req)
 		select {
-		case rolled <- req:
+		case reverted <- req:
 		default:
 		}
-		return nil, nil
+		return map[string]any{
+			"thread":               map[string]any{"id": "thread-revert", "status": "idle"},
+			"turnsBackwardsCursor": "turns-cur",
+			"itemsBackwardsCursor": "items-cur",
+		}, nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -2058,21 +2062,39 @@ func TestSessionThreadRollback(t *testing.T) {
 	}
 	defer st.Close()
 
-	wantTurnIDs := []string{"turn-rb-1", "turn-rb-2"}
-	if err := st.Rollback(ctx, wantTurnIDs); err != nil {
-		t.Fatalf("Rollback(): %v", err)
+	// The ergonomic wrapper drops the cursors...
+	if err := st.Revert(ctx, "turn-rv-2"); err != nil {
+		t.Fatalf("Revert(): %v", err)
 	}
-
 	select {
-	case req := <-rolled:
-		if req.ThreadID != "thread-rollback" {
-			t.Fatalf("unexpected threadId in rollback request: %q", req.ThreadID)
+	case req := <-reverted:
+		if req.ThreadID != "thread-revert" {
+			t.Fatalf("unexpected threadId in revert request: %q", req.ThreadID)
 		}
-		if len(req.TurnIDs) != 2 || req.TurnIDs[0] != "turn-rb-1" || req.TurnIDs[1] != "turn-rb-2" {
-			t.Fatalf("unexpected turnIds in rollback request: %v", req.TurnIDs)
+		if req.BeforeTurnID != "turn-rv-2" {
+			t.Fatalf("unexpected beforeTurnId in revert request: %q", req.BeforeTurnID)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatal("timeout waiting for thread/rollback")
+		t.Fatal("timeout waiting for thread/revert")
+	}
+
+	// ...while the full form must surface the hydration cursors, since Thread.Turns is
+	// always empty after a revert.
+	resp, err := client.ThreadRevert(ctx, codexgo.ThreadRevertParams{
+		ThreadID:     st.ID(),
+		BeforeTurnID: "turn-rv-1",
+	})
+	if err != nil {
+		t.Fatalf("ThreadRevert(): %v", err)
+	}
+	if resp.Thread.ID != "thread-revert" {
+		t.Fatalf("unexpected thread in revert response: %q", resp.Thread.ID)
+	}
+	if resp.TurnsBackwardsCursor == nil || *resp.TurnsBackwardsCursor != "turns-cur" {
+		t.Fatalf("turnsBackwardsCursor not surfaced: %v", resp.TurnsBackwardsCursor)
+	}
+	if resp.ItemsBackwardsCursor == nil || *resp.ItemsBackwardsCursor != "items-cur" {
+		t.Fatalf("itemsBackwardsCursor not surfaced: %v", resp.ItemsBackwardsCursor)
 	}
 }
 
@@ -2223,7 +2245,7 @@ func TestMCPApprovalDispatcher(t *testing.T) {
 // ---- Deliverable 2: TestWithSkillOption ----
 
 func TestWithSkillOption(t *testing.T) {
-	req := codexgo.TurnStartRequest{
+	req := codexgo.TurnStartParams{
 		ThreadID: "thread-skill",
 		Input:    "hello",
 	}

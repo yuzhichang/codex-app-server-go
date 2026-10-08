@@ -119,7 +119,7 @@ func (c *Client) WaitForTurn(ctx context.Context, threadID, turnID string) (Turn
 }
 
 func (c *Client) readTurn(ctx context.Context, threadID, turnID string) (Turn, error) {
-	thread, err := c.ThreadRead(ctx, ThreadReadRequest{
+	thread, err := c.ThreadRead(ctx, ThreadReadParams{
 		ThreadID:     threadID,
 		IncludeTurns: true,
 	})

@@ -8,7 +8,7 @@ import (
 
 // TestContextTimeoutOnInitialize verifies timeout during Initialize.
 func TestContextTimeoutOnInitialize(t *testing.T) {
-	ft := &fakeTransportWithErrors{result: InitializeResult{UserAgent: "ua"}}
+	ft := &fakeTransportWithErrors{result: InitializeResponse{UserAgent: "ua"}}
 	client, err := New(WithTransport(ft))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -17,7 +17,7 @@ func TestContextTimeoutOnInitialize(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	_, err = client.Initialize(ctx, InitializeRequest{})
+	_, err = client.Initialize(ctx, InitializeParams{})
 	if err != context.DeadlineExceeded && err != context.Canceled {
 		t.Fatalf("expected context timeout error, got %v", err)
 	}
@@ -33,7 +33,7 @@ func TestMultipleOperationsSequential(t *testing.T) {
 	defer client.Close()
 
 	// First operation
-	thread1, err := client.ThreadStart(context.Background(), ThreadStartRequest{Model: "gpt-5.1"})
+	thread1, err := client.ThreadStart(context.Background(), ThreadStartParams{Model: "gpt-5.1"})
 	if err != nil {
 		t.Fatalf("first ThreadStart error: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestMultipleOperationsSequential(t *testing.T) {
 
 	// Second operation
 	ft.result = Thread{ID: "thread-2"}
-	thread2, err := client.ThreadStart(context.Background(), ThreadStartRequest{Model: "gpt-5.1"})
+	thread2, err := client.ThreadStart(context.Background(), ThreadStartParams{Model: "gpt-5.1"})
 	if err != nil {
 		t.Fatalf("second ThreadStart error: %v", err)
 	}

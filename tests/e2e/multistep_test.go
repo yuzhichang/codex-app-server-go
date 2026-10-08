@@ -34,7 +34,7 @@ func TestMultiStepRun(t *testing.T) {
 	t.Logf("Turn 2 completed: %s", turn2ID)
 
 	// Read the thread and verify both turns are present.
-	thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+	thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadParams{
 		ThreadID:     threadID,
 		IncludeTurns: true,
 	})
@@ -68,7 +68,7 @@ func TestMultiStepWithTurnRead(t *testing.T) {
 			t.Fatalf("step %d turn: %v", i+1, err)
 		}
 
-		thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+		thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadParams{
 			ThreadID:     threadID,
 			IncludeTurns: true,
 		})

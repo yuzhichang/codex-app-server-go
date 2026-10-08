@@ -23,7 +23,7 @@ func TestTurnInterrupt(t *testing.T) {
 
 	// A prompt designed to produce a long model response so it's still running
 	// when we call TurnInterrupt a few seconds later.
-	turn, err := h.client.TurnStart(ctx, codexgo.TurnStartRequest{
+	turn, err := h.client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: threadID,
 		Input:    "Write a very long story — at least 500 words — about a robot exploring Mars.",
 	})
@@ -35,7 +35,7 @@ func TestTurnInterrupt(t *testing.T) {
 	// Allow the server a moment to start streaming tokens.
 	time.Sleep(3 * time.Second)
 
-	if err := h.client.TurnInterrupt(ctx, codexgo.TurnInterruptRequest{
+	if err := h.client.TurnInterrupt(ctx, codexgo.TurnInterruptParams{
 		ThreadID: threadID,
 		TurnID:   turn.ID,
 	}); err != nil {
@@ -71,7 +71,7 @@ func TestInterruptNonExistentTurn(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	err := h.client.TurnInterrupt(ctx, codexgo.TurnInterruptRequest{
+	err := h.client.TurnInterrupt(ctx, codexgo.TurnInterruptParams{
 		ThreadID: threadID,
 		TurnID:   "turn-does-not-exist",
 	})
@@ -96,7 +96,7 @@ func TestSessionStop(t *testing.T) {
 	ctx := context.Background()
 
 	// Start a turn — don't wait for it to finish.
-	turn, err := h.client.TurnStart(ctx, codexgo.TurnStartRequest{
+	turn, err := h.client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: threadID,
 		Input:    "Write a haiku.",
 	})

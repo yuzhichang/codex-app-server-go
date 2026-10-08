@@ -37,9 +37,9 @@ func main() {
 	defer client.Close()
 
 	ctx := context.Background()
-	_, _ = client.Initialize(ctx, codexgo.InitializeRequest{
+	_, _ = client.Initialize(ctx, codexgo.InitializeParams{
 		ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-		Capabilities: codexgo.Capabilities{ExperimentalAPI: true},
+		InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
 	})
 
 	thread, _ := client.StartThread(ctx, codexgo.WithThreadModel("gpt-5.4"))
@@ -62,9 +62,9 @@ client, _ := codexgo.New(
 )
 defer client.Close()
 
-_, _ = client.Initialize(ctx, codexgo.InitializeRequest{
+_, _ = client.Initialize(ctx, codexgo.InitializeParams{
     ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-    Capabilities: codexgo.Capabilities{ExperimentalAPI: true},
+    InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
 })
 ```
 
@@ -196,8 +196,8 @@ _ = thread.SetName(ctx, "my-project")
 forked, _ := thread.Fork(ctx, "" /* latest turn */)
 defer forked.Close()
 
-// Rollback specific turns
-_ = thread.Rollback(ctx, []string{turnID})
+// Revert: exclude this turn and every later turn from the history
+_ = thread.Revert(ctx, turnID)
 
 // Goal tracking
 _ = thread.SetGoal(ctx, "Implement a REST API in Go")

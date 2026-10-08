@@ -1,4 +1,3 @@
 # Methods the SDK still wires up that upstream no longer declares (decision R3: remove them).
 client_method            config/update
 server_request_handler   item/mcp/requestApproval
-client_method            thread/rollback

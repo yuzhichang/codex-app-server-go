@@ -46,40 +46,40 @@ func (r *TurnResult) FinalAgentText() string {
 	return ""
 }
 
-// TurnOption is a functional option that configures a TurnStartRequest.
-type TurnOption func(*TurnStartRequest)
+// TurnOption is a functional option that configures a TurnStartParams.
+type TurnOption func(*TurnStartParams)
 
 // WithModel sets the model for the turn.
 func WithModel(model string) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.Model = model
 	}
 }
 
 // WithApprovalPolicy sets the approval policy for the turn.
 func WithApprovalPolicy(policy string) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.ApprovalPolicy = policy
 	}
 }
 
 // WithSandbox sets the sandbox policy for the turn.
 func WithSandbox(sandbox string) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.SandboxPolicy = sandbox
 	}
 }
 
 // WithApprovalMode sets a typed approval policy for the turn.
 func WithApprovalMode(mode ApprovalMode) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.ApprovalPolicy = string(mode)
 	}
 }
 
 // WithSandboxMode sets a typed sandbox policy for the turn.
 func WithSandboxMode(mode SandboxMode) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.SandboxPolicy = string(mode)
 	}
 }
@@ -88,40 +88,40 @@ func WithSandboxMode(mode SandboxMode) TurnOption {
 // string input. Use TextInput, ImageInput, LocalImageInput, SkillInput, and
 // MentionInput to construct the items.
 func WithInputs(inputs ...TurnInput) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.Input = encodeInputs(inputs)
 	}
 }
 
 // WithCWD sets the working directory for the turn.
 func WithCWD(cwd string) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.CWD = cwd
 	}
 }
 
 // WithEffort sets the effort level for the turn.
 func WithEffort(effort string) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		r.Effort = effort
 	}
 }
 
 // WithSkill sets a specific skill to invoke for this turn.
 func WithSkill(skill string) TurnOption {
-	return func(r *TurnStartRequest) { r.Skill = skill }
+	return func(r *TurnStartParams) { r.Skill = skill }
 }
 
 // WithOutputSchema sets the output schema for constraining the assistant's final message.
 func WithOutputSchema(schema any) TurnOption {
-	return func(r *TurnStartRequest) {
+	return func(r *TurnStartParams) {
 		data, _ := json.Marshal(schema)
 		r.OutputSchema = data
 	}
 }
 
 // applyTurnOptions applies all TurnOption values to req.
-func applyTurnOptions(req *TurnStartRequest, opts []TurnOption) {
+func applyTurnOptions(req *TurnStartParams, opts []TurnOption) {
 	for _, o := range opts {
 		o(req)
 	}

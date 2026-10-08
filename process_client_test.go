@@ -66,7 +66,7 @@ func TestWithStdioProcess_EchoServer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if _, err := client.Initialize(ctx, codexgo.InitializeRequest{}); err != nil {
+	if _, err := client.Initialize(ctx, codexgo.InitializeParams{}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
 	if err := client.Close(); err != nil {

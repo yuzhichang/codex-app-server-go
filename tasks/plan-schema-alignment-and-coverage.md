@@ -65,8 +65,11 @@
 | **I5** | **T1.1b 审计结果远超计划预期：SDK 有 5 个（不是 1 个）方法被上游删除/改名**，均由 `scripts/coverage_gate.py` 的"wires-up-but-not-upstream"检查机械发现（见 `gen/unknown-methods.txt`）：<br>`config/update`（SetModel/SetApprovalPolicy/SetSandbox 在用）→ 上游改为 `config/value/write`（带 `expectedVersion` 乐观并发）<br>`thread/rollback` → 上游为 `thread/revert`<br>`turn/diff` → 上游**无对应请求方法**（只有 `turn/diff/updated` 通知），需另寻替代或删除<br>`item/mcp/requestApproval` → `mcpServer/elicitation/request`（= 已知 D3）<br>`item/updated` → 上游**已无此通知** | 按 R3 全部迁移/删除；新增任务 **T1.5**。注意 `config/update`、`thread/rollback`、`turn/diff` 三项是**计划书原先未识别的破坏性变更** |
 | **I6** | **计划书的"43 已实现"高估了完成度**：它统计的是"有接线"的方法，而 T1.1 的判据要求"接线 **且** 有测试证据"。机械统计（`make coverage`）的真实分布为：**已实现 59 + 已接线但缺测试 44 + 完全未开始 72 + 待迁移 5**（declared_stable=182，白名单 7） | 计划书中 M2–M5 的工作量按"72 未开始 + 44 补测试"重新理解；补测试是低成本项，应优先清掉 |
 
-| **I7** | **门禁是"方法级"的，看不到"类型级"漂移。** 全量审计（含所有 118 个 `Method*` 常量、内联/动态方法名、`Call` 站点）确认：SDK 真实 RPC 面 = **118 个方法，其中恰好 3 个上游不存在**（= `gen/unknown-methods.txt`），**不存在额外的幻影包装**。但对照 `codex_app_server_protocol.v2.schemas.json` 的 660 个 `definitions` 后发现：`client_types_gen.go` 的 55 个结构体里 **27 个在 schema 中无同名定义**。原因分三类：**(a) 命名约定差异（良性）** —— 上游用 `*Params`/`*Response`，SDK 用 `*Request`/`*Result`（如 `InitializeParams`↔`InitializeRequest`、`ThreadStartParams`↔`ThreadStartRequest`）；**(b) SDK 自造类型** —— `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError` 在聚合 schema 中**根本不存在**（上游不定义 JSON-RPC 信封），`Capabilities` 对应上游 `InitializeCapabilities`；**(c) 真实孤儿** —— `ThreadRollbackRequest` 无对应（上游是 `ThreadRevertParams`），与方法级审计交叉印证 `thread/rollback` 确已消失。另：`initialize` 的 `Capabilities` 命名与上游不一致，说明 T1.2 若做 codegen 会产出**不同名字**，需先定命名映射 | T1.2 增加"类型级对账"：即使暂不做全量 codegen，也要比对 SDK 结构体名与 schema 定义名，并对**有意改名**维护显式白名单，否则类型级漂移永远不可见 |
+| **I7** | **门禁是"方法级"的，看不到"类型级"漂移。** 全量审计（含所有 118 个 `Method*` 常量、内联/动态方法名、`Call` 站点）确认：SDK 真实 RPC 面 = **118 个方法，其中恰好 3 个上游不存在**（= `gen/unknown-methods.txt`），**不存在额外的幻影包装**。但对照 `codex_app_server_protocol.v2.schemas.json` 的 660 个 `definitions` 后发现：`client_types_gen.go` 的 55 个结构体里 **27 个在 schema 中无同名定义**。原因分三类：**(a) 命名约定差异（良性）** —— 上游用 `*Params`/`*Response`，SDK 用 `*Request`/`*Result`（如 `InitializeParams`↔`InitializeParams`、`ThreadStartParams`↔`ThreadStartParams`）；**(b) SDK 自造类型** —— `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError` 在聚合 schema 中**根本不存在**（上游不定义 JSON-RPC 信封），`InitializeCapabilities` 对应上游 `InitializeCapabilities`；**(c) 真实孤儿** —— `ThreadRollbackRequest` 无对应（上游是 `ThreadRevertParams`），与方法级审计交叉印证 `thread/rollback` 确已消失。另：`initialize` 的 `InitializeCapabilities` 命名与上游不一致，说明 T1.2 若做 codegen 会产出**不同名字**，需先定命名映射 | T1.2 增加"类型级对账"：即使暂不做全量 codegen，也要比对 SDK 结构体名与 schema 定义名，并对**有意改名**维护显式白名单，否则类型级漂移永远不可见 |
 | **I8** | **`TurnRead` 未使用幻影 RPC，但用的是上游已弃用路径**：`readTurn`（`wait.go:121-141`）走 `thread/read{includeTurns:true}`。上游明确标注全量 hydrate 对分页 thread 已弃用，应改用 `thread/turns/list` + `thread/items/list`（`thread.rs:1703-1706`） | 不改方法归属（`thread/read` 真实存在），但记录为"弃用用法"，纳入 M5 的读路径改造 |
+
+| **I9** | **`TokenUsage` 不只是命名问题，而是整个 usage 模型过时**：上游 `TurnCompletedNotification` 的字段只有 `{threadId, turn}`（**没有 `usage`**），`Turn` 结构体也没有 usage 字段；usage 现由独立通知 `thread/tokenUsage/updated` 承载，类型为 `ThreadTokenUsage { last: TokenUsageBreakdown, total: TokenUsageBreakdown, modelContextWindow? }`，而 `TokenUsageBreakdown` 的字段是 `{cachedInputTokens, cacheWriteInputTokens, inputTokens, outputTokens, reasoningOutputTokens, totalTokens}`（注意是 **reasoningOutputTokens**，SDK 现叫 `reasoningTokens`，且缺 2 个 cached 字段）。因此 SDK 的 `TurnCompletedEvent.Usage` / `TurnResult.Usage` 建模了**上游不发送的东西** | **不能靠改名解决**。需：① 新增 `ThreadTokenUsage`/`TokenUsageBreakdown`（按上游名与字段）；② 把 usage 来源改为 `thread/tokenUsage/updated`；③ 从 `TurnCompletedEvent`/`TurnResult` 移除 `Usage`（破坏性）。已记为待办，未实施 |
+| **I10** | **类型级清理已完成（27 → 2 漂移）**：16 个纯命名差异已重命名为上游名（`*Request`/`*Result` → `*Params`/`*Response`，`Capabilities` → `InitializeCapabilities`）；`SchemaItem`/`SchemaTurn`/`SchemaThread` → 上游的 `ThreadItem`/`Turn`/`Thread`；删除 5 个 SDK 自造类型（`RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification`，上游根本不定义 JSON-RPC 信封，线上信封归 `internal/transport`）及其 `rpc_ext.go` 与 `envelope.go` 别名（`Request`/`Response`/`Notification`/`ErrorObject` 本就零使用）；删除真实孤儿 `ThreadRollbackRequest` 并把 `thread/rollback` 迁移为**真实存在**的 `thread/revert`（`ThreadRevertParams{threadId, beforeTurnId}` + `ThreadRevertResponse{thread, turnsBackwardsCursor, itemsBackwardsCursor}`） | 新增 `scripts/type_check.py` + `gen/type-allowlist.json`，纳入 `make typecheck` / `conformance` / `conformance-strict`：**任何不在白名单内的类型漂移都会让门禁失败**，防止再次腐化。剩余 2 项漂移：`InitializeResponse`（名字正确，仅 v2 聚合未收录 → 已白名单说明）、`TokenUsage`（见 I9，故意保持**未白名单**以持续报警） |
 
 > 附带结论 1：M0 的机械提取（`scripts/codex_schema_surface.py`）**独立复现了计划书的全部计数**（173/65/108、11/1/10、86/23/63、1/0/1），且 6 条集合断言全绿 —— 此前手工推导的数字现已变为**机器验证**。
 >
@@ -140,7 +143,7 @@
 | # | 问题 | 证据 | 处置 |
 |---|---|---|---|
 | D1 | SDK 发送 `"jsonrpc":"2.0"`；上游既不发送也不期望 | 上游 `rpc.rs:1-2`；SDK `internal/transport/transport.go` | **删除，不提供开关** |
-| D2 | `Capabilities.OptOutNotificationMethods` 类型为 `bool`，上游是 `Option<Vec<String>>` | 上游 `protocol/v1.rs:65`；SDK `client_types_gen.go` | 改 `[]string`（静默失效 bug） |
+| D2 | `InitializeCapabilities.OptOutNotificationMethods` 类型为 `bool`，上游是 `Option<Vec<String>>` | 上游 `protocol/v1.rs:65`；SDK `client_types_gen.go` | 改 `[]string`（静默失效 bug） |
 | D3 | SDK 用 `item/mcp/requestApproval`；上游已无此名 | SDK `envelope.go:46`、`interaction.go:218`；上游 ServerRequest 面 | 迁移到 `mcpServer/elicitation/request`，**删旧名** |
 | D4 | 通知信封新增 `ServerNotificationEnvelope.emittedAtMs`，SDK 未建模 | 上游 `common.rs:2067-2080` | **建模并在 transport 层捕获**（`emittedAtMs` 与 `method`/`params` **同级**，见 T1.3 的 D4 说明；放在解码器里无效） |
 | D5 | `InitializeCapabilities` 缺 `explicitGatewayOauth`/`requestAttestation`/`extensions`；`ClientInfo` 缺 `title`；`client.go` 硬编码 `codex-go-sdk/0.1.0` | 上游 `protocol/v1.rs:29-70`；SDK `client.go:90-109` | 补字段；`ClientInfo` 可配置 |
@@ -270,7 +273,7 @@
   - **判据按 face 绑定 kind**（不用"扫描全部 role 再取优先级"——`client.go` 同时承载 client_request 与唯一 client notification，那种写法会把请求误判为 `client_notification_sender` 后被 Notify 检查丢弃，实测造成 44 个方法的假缺口）。
   - **测试证据放宽**为"引用常量 **或** 引用 wire 方法字符串"：SDK 的测试普遍用 wire 字符串驱动 mock server，只认常量会严重低估。
   - 新增 4 条自检：白名单项必须属于 `declared_stable`；白名单项不得已被实现（矛盾）；已接线但上游已删除的方法必须为空；双向一致。
-- **实测结果（`make coverage`）**：`declared_stable=182 / 白名单=7 / 已实现=59 / 缺口=116`，其中 **未开始 72 + 已接线但缺测试 44**；另有 **5 个待迁移方法**（I5）。
+- **实测结果（`make coverage`）**：`declared_stable=182 / 白名单=7 / 已实现=60 / 缺口=115`，其中 **未开始 71 + 已接线但缺测试 44**；另有 **2 个待迁移方法**（`config/update`、`item/mcp/requestApproval`）。
 - **输出**：`gen/method-surface.json`、`gen/export-exclusions.json`、`gen/not-in-scope.txt`、`gen/whitelist.json`、`gen/implemented-methods.json`、`gen/unknown-methods.txt`。
 
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
@@ -297,9 +300,9 @@
 
 ### T1.3 修复类型/建模缺陷（D2/D4/D5/D5b）
 
-- ✅ **D2 已修**：`Capabilities.OptOutNotificationMethods` → `[]string`；回归测试同时断言"旧 `bool` 形状必须解码失败"。
-- ✅ **D5 已修**：`Capabilities` 补 `ExplicitGatewayOauth`/`RequestAttestation`/`Extensions`；`ClientInfo` 补 `Title`；新增 `WithClientInfo(name, title, version)`；新增 `options.go` 的 `Version` 变量（可由 `-ldflags -X` 注入，取代硬编码 `0.1.0`）。
-- ✅ **D5b 已修**：默认不宣告任何 capabilities —— `InitializeRequest.Capabilities` 改为**指针**（`nil` → 字段整体从线上省略，对齐上游 `Option`）；`New()` 不再硬编码 `ExperimentalAPI: true`；新增 `WithInitializeCapabilities` 供显式覆盖。
+- ✅ **D2 已修**：`InitializeCapabilities.OptOutNotificationMethods` → `[]string`；回归测试同时断言"旧 `bool` 形状必须解码失败"。
+- ✅ **D5 已修**：`InitializeCapabilities` 补 `ExplicitGatewayOauth`/`RequestAttestation`/`Extensions`；`ClientInfo` 补 `Title`；新增 `WithClientInfo(name, title, version)`；新增 `options.go` 的 `Version` 变量（可由 `-ldflags -X` 注入，取代硬编码 `0.1.0`）。
+- ✅ **D5b 已修**：默认不宣告任何 capabilities —— `InitializeParams.InitializeCapabilities` 改为**指针**（`nil` → 字段整体从线上省略，对齐上游 `Option`）；`New()` 不再硬编码 `ExperimentalAPI: true`；新增 `WithInitializeCapabilities` 供显式覆盖。
 - ✅ **D1 配套**：`RPCRequest`/`RPCResponse`/`RPCNotification` 移除 `Version`（实测聚合 schema 中根本不存在 JSONRPC 信封类型，故这三个 `Version` 字段本就是 SDK 自造）。
 - ⏳ **D4 待办（本轮未做，发现需改设计）**：`ServerNotificationEnvelope.emittedAtMs` **不是 `params` 的成员** —— 上游 `#[serde(flatten)] notification` + `emitted_at_ms`（`common.rs:2067-2080`）意味着线上形状是 `{"method":…,"params":{…},"emittedAtMs":123}`，`emittedAtMs` 与 `method`/`params` **同级**。而现有 transport 只把 `raw["params"]` 取出（`websocket.go` / `transport.go` 的 readLoop），**同级字段在这一步就被丢弃**。因此 D4 必须在 **transport 层**（`Notification` 增加 `EmittedAtMs`）而不是解码器里实现 —— 原任务描述有误，已修正。
 
@@ -601,6 +604,8 @@
 | 19 | 实施 I3：vendor 对象与理由证据 | 采纳：vendor 聚合 stable schema + 派生方法集；internal-only 排除理由已有上游注释背书 |
 | 20 | 实施 I5 的 `item/updated` | 采纳：删除该通知类型与解码分支，测试改为断言回退 `RawNotificationEvent` |
 | 21 | **`turn/diff` 的处置（用户决策）** | JSON-RPC 无 `turn/diff` 方法 → **SDK 侧不实现**。删除 `Client.TurnDiff`/`SessionThread.GitDiff`/`TurnDiffRequest`/`TurnDiffResult`/`MethodTurnDiff` 及相关文档引用；保留 `TurnDiffUpdatedEvent` 通知 |
+| 22 | **类型级清理（用户决策：先清理再推进）** | 采纳三条原则并落地：**① 消除良性命名差异**（16 个 `*Request`/`*Result` → 上游 `*Params`/`*Response`；`Capabilities` → `InitializeCapabilities`；`SchemaItem/Turn/Thread` → `ThreadItem/Turn/Thread`）；**② 不自造类型**（删除 `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification` 及零使用的别名，线上信封归 `internal/transport`）；**③ 删除真实孤儿**（`ThreadRollbackRequest`，并把 `thread/rollback` 迁移为真实存在的 `thread/revert`）。新增类型级门禁 `scripts/type_check.py` + `gen/type-allowlist.json`（I10） |
+| 23 | **`TokenUsage` 的处置** | **本轮不改名、保持未白名单**：I9 表明它是用法模型过时（usage 已迁至 `thread/tokenUsage/updated` + `ThreadTokenUsage`），改名会造成"已对齐"的假象。保留报警，待按其正确形状重构 |
 
 > 无遗留开放项。
 

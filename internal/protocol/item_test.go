@@ -45,7 +45,9 @@ func TestItemRoundTrip(t *testing.T) {
 	}
 }
 
-func TestRPCNotificationDecodeParams(t *testing.T) {
+// A notification's params decode straight into the typed event. There is deliberately no
+// RPCNotification envelope type in the SDK (upstream declares none; see envelope.go).
+func TestTurnStartedParamsDecode(t *testing.T) {
 	evt := TurnStartedEvent{
 		ThreadID: "thread_1",
 		TurnID:   "turn_1",
@@ -59,14 +61,9 @@ func TestRPCNotificationDecodeParams(t *testing.T) {
 		t.Fatalf("RawJSON: %v", err)
 	}
 
-	n := RPCNotification{
-		Method: MethodTurnStarted,
-		Params: params,
-	}
-
 	var decoded TurnStartedEvent
-	if err := n.DecodeParams(&decoded); err != nil {
-		t.Fatalf("DecodeParams: %v", err)
+	if err := json.Unmarshal(params, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
 	}
 	if decoded.ThreadID != evt.ThreadID || decoded.TurnID != evt.TurnID || decoded.Turn == nil {
 		t.Fatalf("decoded mismatch: %+v", decoded)

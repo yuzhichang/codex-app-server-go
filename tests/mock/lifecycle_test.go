@@ -34,7 +34,7 @@ func TestThreadStartAndRead(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	thread, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	thread, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestThreadStartAndRead(t *testing.T) {
 		t.Fatal("ThreadStart returned empty thread ID")
 	}
 
-	read, err := h.Client.ThreadRead(ctx, codexgo.ThreadReadRequest{ThreadID: thread.ID})
+	read, err := h.Client.ThreadRead(ctx, codexgo.ThreadReadParams{ThreadID: thread.ID})
 	if err != nil {
 		t.Fatalf("ThreadRead: %v", err)
 	}
@@ -56,19 +56,19 @@ func TestThreadSetNameRoundTrip(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	thread, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	thread, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
 
-	if err := h.Client.ThreadSetName(ctx, codexgo.ThreadSetNameRequest{
+	if err := h.Client.ThreadSetName(ctx, codexgo.ThreadSetNameParams{
 		ThreadID: thread.ID,
 		Name:     "my-thread",
 	}); err != nil {
 		t.Fatalf("ThreadSetName: %v", err)
 	}
 
-	read, err := h.Client.ThreadRead(ctx, codexgo.ThreadReadRequest{ThreadID: thread.ID})
+	read, err := h.Client.ThreadRead(ctx, codexgo.ThreadReadParams{ThreadID: thread.ID})
 	if err != nil {
 		t.Fatalf("ThreadRead: %v", err)
 	}
@@ -82,11 +82,11 @@ func TestThreadList(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	t1, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	t1, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart 1: %v", err)
 	}
-	t2, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	t2, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart 2: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestThreadArchiveAndUnarchive(t *testing.T) {
 		t.Skip("binary interrupted turn before LLM call; skipping archive test")
 	}
 
-	if err := h.Client.ThreadArchive(ctx, codexgo.ThreadArchiveRequest{ThreadID: st.ID()}); err != nil {
+	if err := h.Client.ThreadArchive(ctx, codexgo.ThreadArchiveParams{ThreadID: st.ID()}); err != nil {
 		t.Fatalf("ThreadArchive: %v", err)
 	}
 
@@ -149,7 +149,7 @@ func TestThreadArchiveAndUnarchive(t *testing.T) {
 		}
 	}
 
-	if err := h.Client.ThreadUnarchive(ctx, codexgo.ThreadUnarchiveRequest{ThreadID: st.ID()}); err != nil {
+	if err := h.Client.ThreadUnarchive(ctx, codexgo.ThreadUnarchiveParams{ThreadID: st.ID()}); err != nil {
 		t.Fatalf("ThreadUnarchive: %v", err)
 	}
 }
@@ -171,7 +171,7 @@ func TestThreadForkDistinct(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 
-	forked, err := h.Client.ThreadFork(ctx, codexgo.ThreadForkRequest{ThreadID: st.ID()})
+	forked, err := h.Client.ThreadFork(ctx, codexgo.ThreadForkParams{ThreadID: st.ID()})
 	if err != nil {
 		t.Fatalf("ThreadFork: %v", err)
 	}

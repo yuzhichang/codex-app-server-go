@@ -127,18 +127,18 @@ type GitInfo struct {
 
 // --- Core data models (schema-faithful; runtime types with custom decoders live in protocol) ---
 
-// SchemaItem mirrors the Item definition from the schema.
+// ThreadItem mirrors the Item definition from the schema.
 // For the full runtime type with payload encoding, see protocol.Item.
-type SchemaItem struct {
+type ThreadItem struct {
 	ID   string   `json:"id,omitempty"`
 	Type ItemKind `json:"type"`
 }
 
-// SchemaTurn mirrors the Turn definition from the schema.
+// Turn mirrors the Turn definition from the schema.
 // For the full runtime type with flexible time parsing, see protocol.Turn.
-type SchemaTurn struct {
+type Turn struct {
 	ID          string        `json:"id,omitempty"`
-	Items       []SchemaItem  `json:"items,omitempty"`
+	Items       []ThreadItem  `json:"items,omitempty"`
 	ItemsView   TurnItemsView `json:"itemsView,omitempty"`
 	Status      TurnStatus    `json:"status,omitempty"`
 	Error       *TurnError    `json:"error,omitempty"`
@@ -148,9 +148,9 @@ type SchemaTurn struct {
 	Usage       *TokenUsage   `json:"usage,omitempty"`
 }
 
-// SchemaThread mirrors the Thread definition from the schema.
+// Thread mirrors the Thread definition from the schema.
 // For the full runtime type with flexible status decoding, see protocol.Thread.
-type SchemaThread struct {
+type Thread struct {
 	ID             string       `json:"id,omitempty"`
 	SessionID      string       `json:"sessionId,omitempty"`
 	ForkedFromID   string       `json:"forkedFromId,omitempty"`
@@ -170,36 +170,16 @@ type SchemaThread struct {
 	AgentRole      string       `json:"agentRole,omitempty"`
 	GitInfo        *GitInfo     `json:"gitInfo,omitempty"`
 	Name           string       `json:"name,omitempty"`
-	Turns          []SchemaTurn `json:"turns,omitempty"`
+	Turns          []Turn       `json:"turns,omitempty"`
 }
 
-// --- RPC envelope types ---
-
-type RPCError struct {
-	Code    int             `json:"code"`
-	Message string          `json:"message"`
-	Data    json.RawMessage `json:"data,omitempty"`
-}
-
-type RPCRequest struct {
-	Method string          `json:"method"`
-	ID     json.RawMessage `json:"id,omitempty"`
-	Params json.RawMessage `json:"params,omitempty"`
-}
-
-type RPCResponse struct {
-	ID     json.RawMessage `json:"id,omitempty"`
-	Result json.RawMessage `json:"result,omitempty"`
-	Error  *RPCError       `json:"error,omitempty"`
-}
-
-type RPCNotification struct {
-	Method string          `json:"method"`
-	Params json.RawMessage `json:"params,omitempty"`
-}
-
-// InitializedNotification is the empty notification sent after Initialize.
-type InitializedNotification struct{}
+// NOTE: the SDK deliberately declares NO JSON-RPC envelope types here.
+//
+// Upstream defines none either -- `app-server-protocol/src/rpc.rs` is explicit that it
+// does not do true JSON-RPC 2.0 -- and the wire envelopes are owned by
+// internal/transport (requestEnvelope / notificationEnvelope / replyEnvelope). The
+// former RPCRequest / RPCResponse / RPCNotification / RPCError / InitializedNotification
+// types were SDK inventions with no upstream counterpart and have been removed.
 
 // --- Initialize ---
 
@@ -209,13 +189,13 @@ type ClientInfo struct {
 	Version string `json:"version,omitempty"`
 }
 
-// Capabilities mirrors the upstream InitializeCapabilities
+// InitializeCapabilities mirrors the upstream InitializeCapabilities
 // (app-server-protocol/src/protocol/v1.rs:46-70).
 //
-// Upstream `capabilities` is `Option<InitializeCapabilities>`; InitializeRequest therefore
+// Upstream `capabilities` is `Option<InitializeCapabilities>`; InitializeParams therefore
 // holds a pointer so that "no capabilities" is actually omitted from the wire. A struct
 // value would always be serialized (encoding/json never treats a struct as empty).
-type Capabilities struct {
+type InitializeCapabilities struct {
 	// ExplicitGatewayOauth uses explicit gateway OAuth login instead of automatic browser
 	// authorization. Applies to the app-server's gateway runtime.
 	ExplicitGatewayOauth bool `json:"explicitGatewayOauth,omitempty"`
@@ -244,12 +224,12 @@ type Capabilities struct {
 	Extensions map[string]any `json:"extensions,omitempty"`
 }
 
-type InitializeRequest struct {
-	ClientInfo   ClientInfo    `json:"clientInfo"`
-	Capabilities *Capabilities `json:"capabilities,omitempty"`
+type InitializeParams struct {
+	ClientInfo             ClientInfo              `json:"clientInfo"`
+	InitializeCapabilities *InitializeCapabilities `json:"capabilities,omitempty"`
 }
 
-type InitializeResult struct {
+type InitializeResponse struct {
 	UserAgent      string `json:"userAgent,omitempty"`
 	CodexHome      string `json:"codexHome,omitempty"`
 	PlatformFamily string `json:"platformFamily,omitempty"`
@@ -258,7 +238,7 @@ type InitializeResult struct {
 
 // --- Thread/Turn RPC requests ---
 
-type ThreadStartRequest struct {
+type ThreadStartParams struct {
 	Model                 string          `json:"model,omitempty"`
 	CWD                   string          `json:"cwd,omitempty"`
 	ApprovalPolicy        string          `json:"approvalPolicy,omitempty"`
@@ -270,7 +250,7 @@ type ThreadStartRequest struct {
 	Metadata              json.RawMessage `json:"metadata,omitempty"`
 }
 
-type ThreadResumeRequest struct {
+type ThreadResumeParams struct {
 	ThreadID         string   `json:"threadId"`
 	History          []string `json:"history,omitempty"`
 	Path             string   `json:"path,omitempty"`
@@ -278,12 +258,12 @@ type ThreadResumeRequest struct {
 	InitialTurnsPage int      `json:"initialTurnsPage,omitempty"`
 }
 
-type ThreadReadRequest struct {
+type ThreadReadParams struct {
 	ThreadID     string `json:"threadId"`
 	IncludeTurns bool   `json:"includeTurns,omitempty"`
 }
 
-type TurnStartRequest struct {
+type TurnStartParams struct {
 	ThreadID            string          `json:"threadId"`
 	Input               string          `json:"input,omitempty"`
 	ClientUserMessageID string          `json:"clientUserMessageId,omitempty"`
@@ -303,53 +283,64 @@ type TurnStartRequest struct {
 	Skill string `json:"skill,omitempty"`
 }
 
-type TurnInterruptRequest struct {
+type TurnInterruptParams struct {
 	ThreadID string `json:"threadId"`
 	TurnID   string `json:"turnId"`
 }
 
 // --- Thread fork / list / archive / setName / rollback ---
 
-type ThreadForkRequest struct {
+type ThreadForkParams struct {
 	ThreadID string `json:"threadId"`
 	TurnID   string `json:"turnId,omitempty"` // fork at specific turn
 }
 
-type ThreadForkResult struct {
-	Thread SchemaThread `json:"thread"`
+type ThreadForkResponse struct {
+	Thread Thread `json:"thread"`
 }
 
-type ThreadListRequest struct {
+type ThreadListParams struct {
 	Limit  int    `json:"limit,omitempty"`
 	Cursor string `json:"cursor,omitempty"`
 }
 
-type ThreadListResult struct {
-	Threads []SchemaThread `json:"threads"`
-	Cursor  string         `json:"cursor,omitempty"`
+type ThreadListResponse struct {
+	Threads []Thread `json:"threads"`
+	Cursor  string   `json:"cursor,omitempty"`
 }
 
-type ThreadArchiveRequest struct {
+type ThreadArchiveParams struct {
 	ThreadID string `json:"threadId"`
 }
 
-type ThreadUnarchiveRequest struct {
+type ThreadUnarchiveParams struct {
 	ThreadID string `json:"threadId"`
 }
 
-type ThreadSetNameRequest struct {
+type ThreadSetNameParams struct {
 	ThreadID string `json:"threadId"`
 	Name     string `json:"name"`
 }
 
-type ThreadRollbackRequest struct {
-	ThreadID string   `json:"threadId"`
-	TurnIDs  []string `json:"turnIds"`
+// ThreadRevertParams excludes beforeTurnID, together with every later turn, from the
+// thread's replacement history.
+type ThreadRevertParams struct {
+	ThreadID     string `json:"threadId"`
+	BeforeTurnID string `json:"beforeTurnId"`
+}
+
+// ThreadRevertResponse returns the updated thread metadata plus cursors for hydrating the
+// retained history. `Thread.Turns` is always empty here: page it back with
+// thread/turns/list (via TurnsBackwardsCursor) and thread/items/list.
+type ThreadRevertResponse struct {
+	Thread               Thread  `json:"thread"`
+	TurnsBackwardsCursor *string `json:"turnsBackwardsCursor,omitempty"`
+	ItemsBackwardsCursor *string `json:"itemsBackwardsCursor,omitempty"`
 }
 
 // --- Turn steer ---
 
-type TurnSteerRequest struct {
+type TurnSteerParams struct {
 	ThreadID string `json:"threadId"`
 	TurnID   string `json:"turnId"`
 	Input    string `json:"input"`
@@ -357,7 +348,7 @@ type TurnSteerRequest struct {
 
 // --- Review ---
 
-type ReviewStartRequest struct {
+type ReviewStartParams struct {
 	ThreadID string `json:"threadId"`
 	TurnID   string `json:"turnId,omitempty"`
 }

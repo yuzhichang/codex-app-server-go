@@ -53,9 +53,9 @@ client, _ := codexgo.New(codexgo.WithStdioTransport(stdout, stdin))
 defer client.Close()
 
 ctx := context.Background()
-_, _ = client.Initialize(ctx, codexgo.InitializeRequest{
+_, _ = client.Initialize(ctx, codexgo.InitializeParams{
     ClientInfo:   codexgo.ClientInfo{Name: "my-tool", Version: "0.1.0"},
-    Capabilities: codexgo.Capabilities{ExperimentalAPI: true},
+    InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
 })
 
 thread, _ := client.StartThread(ctx, codexgo.WithThreadModel("claude-opus-4-8"))
@@ -92,7 +92,7 @@ for delta := range ch {
 
 ```go
 sub := client.Events(); defer sub.Close()
-turn, _ := client.TurnStart(ctx, codexgo.TurnStartRequest{
+turn, _ := client.TurnStart(ctx, codexgo.TurnStartParams{
     ThreadID:     thread.ID(),
     Input:        "Return {\"answer\":\"PONG\",\"n\":42} as JSON.",
     OutputSchema: schemaJSON,

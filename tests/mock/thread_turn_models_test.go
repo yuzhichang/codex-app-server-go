@@ -32,7 +32,7 @@ func TestThreadMetadataUpdateRPC(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{CWD: h.Workspace()})
+	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{CWD: h.Workspace()})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestThreadUnsubscribeRPC(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{CWD: h.Workspace()})
+	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{CWD: h.Workspace()})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestThreadShellCommandRPC(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{CWD: h.Workspace()})
+	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{CWD: h.Workspace()})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestThreadDeleteRPC(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartRequest{CWD: h.Workspace()})
+	th, err := h.Client.ThreadStart(ctx, codexgo.ThreadStartParams{CWD: h.Workspace()})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}

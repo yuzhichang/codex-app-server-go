@@ -2,8 +2,6 @@ package protocol
 
 import (
 	"encoding/json"
-
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
 )
 
 // NOTE (D1 / decision R3): there is deliberately no JSONRPCVersion constant here.
@@ -55,7 +53,7 @@ const (
 	MethodThreadArchive    = "thread/archive"
 	MethodThreadUnarchive  = "thread/unarchive"
 	MethodThreadSetName    = "thread/name/set"
-	MethodThreadRollback   = "thread/rollback"
+	MethodThreadRevert     = "thread/revert"
 
 	// Thread goals
 	MethodThreadGoalSet   = "thread/goal/set"
@@ -167,18 +165,14 @@ const (
 	MethodServerRequestResolved = "serverRequest/resolved"
 )
 
-// RPC envelope type aliases -- canonical definitions live in the generated schema package.
-
-type RPCRequest = schematypes.RPCRequest
-type RPCResponse = schematypes.RPCResponse
-type RPCNotification = schematypes.RPCNotification
-type RPCError = schematypes.RPCError
-
-// Backward-compat aliases.
-type Request = RPCRequest
-type Response = RPCResponse
-type Notification = RPCNotification
-type ErrorObject = RPCError
+// NOTE: there are deliberately no JSON-RPC envelope types or aliases here.
+//
+// Upstream declares none (app-server-protocol/src/rpc.rs is explicit that it does not do
+// true JSON-RPC 2.0), and the wire envelopes are owned by internal/transport
+// (requestEnvelope / notificationEnvelope / replyEnvelope, plus transport.RPCError).
+// The former RPCRequest / RPCResponse / RPCNotification / RPCError aliases -- and the
+// Request / Response / Notification / ErrorObject "backward-compat" aliases, which had no
+// users at all -- were SDK inventions and have been removed.
 
 // Utility helpers for building JSON-RPC payloads.
 

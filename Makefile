@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage conformance conformance-strict build test
+.PHONY: sync verify diff-cli coverage typecheck conformance conformance-strict build test
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -28,14 +28,21 @@ diff-cli:
 coverage:
 	python3 $(SDK_DIR)/scripts/coverage_gate.py report
 
+# Type-level reconciliation: every SDK struct must match an upstream definition by name, or
+# be allow-listed with a reason (see gen/type-allowlist.json).
+typecheck:
+	python3 $(SDK_DIR)/scripts/type_check.py report
+
 # Mid-implementation: reconciliation must pass; coverage gaps are reported but not fatal.
 conformance: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py report
+	@python3 $(SDK_DIR)/scripts/type_check.py report
 
-# Final gate: no gap, no untested wiring, no stale methods. This is the CI target once
-# the work in tasks/plan-schema-alignment-and-coverage.md is complete.
+# Final gate: no gap, no untested wiring, no stale methods, no unlisted type drift.
+# This is the CI target once the work in tasks/plan-schema-alignment-and-coverage.md is done.
 conformance-strict: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
+	@python3 $(SDK_DIR)/scripts/type_check.py check
 
 build:
 	cd $(SDK_DIR) && go build ./...

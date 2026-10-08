@@ -11,7 +11,7 @@ import (
 // MarshalJSON omits the Ephemeral field when false so the wire format stays
 // compact. The alias breaks the recursion that would otherwise occur when
 // calling json.Marshal on the same type.
-func (r ThreadStartRequest) MarshalJSON() ([]byte, error) {
+func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
 		Model                 string          `json:"model,omitempty"`
 		CWD                   string          `json:"cwd,omitempty"`
@@ -50,7 +50,7 @@ func wireInput(s string) any {
 
 // MarshalJSON converts the string Input into the multi-part array format the
 // server expects and passes all other fields through unchanged.
-func (r TurnSteerRequest) MarshalJSON() ([]byte, error) {
+func (r TurnSteerParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
 		ThreadID string `json:"threadId"`
 		TurnID   string `json:"turnId"`
@@ -65,7 +65,7 @@ func (r TurnSteerRequest) MarshalJSON() ([]byte, error) {
 
 // MarshalJSON converts the string Input into the multi-part array format the
 // server expects and passes all other fields through unchanged.
-func (r TurnStartRequest) MarshalJSON() ([]byte, error) {
+func (r TurnStartParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
 		ThreadID            string   `json:"threadId"`
 		Input               any      `json:"input"`

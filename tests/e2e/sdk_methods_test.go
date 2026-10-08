@@ -17,7 +17,7 @@ func TestInitializeResult(t *testing.T) {
 	result := initialize(t, h.client)
 
 	if result.UserAgent == "" {
-		t.Error("InitializeResult.UserAgent must not be empty")
+		t.Error("InitializeResponse.UserAgent must not be empty")
 	}
 	// PlatformOS and CodexHome are optional but logged for diagnostics.
 	t.Logf("Initialize OK — userAgent=%q platformOS=%q codexHome=%q",
@@ -34,7 +34,7 @@ func TestThreadRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+	thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadParams{
 		ThreadID: threadID,
 	})
 	if err != nil {
@@ -60,13 +60,13 @@ func TestThreadReadWithTurns(t *testing.T) {
 	}
 
 	// Read without turns.
-	threadNoTurns, err := h.client.ThreadRead(ctx, codexgo.ThreadReadRequest{ThreadID: threadID})
+	threadNoTurns, err := h.client.ThreadRead(ctx, codexgo.ThreadReadParams{ThreadID: threadID})
 	if err != nil {
 		t.Fatalf("ThreadRead (no turns): %v", err)
 	}
 
 	// Read with turns.
-	threadWithTurns, err := h.client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+	threadWithTurns, err := h.client.ThreadRead(ctx, codexgo.ThreadReadParams{
 		ThreadID:     threadID,
 		IncludeTurns: true,
 	})
@@ -99,7 +99,7 @@ func TestThreadResume(t *testing.T) {
 	resumeCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	resumed, err := h.client.ThreadResume(resumeCtx, codexgo.ThreadResumeRequest{
+	resumed, err := h.client.ThreadResume(resumeCtx, codexgo.ThreadResumeParams{
 		ThreadID: threadID,
 	})
 	if err != nil {
@@ -111,7 +111,7 @@ func TestThreadResume(t *testing.T) {
 	t.Logf("ThreadResume: thread %s status=%s", resumed.ID, resumed.Status)
 }
 
-// TestThreadStartOptions verifies that non-default ThreadStartRequest fields are
+// TestThreadStartOptions verifies that non-default ThreadStartParams fields are
 // reflected in the created thread.
 func TestThreadStartOptions(t *testing.T) {
 	h := startServer(t)
@@ -121,7 +121,7 @@ func TestThreadStartOptions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	thread, err := h.client.ThreadStart(ctx, codexgo.ThreadStartRequest{
+	thread, err := h.client.ThreadStart(ctx, codexgo.ThreadStartParams{
 		Ephemeral:      true,
 		ApprovalPolicy: "on-request",
 		CWD:            cwd,
@@ -151,7 +151,7 @@ func TestTurnStartAndRead(t *testing.T) {
 	turnCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	turn, err := h.client.TurnStart(turnCtx, codexgo.TurnStartRequest{
+	turn, err := h.client.TurnStart(turnCtx, codexgo.TurnStartParams{
 		ThreadID: threadID,
 		Input:    "Write a haiku about Go programming.",
 	})
@@ -170,7 +170,7 @@ func TestTurnStartAndRead(t *testing.T) {
 	}
 
 	// Read back and assert the turn is listed.
-	thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+	thread, err := h.client.ThreadRead(ctx, codexgo.ThreadReadParams{
 		ThreadID:     threadID,
 		IncludeTurns: true,
 	})

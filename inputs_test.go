@@ -40,8 +40,8 @@ func TestWithInputsWireFormat(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := client.TurnStart(ctx, func() codexgo.TurnStartRequest {
-		req := codexgo.TurnStartRequest{ThreadID: "thread-1"}
+	_, err := client.TurnStart(ctx, func() codexgo.TurnStartParams {
+		req := codexgo.TurnStartParams{ThreadID: "thread-1"}
 		codexgo.WithInputs(
 			codexgo.TextInput("hello"),
 			codexgo.ImageInput("https://example.com/a.png", "image/png"),
@@ -153,7 +153,7 @@ func TestModelListAndModels(t *testing.T) {
 }
 
 func TestTypedEnumOptions(t *testing.T) {
-	var req codexgo.TurnStartRequest
+	var req codexgo.TurnStartParams
 	codexgo.WithApprovalMode(codexgo.ApprovalModeNever)(&req)
 	codexgo.WithSandboxMode(codexgo.SandboxWorkspaceWrite)(&req)
 	if req.ApprovalPolicy != "never" {

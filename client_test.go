@@ -60,13 +60,13 @@ func TestNewWiresApprovalHandler(t *testing.T) {
 }
 
 func TestInitializeUsesProtocolMethods(t *testing.T) {
-	ft := &fakeTransport{result: InitializeResult{UserAgent: "ua"}}
+	ft := &fakeTransport{result: InitializeResponse{UserAgent: "ua"}}
 	client, err := New(WithTransport(ft))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.Initialize(context.Background(), InitializeRequest{})
+	got, err := client.Initialize(context.Background(), InitializeParams{})
 	if err != nil {
 		t.Fatalf("Initialize() error = %v", err)
 	}

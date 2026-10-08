@@ -286,7 +286,7 @@ func MentionInput(mentionID, text string) TurnInput {
 }
 
 // encodeInputs serializes typed inputs into the JSON-array string carried by the
-// Input field; TurnStartRequest/TurnSteerRequest marshaling pass it through as
+// Input field; TurnStartParams/TurnSteerParams marshaling pass it through as
 // the wire input array. Returns "" for an empty slice.
 func encodeInputs(inputs []TurnInput) string {
 	if len(inputs) == 0 {

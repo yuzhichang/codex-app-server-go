@@ -109,6 +109,15 @@
     "test": "client_extended_test.go"
   },
   {
+    "method": "thread/revert",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
     "method": "thread/start",
     "face": "client_request",
     "kind": "client_method",
@@ -457,7 +466,7 @@
     "wiring": [
       "events.go"
     ],
-    "test": "internal/protocol/item_test.go"
+    "test": "sdk_v2_test.go"
   },
   {
     "method": "warning",

@@ -15,14 +15,14 @@ var ErrUnsupportedServerRequest = errors.New("protocol: unsupported server reque
 // Request/response type aliases pointing at schema-generated definitions.
 
 type ClientInfo = schematypes.ClientInfo
-type Capabilities = schematypes.Capabilities
-type InitializeRequest = schematypes.InitializeRequest
-type InitializeResult = schematypes.InitializeResult
-type ThreadStartRequest = schematypes.ThreadStartRequest
-type ThreadResumeRequest = schematypes.ThreadResumeRequest
-type ThreadReadRequest = schematypes.ThreadReadRequest
-type TurnStartRequest = schematypes.TurnStartRequest
-type TurnInterruptRequest = schematypes.TurnInterruptRequest
+type InitializeCapabilities = schematypes.InitializeCapabilities
+type InitializeParams = schematypes.InitializeParams
+type InitializeResponse = schematypes.InitializeResponse
+type ThreadStartParams = schematypes.ThreadStartParams
+type ThreadResumeParams = schematypes.ThreadResumeParams
+type ThreadReadParams = schematypes.ThreadReadParams
+type TurnStartParams = schematypes.TurnStartParams
+type TurnInterruptParams = schematypes.TurnInterruptParams
 
 // ServerRequest / ServerResponse are protocol-layer helpers (not in schema).
 

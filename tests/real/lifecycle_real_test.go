@@ -22,7 +22,7 @@ func TestReal_ThreadStartAndRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestReal_ThreadStartAndRead(t *testing.T) {
 		t.Fatal("ThreadStart returned empty thread ID")
 	}
 
-	read, err := client.ThreadRead(ctx, codexgo.ThreadReadRequest{ThreadID: thread.ID})
+	read, err := client.ThreadRead(ctx, codexgo.ThreadReadParams{ThreadID: thread.ID})
 	if err != nil {
 		t.Fatalf("ThreadRead: %v", err)
 	}
@@ -45,17 +45,17 @@ func TestReal_ThreadSetName(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
 
 	const name = "go-real-test"
-	if err := client.ThreadSetName(ctx, codexgo.ThreadSetNameRequest{ThreadID: thread.ID, Name: name}); err != nil {
+	if err := client.ThreadSetName(ctx, codexgo.ThreadSetNameParams{ThreadID: thread.ID, Name: name}); err != nil {
 		t.Fatalf("ThreadSetName: %v", err)
 	}
 
-	read, err := client.ThreadRead(ctx, codexgo.ThreadReadRequest{ThreadID: thread.ID})
+	read, err := client.ThreadRead(ctx, codexgo.ThreadReadParams{ThreadID: thread.ID})
 	if err != nil {
 		t.Fatalf("ThreadRead: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestReal_ThreadList(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartRequest{})
+	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{})
 	if err != nil {
 		t.Fatalf("ThreadStart: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestReal_ThreadArchiveAndUnarchive(t *testing.T) {
 	}
 	id := thread.ID()
 
-	if err := client.ThreadArchive(ctx, codexgo.ThreadArchiveRequest{ThreadID: id}); err != nil {
+	if err := client.ThreadArchive(ctx, codexgo.ThreadArchiveParams{ThreadID: id}); err != nil {
 		t.Fatalf("ThreadArchive: %v", err)
 	}
 
@@ -126,7 +126,7 @@ func TestReal_ThreadArchiveAndUnarchive(t *testing.T) {
 		}
 	}
 
-	if err := client.ThreadUnarchive(ctx, codexgo.ThreadUnarchiveRequest{ThreadID: id}); err != nil {
+	if err := client.ThreadUnarchive(ctx, codexgo.ThreadUnarchiveParams{ThreadID: id}); err != nil {
 		t.Fatalf("ThreadUnarchive: %v", err)
 	}
 }

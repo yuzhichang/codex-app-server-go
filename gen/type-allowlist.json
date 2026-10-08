@@ -1,0 +1,6 @@
+[
+  {
+    "name": "InitializeResponse",
+    "reason": "Name matches upstream (protocol/v1.rs InitializeResponse); the v2 aggregate simply does not carry it, although it does carry InitializeParams. Not a naming divergence."
+  }
+]

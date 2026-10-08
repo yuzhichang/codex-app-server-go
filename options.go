@@ -29,7 +29,7 @@ type clientConfig struct {
 	// initCapabilities means the `capabilities` field is omitted from the wire, which
 	// mirrors upstream's Option<InitializeCapabilities>.
 	clientInfo       ClientInfo
-	initCapabilities *Capabilities
+	initCapabilities *InitializeCapabilities
 	// maxThreads sets the maximum number of concurrent live SessionThreads.
 	// 0 means use the default (64). -1 means unlimited.
 	maxThreads int
@@ -81,7 +81,7 @@ func WithClientInfo(name, title, version string) Option {
 // Note: the SDK implements no experimental surface (decision R2), and
 // `requestAttestation` has no handler (decision R4), so enabling either is not normally
 // useful. Defaults are deliberately all-false.
-func WithInitializeCapabilities(c *Capabilities) Option {
+func WithInitializeCapabilities(c *InitializeCapabilities) Option {
 	return func(cfg *clientConfig) error {
 		cfg.initCapabilities = c
 		return nil

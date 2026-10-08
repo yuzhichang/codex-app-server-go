@@ -33,7 +33,7 @@ func TestSessionThread_SetName(t *testing.T) {
 		t.Fatalf("SetName: %v", err)
 	}
 
-	read, err := h.Client.ThreadRead(ctx, codexgo.ThreadReadRequest{ThreadID: st.ID()})
+	read, err := h.Client.ThreadRead(ctx, codexgo.ThreadReadParams{ThreadID: st.ID()})
 	if err != nil {
 		t.Fatalf("ThreadRead: %v", err)
 	}

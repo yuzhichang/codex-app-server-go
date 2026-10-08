@@ -173,17 +173,17 @@ func copyIfExists(t *testing.T, src, dst string) {
 }
 
 // initialize performs the JSON-RPC initialize+initialized handshake.
-func initialize(t *testing.T, client *codexgo.Client) codexgo.InitializeResult {
+func initialize(t *testing.T, client *codexgo.Client) codexgo.InitializeResponse {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	result, err := client.Initialize(ctx, codexgo.InitializeRequest{
+	result, err := client.Initialize(ctx, codexgo.InitializeParams{
 		ClientInfo: codexgo.ClientInfo{
 			Name:    "codex-go-e2e",
 			Version: "0.0.1",
 		},
-		Capabilities: &codexgo.Capabilities{
+		InitializeCapabilities: &codexgo.InitializeCapabilities{
 			ExperimentalAPI: true,
 		},
 	})
@@ -199,7 +199,7 @@ func startThread(t *testing.T, client *codexgo.Client) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartRequest{
+	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{
 		ApprovalPolicy: "on-request",
 		Model:          e2eModel(),
 	})
@@ -218,7 +218,7 @@ func startTurn(t *testing.T, client *codexgo.Client, threadID, input string) str
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	turn, err := client.TurnStart(ctx, codexgo.TurnStartRequest{
+	turn, err := client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: threadID,
 		Input:    input,
 		Model:    e2eModel(),
@@ -240,7 +240,7 @@ func waitForTurnStatus(ctx context.Context, client *codexgo.Client, threadID, tu
 			return ctx.Err()
 		}
 		readCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		thread, err := client.ThreadRead(readCtx, codexgo.ThreadReadRequest{
+		thread, err := client.ThreadRead(readCtx, codexgo.ThreadReadParams{
 			ThreadID:     threadID,
 			IncludeTurns: true,
 		})
@@ -282,7 +282,7 @@ func readThreadWithTurns(ctx context.Context, client *codexgo.Client, threadID s
 		if ctx.Err() != nil {
 			return codexgo.Thread{}, ctx.Err()
 		}
-		thread, err := client.ThreadRead(ctx, codexgo.ThreadReadRequest{
+		thread, err := client.ThreadRead(ctx, codexgo.ThreadReadParams{
 			ThreadID:     threadID,
 			IncludeTurns: true,
 		})
@@ -307,7 +307,7 @@ func pollTurnFinished(ctx context.Context, client *codexgo.Client, threadID, tur
 			return "", ctx.Err()
 		}
 		readCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		thread, err := client.ThreadRead(readCtx, codexgo.ThreadReadRequest{
+		thread, err := client.ThreadRead(readCtx, codexgo.ThreadReadParams{
 			ThreadID:     threadID,
 			IncludeTurns: true,
 		})

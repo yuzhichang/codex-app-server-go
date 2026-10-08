@@ -11,7 +11,7 @@ import (
 
 // threadConfig holds the resolved configuration for a new or resumed thread.
 type threadConfig struct {
-	req ThreadStartRequest
+	req ThreadStartParams
 	// initialInput, when non-empty, is run as the first turn immediately after
 	// the thread starts (or resumes).
 	initialInput string
@@ -117,7 +117,7 @@ func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOptio
 	t.turnMu.Lock()
 	defer t.turnMu.Unlock()
 
-	req := TurnStartRequest{ThreadID: t.threadID, Input: input}
+	req := TurnStartParams{ThreadID: t.threadID, Input: input}
 	applyTurnOptions(&req, opts)
 
 	// Subscribe before TurnStart to capture all events for this turn.
@@ -176,7 +176,7 @@ func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOptio
 func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, error) {
 	t.turnMu.Lock()
 
-	req := TurnStartRequest{ThreadID: t.threadID, Input: input}
+	req := TurnStartParams{ThreadID: t.threadID, Input: input}
 	applyTurnOptions(&req, opts)
 
 	turn, err := t.client.TurnStart(ctx, req)
@@ -226,7 +226,7 @@ func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...T
 
 // Interrupt sends a turn/interrupt for the given turnID.
 func (t *SessionThread) Interrupt(ctx context.Context, turnID string) error {
-	return t.client.TurnInterrupt(ctx, TurnInterruptRequest{
+	return t.client.TurnInterrupt(ctx, TurnInterruptParams{
 		ThreadID: t.threadID,
 		TurnID:   turnID,
 	})
@@ -244,7 +244,7 @@ func (t *SessionThread) Compact(ctx context.Context) error {
 // Only valid while a turn is active. Does not require the turn mutex because
 // steering is sent to an already-running turn, not starting a new one.
 func (t *SessionThread) Steer(ctx context.Context, turnID, input string) error {
-	return t.client.TurnSteer(ctx, TurnSteerRequest{
+	return t.client.TurnSteer(ctx, TurnSteerParams{
 		ThreadID: t.threadID,
 		TurnID:   turnID,
 		Input:    input,
@@ -254,7 +254,7 @@ func (t *SessionThread) Steer(ctx context.Context, turnID, input string) error {
 // SteerInputs sends typed multi-part input to an in-progress turn, mirroring
 // Steer but accepting TurnInput items instead of a plain string.
 func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs ...TurnInput) error {
-	return t.client.TurnSteer(ctx, TurnSteerRequest{
+	return t.client.TurnSteer(ctx, TurnSteerParams{
 		ThreadID: t.threadID,
 		TurnID:   turnID,
 		Input:    encodeInputs(inputs),
@@ -268,7 +268,7 @@ func (t *SessionThread) Fork(ctx context.Context, turnID string, opts ...ThreadO
 	if err != nil {
 		return nil, err
 	}
-	thread, err := t.client.ThreadFork(ctx, ThreadForkRequest{
+	thread, err := t.client.ThreadFork(ctx, ThreadForkParams{
 		ThreadID: t.threadID,
 		TurnID:   turnID,
 	})
@@ -282,17 +282,17 @@ func (t *SessionThread) Fork(ctx context.Context, turnID string, opts ...ThreadO
 
 // Archive marks this thread as archived.
 func (t *SessionThread) Archive(ctx context.Context) error {
-	return t.client.ThreadArchive(ctx, ThreadArchiveRequest{ThreadID: t.threadID})
+	return t.client.ThreadArchive(ctx, ThreadArchiveParams{ThreadID: t.threadID})
 }
 
 // Unarchive restores this thread from archived state.
 func (t *SessionThread) Unarchive(ctx context.Context) error {
-	return t.client.ThreadUnarchive(ctx, ThreadUnarchiveRequest{ThreadID: t.threadID})
+	return t.client.ThreadUnarchive(ctx, ThreadUnarchiveParams{ThreadID: t.threadID})
 }
 
 // SetName sets the display name for this thread.
 func (t *SessionThread) SetName(ctx context.Context, name string) error {
-	return t.client.ThreadSetName(ctx, ThreadSetNameRequest{ThreadID: t.threadID, Name: name})
+	return t.client.ThreadSetName(ctx, ThreadSetNameParams{ThreadID: t.threadID, Name: name})
 }
 
 // SetGoal creates or updates the persisted goal (objective) for this thread.
@@ -313,8 +313,17 @@ func (t *SessionThread) GetGoal(ctx context.Context) (ThreadGoal, error) {
 }
 
 // Rollback removes the specified turns from this thread's history.
-func (t *SessionThread) Rollback(ctx context.Context, turnIDs []string) error {
-	return t.client.ThreadRollback(ctx, ThreadRollbackRequest{ThreadID: t.threadID, TurnIDs: turnIDs})
+// Revert excludes beforeTurnID and every later turn from this thread's history.
+//
+// This replaces the removed Rollback API (upstream `thread/revert` truncates forward from a
+// single turn boundary rather than taking a list of turn ids). Retained history is not
+// returned here; use Client.ThreadRevert if you need the hydration cursors.
+func (t *SessionThread) Revert(ctx context.Context, beforeTurnID string) error {
+	_, err := t.client.ThreadRevert(ctx, ThreadRevertParams{
+		ThreadID:     t.threadID,
+		BeforeTurnID: beforeTurnID,
+	})
+	return err
 }
 
 // NOTE: `SessionThread.GitDiff` was removed together with `Client.TurnDiff` -- upstream

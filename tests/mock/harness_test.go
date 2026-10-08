@@ -126,12 +126,12 @@ stream_max_retries = 0
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if _, err := client.Initialize(ctx, codexgo.InitializeRequest{
+	if _, err := client.Initialize(ctx, codexgo.InitializeParams{
 		ClientInfo: codexgo.ClientInfo{
 			Name:    "codex-go-sdk-test",
 			Version: "0.0.1",
 		},
-		Capabilities: &codexgo.Capabilities{
+		InitializeCapabilities: &codexgo.InitializeCapabilities{
 			ExperimentalAPI: true,
 		},
 	}); err != nil {

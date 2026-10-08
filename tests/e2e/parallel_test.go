@@ -39,7 +39,7 @@ func TestParallelSessions(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 
-			thread, err := h.client.ThreadStart(ctx, codexgo.ThreadStartRequest{
+			thread, err := h.client.ThreadStart(ctx, codexgo.ThreadStartParams{
 				ApprovalPolicy: "on-request",
 				Model:          e2eModel(),
 			})
@@ -48,7 +48,7 @@ func TestParallelSessions(t *testing.T) {
 				return
 			}
 
-			turn, err := h.client.TurnStart(ctx, codexgo.TurnStartRequest{
+			turn, err := h.client.TurnStart(ctx, codexgo.TurnStartParams{
 				ThreadID: thread.ID,
 				Input:    fmt.Sprintf("Number %d only.", i+1),
 				Model:    e2eModel(),

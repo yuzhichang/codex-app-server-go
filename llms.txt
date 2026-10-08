@@ -42,20 +42,20 @@ result.DeltaText                -- streaming delta fallback text
 events, err := thread.RunStreamed(ctx, "prompt")  // streaming; drain or cancel ctx
 
 ## Client methods (all take context.Context)
-Initialize(ctx, InitializeRequest) (InitializeResult, error)
-ThreadStart(ctx, ThreadStartRequest) (Thread, error)
-ThreadResume(ctx, ThreadResumeRequest) (Thread, error)
-ThreadRead(ctx, ThreadReadRequest) (Thread, error)
-ThreadFork(ctx, ThreadForkRequest) (Thread, error)
-ThreadList(ctx, ThreadListRequest) ([]Thread, error)
+Initialize(ctx, InitializeParams) (InitializeResponse, error)
+ThreadStart(ctx, ThreadStartParams) (Thread, error)
+ThreadResume(ctx, ThreadResumeParams) (Thread, error)
+ThreadRead(ctx, ThreadReadParams) (Thread, error)
+ThreadFork(ctx, ThreadForkParams) (Thread, error)
+ThreadList(ctx, ThreadListParams) ([]Thread, error)
 ThreadLoadedList(ctx) ([]string, error)
-ThreadArchive(ctx, ThreadArchiveRequest) error
-ThreadUnarchive(ctx, ThreadUnarchiveRequest) error
-ThreadSetName(ctx, ThreadSetNameRequest) error
-ThreadRollback(ctx, ThreadRollbackRequest) error
-TurnStart(ctx, TurnStartRequest) (Turn, error)
-TurnInterrupt(ctx, TurnInterruptRequest) error
-TurnSteer(ctx, TurnSteerRequest) error
+ThreadArchive(ctx, ThreadArchiveParams) error
+ThreadUnarchive(ctx, ThreadUnarchiveParams) error
+ThreadSetName(ctx, ThreadSetNameParams) error
+ThreadRevert(ctx, ThreadRevertParams) (ThreadRevertResponse, error)
+TurnStart(ctx, TurnStartParams) (Turn, error)
+TurnInterrupt(ctx, TurnInterruptParams) error
+TurnSteer(ctx, TurnSteerParams) error
 TurnRead(ctx, threadID, turnID string) (Turn, error)
 ThreadGoalSet/Get/Clear(ctx, req)
 SetModel(ctx, model) / SetApprovalPolicy(ctx, policy) / SetSandboxPolicy(ctx, policy)
@@ -104,7 +104,7 @@ thread.SteerInputs(ctx, turnID, inputs...) error
 thread.Interrupt(ctx, turnID) error
 thread.Archive(ctx) / Unarchive(ctx) / SetName(ctx, name) error
 thread.Fork(ctx, turnID, opts...) (*SessionThread, error)
-thread.Rollback(ctx, turnIDs) error
+thread.Revert(ctx, beforeTurnID) error
 thread.Compact(ctx) error
 thread.SetGoal/GetGoal/ClearGoal(ctx, ...) error
 

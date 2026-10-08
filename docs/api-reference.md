@@ -7,25 +7,25 @@ Package: `github.com/zealbase/codex-app-server-go`
 ```go
 func New(opts ...Option) (*Client, error)
 func (c *Client) Close() error
-func (c *Client) Initialize(ctx context.Context, req InitializeRequest) (InitializeResult, error)
+func (c *Client) Initialize(ctx context.Context, req InitializeParams) (InitializeResponse, error)
 func (c *Client) Ping(ctx context.Context) error
 
 // Thread lifecycle (low-level)
-func (c *Client) ThreadStart(ctx context.Context, req ThreadStartRequest) (Thread, error)
-func (c *Client) ThreadResume(ctx context.Context, req ThreadResumeRequest) (Thread, error)
-func (c *Client) ThreadRead(ctx context.Context, req ThreadReadRequest) (Thread, error)
-func (c *Client) ThreadFork(ctx context.Context, req ThreadForkRequest) (Thread, error)
-func (c *Client) ThreadList(ctx context.Context, req ThreadListRequest) ([]Thread, error)
+func (c *Client) ThreadStart(ctx context.Context, req ThreadStartParams) (Thread, error)
+func (c *Client) ThreadResume(ctx context.Context, req ThreadResumeParams) (Thread, error)
+func (c *Client) ThreadRead(ctx context.Context, req ThreadReadParams) (Thread, error)
+func (c *Client) ThreadFork(ctx context.Context, req ThreadForkParams) (Thread, error)
+func (c *Client) ThreadList(ctx context.Context, req ThreadListParams) ([]Thread, error)
 func (c *Client) ThreadLoadedList(ctx context.Context) ([]string, error)
-func (c *Client) ThreadArchive(ctx context.Context, req ThreadArchiveRequest) error
-func (c *Client) ThreadUnarchive(ctx context.Context, req ThreadUnarchiveRequest) error
-func (c *Client) ThreadSetName(ctx context.Context, req ThreadSetNameRequest) error
-func (c *Client) ThreadRollback(ctx context.Context, req ThreadRollbackRequest) error
+func (c *Client) ThreadArchive(ctx context.Context, req ThreadArchiveParams) error
+func (c *Client) ThreadUnarchive(ctx context.Context, req ThreadUnarchiveParams) error
+func (c *Client) ThreadSetName(ctx context.Context, req ThreadSetNameParams) error
+func (c *Client) ThreadRevert(ctx context.Context, req ThreadRevertParams) (ThreadRevertResponse, error)
 
 // Turn lifecycle (low-level)
-func (c *Client) TurnStart(ctx context.Context, req TurnStartRequest) (Turn, error)
-func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptRequest) error
-func (c *Client) TurnSteer(ctx context.Context, req TurnSteerRequest) error
+func (c *Client) TurnStart(ctx context.Context, req TurnStartParams) (Turn, error)
+func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptParams) error
+func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) error
 func (c *Client) TurnRead(ctx context.Context, threadID, turnID string) (Turn, error)
 
 // Thread goals
@@ -113,7 +113,7 @@ func (t *SessionThread) Archive(ctx context.Context) error
 func (t *SessionThread) Unarchive(ctx context.Context) error
 func (t *SessionThread) SetName(ctx context.Context, name string) error
 func (t *SessionThread) Fork(ctx context.Context, turnID string, opts ...ThreadOption) (*SessionThread, error)
-func (t *SessionThread) Rollback(ctx context.Context, turnIDs []string) error
+func (t *SessionThread) Revert(ctx context.Context, beforeTurnID string) error
 func (t *SessionThread) Compact(ctx context.Context) error
 
 // Goals
@@ -298,14 +298,14 @@ type ThreadRealtimeTranscriptDoneEvent struct { ThreadID, Role, Text string }
 ## Core Request/Response Types
 
 ```go
-type ThreadStartRequest struct {
+type ThreadStartParams struct {
     Model          string `json:"model,omitempty"`
     CWD            string `json:"cwd,omitempty"`
     ApprovalPolicy string `json:"approvalPolicy,omitempty"`
     Ephemeral      bool   `json:"ephemeral,omitempty"`
 }
 
-type TurnStartRequest struct {
+type TurnStartParams struct {
     ThreadID       string          `json:"threadId"`
     Input          string          `json:"input,omitempty"`
     CWD            string          `json:"cwd,omitempty"`

@@ -21,7 +21,7 @@ func TestInitializeCallFails(t *testing.T) {
 	ft.callErr = errors.New("transport failed")
 	ft.mu.Unlock()
 
-	_, err = client.Initialize(context.Background(), InitializeRequest{})
+	_, err = client.Initialize(context.Background(), InitializeParams{})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -30,7 +30,7 @@ func TestInitializeCallFails(t *testing.T) {
 // TestInitializeNotifyFails verifies error handling when Notify fails.
 func TestInitializeNotifyFails(t *testing.T) {
 	ft := &fakeTransportWithErrors{
-		result: InitializeResult{UserAgent: "ua"},
+		result: InitializeResponse{UserAgent: "ua"},
 	}
 	client, err := New(WithTransport(ft))
 	if err != nil {
@@ -41,7 +41,7 @@ func TestInitializeNotifyFails(t *testing.T) {
 	ft.notifyErr = errors.New("notify failed")
 	ft.mu.Unlock()
 
-	_, err = client.Initialize(context.Background(), InitializeRequest{})
+	_, err = client.Initialize(context.Background(), InitializeParams{})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -57,7 +57,7 @@ func TestThreadStart(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.ThreadStart(context.Background(), ThreadStartRequest{Model: "gpt-5.1"})
+	got, err := client.ThreadStart(context.Background(), ThreadStartParams{Model: "gpt-5.1"})
 	if err != nil {
 		t.Fatalf("ThreadStart() error = %v", err)
 	}
@@ -85,7 +85,7 @@ func TestThreadStartPassesThroughModel(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.ThreadStart(context.Background(), ThreadStartRequest{Model: "bogus-model"})
+	got, err := client.ThreadStart(context.Background(), ThreadStartParams{Model: "bogus-model"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestThreadResume(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.ThreadResume(context.Background(), ThreadResumeRequest{ThreadID: "thread-1"})
+	got, err := client.ThreadResume(context.Background(), ThreadResumeParams{ThreadID: "thread-1"})
 	if err != nil {
 		t.Fatalf("ThreadResume() error = %v", err)
 	}
@@ -129,7 +129,7 @@ func TestThreadRead(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.ThreadRead(context.Background(), ThreadReadRequest{ThreadID: "thread-1"})
+	got, err := client.ThreadRead(context.Background(), ThreadReadParams{ThreadID: "thread-1"})
 	if err != nil {
 		t.Fatalf("ThreadRead() error = %v", err)
 	}
@@ -151,7 +151,7 @@ func TestTurnStart(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.TurnStart(context.Background(), TurnStartRequest{ThreadID: "thread-1", Input: "hello"})
+	got, err := client.TurnStart(context.Background(), TurnStartParams{ThreadID: "thread-1", Input: "hello"})
 	if err != nil {
 		t.Fatalf("TurnStart() error = %v", err)
 	}
@@ -171,7 +171,7 @@ func TestTurnInterrupt(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	err = client.TurnInterrupt(context.Background(), TurnInterruptRequest{ThreadID: "thread-1", TurnID: "turn-1"})
+	err = client.TurnInterrupt(context.Background(), TurnInterruptParams{ThreadID: "thread-1", TurnID: "turn-1"})
 	if err != nil {
 		t.Fatalf("TurnInterrupt() error = %v", err)
 	}
@@ -182,7 +182,7 @@ func TestTurnInterrupt(t *testing.T) {
 
 // TestContextCancellationOnInitialize verifies context cancellation propagates.
 func TestContextCancellationOnInitialize(t *testing.T) {
-	ft := &fakeTransportWithErrors{result: InitializeResult{UserAgent: "ua"}}
+	ft := &fakeTransportWithErrors{result: InitializeResponse{UserAgent: "ua"}}
 	client, err := New(WithTransport(ft))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -191,7 +191,7 @@ func TestContextCancellationOnInitialize(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err = client.Initialize(ctx, InitializeRequest{})
+	_, err = client.Initialize(ctx, InitializeParams{})
 	if err != context.Canceled {
 		t.Fatalf("expected context.Canceled, got %v", err)
 	}
@@ -210,7 +210,7 @@ func TestContextCancellationOnThreadStart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err = client.ThreadStart(ctx, ThreadStartRequest{})
+	_, err = client.ThreadStart(ctx, ThreadStartParams{})
 	if err != context.Canceled {
 		t.Fatalf("expected context.Canceled, got %v", err)
 	}
@@ -272,7 +272,7 @@ func TestConcurrentCalls(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			defer wg.Done()
-			_, err := client.ThreadStart(context.Background(), ThreadStartRequest{Model: "gpt-5.1"})
+			_, err := client.ThreadStart(context.Background(), ThreadStartParams{Model: "gpt-5.1"})
 			if err != nil {
 				t.Errorf("ThreadStart error: %v", err)
 			}

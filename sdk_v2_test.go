@@ -551,7 +551,7 @@ func TestMockServerDispatcherExecApproval(t *testing.T) {
 	dispatcher := &codexgo.Dispatcher{
 		Exec: execApprovalHandlerFunc(func(_ context.Context, req codexgo.CommandExecutionApprovalRequest) (codexgo.CommandExecutionApprovalResult, error) {
 			approved <- req.Command
-			return codexgo.CommandExecutionApprovalResult{Decision: codexgo.ApprovalDecisionAccept}, nil
+			return codexgo.CommandExecutionApprovalResult{Decision: codexgo.CommandExecutionApprovalDecisionAccept}, nil
 		}),
 	}
 
@@ -1357,7 +1357,7 @@ func (f fileApprovalHandlerFunc) HandleFileChangeApproval(ctx context.Context, r
 func TestCommandExecApprovalBlocksTurn(t *testing.T) {
 	dispatcher := &codexgo.Dispatcher{
 		Exec: execApprovalHandlerFunc(func(_ context.Context, _ codexgo.CommandExecutionApprovalRequest) (codexgo.CommandExecutionApprovalResult, error) {
-			return codexgo.CommandExecutionApprovalResult{Decision: codexgo.ApprovalDecisionDecline}, nil
+			return codexgo.CommandExecutionApprovalResult{Decision: codexgo.CommandExecutionApprovalDecisionDecline}, nil
 		}),
 	}
 
@@ -1475,10 +1475,10 @@ func TestCommandExecutionOutputDeltaDecoded(t *testing.T) {
 func TestApprovalCancelVsDecline(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
-		decision codexgo.ApprovalDecision
+		decision codexgo.CommandExecutionApprovalDecision
 	}{
-		{"cancel", codexgo.ApprovalDecisionCancel},
-		{"decline", codexgo.ApprovalDecisionDecline},
+		{"cancel", codexgo.CommandExecutionApprovalDecisionCancel},
+		{"decline", codexgo.CommandExecutionApprovalDecisionDecline},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {

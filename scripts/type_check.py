@@ -34,7 +34,16 @@ GEN_DIR = SDK_ROOT / "gen"
 SCHEMA_DIR = SDK_ROOT / "internal" / "protocol" / "schema"
 AGGREGATE = SCHEMA_DIR / "codex_app_server_protocol.v2.schemas.json"
 
-_STRUCT = re.compile(r"^type (\w+) struct", re.M)
+# Every type declaration, not only structs. Restricting this to `type X struct` let
+# string-typed enums and aliases escape the gate entirely -- `PermissionsScope` (upstream:
+# `PermissionGrantScope`) passed unnoticed for exactly that reason.
+_TYPE_DECL = re.compile(r"^type (\w+)\b", re.M)
+# Aliases grouped in a `type ( ... )` block. Scoped to the block body on purpose: a bare
+# `^\t(\w+)\s*=` anywhere would also match `const ( ... )` entries and report constants as
+# drifting types.
+_TYPE_BLOCK = re.compile(r"^type \(\n(.*?)^\)", re.M | re.S)
+_TYPE_BLOCK_ENTRY = re.compile(r"^\t(\w+)", re.M)
+
 # Types the SDK models locally rather than importing: the aggregate omits them, but they
 # are still types the SDK legitimately has to name.
 ALLOWLIST_FILE = GEN_DIR / "type-allowlist.json"
@@ -53,7 +62,10 @@ def sdk_types() -> set[str]:
     for path in SCHEMA_DIR.glob("*.go"):
         if path.name.endswith("_test.go"):
             continue
-        out.update(_STRUCT.findall(path.read_text(errors="replace")))
+        text = path.read_text(errors="replace")
+        out.update(_TYPE_DECL.findall(text))
+        for block in _TYPE_BLOCK.findall(text):
+            out.update(_TYPE_BLOCK_ENTRY.findall(block))
     return out
 
 
@@ -70,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     unlisted = [t for t in drift if t not in allow]
     stale_allow = sorted(n for n in allow if n not in drift)
 
-    print(f"type check: {len(sdk)} SDK structs vs {len(defs)} upstream definitions")
+    print(f"type check: {len(sdk)} SDK types vs {len(defs)} upstream definitions")
     print(f"  allow-listed   : {len(allow)}")
     print(f"  drifting       : {len(drift)} ({len(unlisted)} unlisted)")
 

@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	ApprovalDecision                    = protocol.ApprovalDecision
+	CommandExecutionApprovalDecision    = protocol.CommandExecutionApprovalDecision
 	CommandExecutionApprovalRequest     = protocol.CommandExecutionApprovalRequest
 	CommandExecutionApprovalResult      = protocol.CommandExecutionApprovalResponse
 	FileChangeApprovalRequest           = protocol.FileChangeApprovalRequest
@@ -41,12 +41,12 @@ type (
 )
 
 const (
-	ApprovalDecisionAccept                        = "accept"
-	ApprovalDecisionAcceptForSession              = "acceptForSession"
-	ApprovalDecisionAcceptWithExecPolicyAmendment = "acceptWithExecpolicyAmendment"
-	ApprovalDecisionApplyNetworkPolicyAmendment   = "applyNetworkPolicyAmendment"
-	ApprovalDecisionDecline                       = "decline"
-	ApprovalDecisionCancel                        = "cancel"
+	CommandExecutionApprovalDecisionAccept                        = "accept"
+	CommandExecutionApprovalDecisionAcceptForSession              = "acceptForSession"
+	CommandExecutionApprovalDecisionAcceptWithExecPolicyAmendment = "acceptWithExecpolicyAmendment"
+	CommandExecutionApprovalDecisionApplyNetworkPolicyAmendment   = "applyNetworkPolicyAmendment"
+	CommandExecutionApprovalDecisionDecline                       = "decline"
+	CommandExecutionApprovalDecisionCancel                        = "cancel"
 
 	FileChangeApprovalDecisionAccept           = "accept"
 	FileChangeApprovalDecisionAcceptForSession = "acceptForSession"
@@ -286,7 +286,7 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 	case protocol.MethodItemCommandExecutionRequestApproval:
 		if d.Exec == nil {
 			d.notifyUnhandled(req, "declined", "no ExecApprovalHandler configured")
-			return serverResponseFrom(CommandExecutionApprovalResult{Decision: ApprovalDecisionDecline})
+			return serverResponseFrom(CommandExecutionApprovalResult{Decision: CommandExecutionApprovalDecisionDecline})
 		}
 		var r CommandExecutionApprovalRequest
 		if err := json.Unmarshal(req.Params, &r); err != nil {

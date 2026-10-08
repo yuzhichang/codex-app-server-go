@@ -102,7 +102,7 @@ func TestApprovalAdapterRoutesRequests(t *testing.T) {
 type testApprovals struct{}
 
 func (testApprovals) HandleCommandExecutionApproval(context.Context, CommandExecutionApprovalRequest) (CommandExecutionApprovalResult, error) {
-	return CommandExecutionApprovalResult{Decision: ApprovalDecisionAccept}, nil
+	return CommandExecutionApprovalResult{Decision: CommandExecutionApprovalDecisionAccept}, nil
 }
 
 func (testApprovals) HandleFileChangeApproval(context.Context, FileChangeApprovalRequest) (FileChangeApprovalResult, error) {

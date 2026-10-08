@@ -47,7 +47,7 @@ func TestApprovalAdapterCommandExecution(t *testing.T) {
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		t.Fatalf("unmarshal result: %v", err)
 	}
-	if string(result.Decision) != ApprovalDecisionAccept {
+	if string(result.Decision) != CommandExecutionApprovalDecisionAccept {
 		t.Fatalf("unexpected decision: %s", result.Decision)
 	}
 }

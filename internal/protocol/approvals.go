@@ -8,17 +8,17 @@ import (
 
 // Approval decision enum aliases -- canonical definitions live in the generated schema package.
 
-type ApprovalDecision = schematypes.ApprovalDecision
+type CommandExecutionApprovalDecision = schematypes.CommandExecutionApprovalDecision
 type FileChangeApprovalDecision = schematypes.FileChangeApprovalDecision
-type PermissionsScope = schematypes.PermissionsScope
+type PermissionGrantScope = schematypes.PermissionGrantScope
 
 const (
-	ApprovalDecisionAccept                        = schematypes.ApprovalDecisionAccept
-	ApprovalDecisionAcceptForSession              = schematypes.ApprovalDecisionAcceptForSession
-	ApprovalDecisionAcceptWithExecpolicyAmendment = schematypes.ApprovalDecisionAcceptWithExecpolicyAmendment
-	ApprovalDecisionApplyNetworkPolicyAmendment   = schematypes.ApprovalDecisionApplyNetworkPolicyAmendment
-	ApprovalDecisionDecline                       = schematypes.ApprovalDecisionDecline
-	ApprovalDecisionCancel                        = schematypes.ApprovalDecisionCancel
+	CommandExecutionApprovalDecisionAccept                        = schematypes.CommandExecutionApprovalDecisionAccept
+	CommandExecutionApprovalDecisionAcceptForSession              = schematypes.CommandExecutionApprovalDecisionAcceptForSession
+	CommandExecutionApprovalDecisionAcceptWithExecpolicyAmendment = schematypes.CommandExecutionApprovalDecisionAcceptWithExecpolicyAmendment
+	CommandExecutionApprovalDecisionApplyNetworkPolicyAmendment   = schematypes.CommandExecutionApprovalDecisionApplyNetworkPolicyAmendment
+	CommandExecutionApprovalDecisionDecline                       = schematypes.CommandExecutionApprovalDecisionDecline
+	CommandExecutionApprovalDecisionCancel                        = schematypes.CommandExecutionApprovalDecisionCancel
 )
 
 const (
@@ -29,8 +29,8 @@ const (
 )
 
 const (
-	PermissionsScopeSession = schematypes.PermissionsScopeSession
-	PermissionsScopeTurn    = schematypes.PermissionsScopeTurn
+	PermissionGrantScopeSession = schematypes.PermissionGrantScopeSession
+	PermissionGrantScopeTurn    = schematypes.PermissionGrantScopeTurn
 )
 
 // Approval request/response types (not in the protocol schema definition).
@@ -49,7 +49,7 @@ type CommandExecutionApprovalRequest struct {
 }
 
 type CommandExecutionApprovalResponse struct {
-	Decision ApprovalDecision `json:"decision"`
+	Decision CommandExecutionApprovalDecision `json:"decision"`
 }
 
 type FileChangeApprovalRequest struct {

@@ -6,5 +6,21 @@
   {
     "name": "FuzzyFileSearchResponse",
     "reason": "Declared upstream in protocol/common.rs:1882 rather than under protocol/v2/, so the v2 aggregate omits it while still carrying FuzzyFileSearchParams/Result/MatchType. Hand-written in internal/protocol/schema/handwritten.go from the source shape."
+  },
+  {
+    "name": "CommandExecutionApprovalDecision",
+    "reason": "Correct upstream name (protocol/v2/item.rs:66); absent from the v2 aggregate even though the params it belongs to are present. Renamed from the SDK's former 'ApprovalDecision', which was a local invention with the same wire values."
+  },
+  {
+    "name": "FileChangeApprovalDecision",
+    "reason": "Correct upstream name (protocol/v2/item.rs:115); absent from the v2 aggregate for the same reason as CommandExecutionApprovalDecision."
+  },
+  {
+    "name": "PermissionGrantScope",
+    "reason": "Correct upstream name (protocol/v2/permissions.rs:789, generated from CorePermissionGrantScope); absent from the v2 aggregate. Renamed from the SDK's former 'PermissionsScope'."
+  },
+  {
+    "name": "ItemKind",
+    "reason": "Names the item discriminator upstream expresses structurally: ThreadItem is a tagged enum whose variants carry a camelCase `type` value, and there is no named enum for it in the schema. The SDK needs a name to switch on, so it keeps one; the string values are exactly the upstream tags."
   }
 ]

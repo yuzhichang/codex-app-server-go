@@ -473,12 +473,12 @@ ItemKind constants (wire = Go constant name in camelCase):
     )
 
 CommandExecution decision constants:
-    ApprovalDecisionAccept
-    ApprovalDecisionAcceptForSession
-    ApprovalDecisionAcceptWithExecPolicyAmendment
-    ApprovalDecisionApplyNetworkPolicyAmendment
-    ApprovalDecisionDecline
-    ApprovalDecisionCancel
+    CommandExecutionApprovalDecisionAccept
+    CommandExecutionApprovalDecisionAcceptForSession
+    CommandExecutionApprovalDecisionAcceptWithExecPolicyAmendment
+    CommandExecutionApprovalDecisionApplyNetworkPolicyAmendment
+    CommandExecutionApprovalDecisionDecline
+    CommandExecutionApprovalDecisionCancel
 
 FileChange decision constants:
     FileChangeApprovalDecisionAccept

@@ -72,17 +72,20 @@ const (
 	ItemKindEnteredReviewMode   ItemKind = "enteredReviewMode"
 	ItemKindExitedReviewMode    ItemKind = "exitedReviewMode"
 	ItemKindContextCompaction   ItemKind = "contextCompaction"
+	// Present upstream as a ThreadItem tag but missing here, so items of this kind were
+	// unrecognised. Checked against the aggregate's ThreadItem discriminator values.
+	ItemKindFunctionCallOutput ItemKind = "functionCallOutput"
 )
 
-type ApprovalDecision string
+type CommandExecutionApprovalDecision string
 
 const (
-	ApprovalDecisionAccept                        ApprovalDecision = "accept"
-	ApprovalDecisionAcceptForSession              ApprovalDecision = "acceptForSession"
-	ApprovalDecisionAcceptWithExecpolicyAmendment ApprovalDecision = "acceptWithExecpolicyAmendment"
-	ApprovalDecisionApplyNetworkPolicyAmendment   ApprovalDecision = "applyNetworkPolicyAmendment"
-	ApprovalDecisionDecline                       ApprovalDecision = "decline"
-	ApprovalDecisionCancel                        ApprovalDecision = "cancel"
+	CommandExecutionApprovalDecisionAccept                        CommandExecutionApprovalDecision = "accept"
+	CommandExecutionApprovalDecisionAcceptForSession              CommandExecutionApprovalDecision = "acceptForSession"
+	CommandExecutionApprovalDecisionAcceptWithExecpolicyAmendment CommandExecutionApprovalDecision = "acceptWithExecpolicyAmendment"
+	CommandExecutionApprovalDecisionApplyNetworkPolicyAmendment   CommandExecutionApprovalDecision = "applyNetworkPolicyAmendment"
+	CommandExecutionApprovalDecisionDecline                       CommandExecutionApprovalDecision = "decline"
+	CommandExecutionApprovalDecisionCancel                        CommandExecutionApprovalDecision = "cancel"
 )
 
 type FileChangeApprovalDecision string
@@ -94,11 +97,11 @@ const (
 	FileChangeApprovalDecisionCancel           FileChangeApprovalDecision = "cancel"
 )
 
-type PermissionsScope string
+type PermissionGrantScope string
 
 const (
-	PermissionsScopeSession PermissionsScope = "session"
-	PermissionsScopeTurn    PermissionsScope = "turn"
+	PermissionGrantScopeSession PermissionGrantScope = "session"
+	PermissionGrantScopeTurn    PermissionGrantScope = "turn"
 )
 
 // --- Shared data types ---

@@ -250,12 +250,42 @@ type ThreadStartParams struct {
 	Metadata              json.RawMessage `json:"metadata,omitempty"`
 }
 
+// ThreadResumeParams resumes a thread.
+//
+// Aligned with the upstream field set. Four fields this used to carry did not exist upstream
+// -- `history`, `path` and `initialTurnsPage` are invented, and `excludeTurns` was typed
+// []string where upstream is a plain boolean. Nothing could set it correctly, and because the
+// slice was omitempty it was never sent either.
+//
+// Types are deliberately the SDK's ergonomic ones rather than the generated shapes. Upstream
+// declares approvalPolicy/approvalsReviewer/personality as unions or enums, and the generated
+// Go types for them live in an internal package, so a field typed that way could not be set by
+// an external caller at all. Unifying the SDK's ApprovalMode/SandboxMode with the schema enums
+// is the follow-up that would let these fields adopt the generated shape.
 type ThreadResumeParams struct {
-	ThreadID         string   `json:"threadId"`
-	History          []string `json:"history,omitempty"`
-	Path             string   `json:"path,omitempty"`
-	ExcludeTurns     []string `json:"excludeTurns,omitempty"`
-	InitialTurnsPage int      `json:"initialTurnsPage,omitempty"`
+	ThreadID string `json:"threadId"`
+
+	// ApprovalPolicy accepts the wire values the app-server expects (see ApprovalMode).
+	ApprovalPolicy string `json:"approvalPolicy,omitempty"`
+	// ApprovalsReviewer selects who reviews approvals.
+	ApprovalsReviewer string `json:"approvalsReviewer,omitempty"`
+	// BaseInstructions / DeveloperInstructions override the thread's instructions.
+	BaseInstructions      string `json:"baseInstructions,omitempty"`
+	DeveloperInstructions string `json:"developerInstructions,omitempty"`
+	// Config is an open-ended config overlay; upstream types it as an object or null.
+	Config map[string]any `json:"config,omitempty"`
+	// CWD sets the working directory for the resumed thread.
+	CWD string `json:"cwd,omitempty"`
+	// ExcludeTurns drops the stored turns instead of replaying them.
+	ExcludeTurns bool `json:"excludeTurns,omitempty"`
+	// Model / ModelProvider / ServiceTier override the thread's model settings.
+	Model         string `json:"model,omitempty"`
+	ModelProvider string `json:"modelProvider,omitempty"`
+	ServiceTier   string `json:"serviceTier,omitempty"`
+	// Personality accepts the upstream personality wire value.
+	Personality string `json:"personality,omitempty"`
+	// Sandbox overrides the sandbox mode for the resumed thread.
+	Sandbox *SandboxMode `json:"sandbox,omitempty"`
 }
 
 type ThreadReadParams struct {

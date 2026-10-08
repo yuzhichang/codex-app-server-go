@@ -2634,3 +2634,67 @@ func TestReviewStartSendsTarget(t *testing.T) {
 		})
 	}
 }
+
+// ---- thread/resume: excludeTurns is a boolean, and the rest of the field set is real ----
+
+// ThreadResumeParams previously carried four fields that do not exist upstream and typed
+// excludeTurns as []string where upstream is a plain boolean, so it could be neither set
+// correctly nor sent (the empty slice was omitempty). This pins the encoded payload.
+func TestThreadResumeSendsUpstreamFieldSet(t *testing.T) {
+	client, mock := newClientFromMock(t)
+
+	got := make(chan map[string]json.RawMessage, 1)
+	mock.Handle("thread/resume", func(params json.RawMessage) (any, error) {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(params, &raw); err != nil {
+			return nil, err
+		}
+		got <- raw
+		return map[string]any{"thread": map[string]any{"id": "thr-r"}}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	sandbox := codexgo.SandboxWorkspaceWrite
+	if _, err := client.ThreadResume(ctx, codexgo.ThreadResumeParams{
+		ThreadID:         "thr-r",
+		ExcludeTurns:     true,
+		Model:            "gpt-5.1",
+		ModelProvider:    "openai",
+		Sandbox:          &sandbox,
+		ServiceTier:      "priority",
+		BaseInstructions: "be terse",
+		Config:           map[string]any{"model": "gpt-5.1"},
+	}); err != nil {
+		t.Fatalf("ThreadResume: %v", err)
+	}
+
+	select {
+	case raw := <-got:
+		// The bug: a boolean, not an array.
+		if v, ok := raw["excludeTurns"]; !ok || string(v) != "true" {
+			t.Errorf("excludeTurns = %s (present=%v), want true", v, ok)
+		}
+		for field, want := range map[string]string{
+			"threadId":         `"thr-r"`,
+			"model":            `"gpt-5.1"`,
+			"modelProvider":    `"openai"`,
+			"sandbox":          `"workspace-write"`,
+			"serviceTier":      `"priority"`,
+			"baseInstructions": `"be terse"`,
+		} {
+			if string(raw[field]) != want {
+				t.Errorf("%s = %s, want %s", field, raw[field], want)
+			}
+		}
+		// The invented fields must not reappear.
+		for _, gone := range []string{"history", "path", "initialTurnsPage"} {
+			if _, ok := raw[gone]; ok {
+				t.Errorf("%q is not an upstream field and must not be sent", gone)
+			}
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("thread/resume was never called")
+	}
+}

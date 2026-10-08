@@ -280,14 +280,21 @@ const (
 	ApprovalModeNever      ApprovalMode = "never"
 )
 
-// SandboxMode is a typed sandbox policy for turns. The string values match the
-// wire values the app-server expects for sandboxPolicy.
-type SandboxMode string
+// SandboxMode is a typed sandbox policy. The string values match the wire values the
+// app-server expects.
+//
+// This is an alias of the schema-derived type, not a second declaration: the two were
+// separate types with identical values, which meant a *SandboxMode could not be passed
+// between them. Aliasing also keeps the type constructible from outside the module, which
+// matters because the schema package is internal.
+type SandboxMode = schematypes.SandboxMode
 
+// SandboxMode values. The shorter names are kept because they are the ones callers already
+// use; the schema-derived names are re-exported alongside them.
 const (
-	SandboxReadOnly       SandboxMode = "read-only"
-	SandboxWorkspaceWrite SandboxMode = "workspace-write"
-	SandboxFullAccess     SandboxMode = "danger-full-access"
+	SandboxReadOnly       = schematypes.SandboxModeReadOnly
+	SandboxWorkspaceWrite = schematypes.SandboxModeWorkspaceWrite
+	SandboxFullAccess     = schematypes.SandboxModeDangerFullAccess
 )
 
 // CodexError wraps an RPCError and exposes the structured codexErrorInfo payload.

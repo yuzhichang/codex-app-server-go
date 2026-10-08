@@ -395,7 +395,11 @@
 > ⚠️ 原测试断言 `req.SandboxPolicy == "workspace-write"` —— **它把这个 bug 钉住了**，而不是抓住它。现改为断言判别值，并新增载荷断言。
 > ⚠️ **验证方法学**：我的第一次反向对照改的是 `SandboxPolicyFromMode`，而该测试**并不调用它** ⇒ 对照"通过"、什么也没证明。改到测试真正调用的构造器后，如期报 `type = "workspace-write", want "workspaceWrite"`。
 
-**⏳ 尚未修（同一发现）**：`ApprovalMode` 需同样处理 —— 建模 `AskForApproval`（枚举 `untrusted`/`on-request`/`never` **或** `{granular:{...}}`）与 `ApprovalsReviewer`（`user`/`auto_review`/`guardian_subagent`）为**两个**类型，废弃混用的 `ApprovalMode`。注意 `AskForApproval` 在生成器里退化为 `json.RawMessage`（枚举或对象的联合），需**手写判别类型**（字符串形态无法用带 `type` 字段的结构体表达，需自定义 `MarshalJSON`）。
+> ✅ `51c2260` **`ApprovalMode` 已拆分**：`AskForApproval`（`untrusted`/`on-request`/`never` **或** `{"granular":{...}}`）与 `ApprovalsReviewer`（`user`/`auto_review`/`guardian_subagent`）建为**两个**类型，`ApprovalMode` 及 `WithApprovalMode`/`WithThreadApprovalMode` 删除；`WithApprovalPolicy` 改为接收 `AskForApproval`（原 `string` **可携带任意值**）。
+> - **实现要点**：`AskForApproval` 的一个分支是**裸字符串** ⇒ **不能**用 `SandboxPolicy` 那套带 `type` 字段的扁平结构体（结构体**恒**编码为对象），必须**自定义 `MarshalJSON`/`UnmarshalJSON`**。`granular` 对象的字段名上游是 **snake_case**（与协议其余部分不同），三个 required 字段**不带 `omitempty`**。
+> - 三个请求结构体新增 `ApprovalsReviewer` —— 那才是 `auto_review` 的归宿。
+> - 新增 `Ptr[T]`（可选指针字段在字面量里很常见）。
+> - 测试覆盖两个分支及其往返；载荷测试断言 `approvalPolicy` 是裸字符串、`auto_review` 落在 `approvalsReviewer`。**反向对照已实测**（把枚举分支包成对象 ⇒ 报 `got {"policy":"never"}, want "never"`）。
 
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 

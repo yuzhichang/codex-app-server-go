@@ -14,21 +14,23 @@ import (
 )
 
 type (
-	ApprovalDecision                = protocol.ApprovalDecision
-	CommandExecutionApprovalRequest = protocol.CommandExecutionApprovalRequest
-	CommandExecutionApprovalResult  = protocol.CommandExecutionApprovalResponse
-	FileChangeApprovalRequest       = protocol.FileChangeApprovalRequest
-	FileChangeApprovalResult        = protocol.FileChangeApprovalResponse
-	PermissionsApprovalRequest      = protocol.PermissionsApprovalRequest
-	PermissionsApprovalResult       = protocol.PermissionsApprovalResponse
-	UserInputQuestion               = protocol.UserInputQuestion
-	UserInputOption                 = protocol.UserInputOption
-	UserInputRequest                = protocol.UserInputRequest
-	UserInputResult                 = protocol.UserInputResult
-	ServerRequest                   = protocol.ServerRequest
-	ServerResponse                  = protocol.ServerResponse
-	MCPToolCallApprovalRequest      = protocol.MCPToolCallApprovalRequest
-	MCPToolCallApprovalResponse     = protocol.MCPToolCallApprovalResponse
+	ApprovalDecision                    = protocol.ApprovalDecision
+	CommandExecutionApprovalRequest     = protocol.CommandExecutionApprovalRequest
+	CommandExecutionApprovalResult      = protocol.CommandExecutionApprovalResponse
+	FileChangeApprovalRequest           = protocol.FileChangeApprovalRequest
+	FileChangeApprovalResult            = protocol.FileChangeApprovalResponse
+	PermissionsApprovalRequest          = protocol.PermissionsApprovalRequest
+	PermissionsApprovalResult           = protocol.PermissionsApprovalResponse
+	UserInputQuestion                   = protocol.UserInputQuestion
+	UserInputOption                     = protocol.UserInputOption
+	UserInputRequest                    = protocol.UserInputRequest
+	UserInputResult                     = protocol.UserInputResult
+	ServerRequest                       = protocol.ServerRequest
+	ServerResponse                      = protocol.ServerResponse
+	McpServerElicitationRequestParams   = protocol.McpServerElicitationRequestParams
+	McpServerElicitationRequestResponse = protocol.McpServerElicitationRequestResponse
+	McpServerElicitationAction          = protocol.McpServerElicitationAction
+	McpServerElicitationMode            = protocol.McpServerElicitationMode
 )
 
 const (
@@ -110,9 +112,13 @@ func serverResponseFrom(v any) (ServerResponse, error) {
 	return ServerResponse{Result: data}, nil
 }
 
-// MCPApprovalHandler handles MCP tool call approval requests.
-type MCPApprovalHandler interface {
-	HandleMCPToolCallApproval(ctx context.Context, req MCPToolCallApprovalRequest) (MCPToolCallApprovalResponse, error)
+// ElicitationHandler handles `mcpServer/elicitation/request`: an MCP server asking the
+// client to collect user input.
+//
+// This replaces the former MCPApprovalHandler, which answered the removed
+// `item/mcp/requestApproval` method (plan T1.5 / decision D3).
+type ElicitationHandler interface {
+	HandleElicitation(ctx context.Context, req McpServerElicitationRequestParams) (McpServerElicitationRequestResponse, error)
 }
 
 // ExecApprovalHandler handles command-execution approval requests.
@@ -161,9 +167,9 @@ type Dispatcher struct {
 	// If nil, dynamic tool calls are answered with an empty content array.
 	DynamicTool DynamicToolHandler
 
-	// MCP handles "item/mcp/requestApproval" requests.
-	// If nil, such requests are declined.
-	MCP MCPApprovalHandler
+	// Elicitation handles "mcpServer/elicitation/request" requests.
+	// If nil, such requests are declined (the session continues; decision R9).
+	Elicitation ElicitationHandler
 
 	// Fallback is consulted for any request method not matched by the above.
 	// If nil, unmatched requests return ErrUnsupportedServerRequest.
@@ -215,15 +221,17 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		}
 		return serverResponseFrom(result)
 
-	case protocol.MethodItemMCPRequestApproval:
-		if d.MCP == nil {
-			return serverResponseFrom(MCPToolCallApprovalResponse{Decision: "decline"})
+	case protocol.MethodMcpServerElicitationRequest:
+		if d.Elicitation == nil {
+			// Decline rather than error: refusing an elicitation is a valid protocol
+			// answer and must not terminate the turn (decision R9).
+			return serverResponseFrom(protocol.DeclineElicitation())
 		}
-		var r MCPToolCallApprovalRequest
+		var r McpServerElicitationRequestParams
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		result, err := d.MCP.HandleMCPToolCallApproval(ctx, r)
+		result, err := d.Elicitation.HandleElicitation(ctx, r)
 		if err != nil {
 			return ServerResponse{}, err
 		}

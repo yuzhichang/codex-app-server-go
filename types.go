@@ -201,8 +201,19 @@ const (
 	PluginShareUpdateDiscoverabilityUNLISTED = schematypes.PluginShareUpdateDiscoverabilityUNLISTED
 
 	// Config merge strategies (upstream enum values).
-	MergeStrategyReplace                    = schematypes.MergeStrategyReplace
-	MergeStrategyUpsert                     = schematypes.MergeStrategyUpsert
+	MergeStrategyReplace = schematypes.MergeStrategyReplace
+	MergeStrategyUpsert  = schematypes.MergeStrategyUpsert
+
+	// MCP elicitation enum values. A type alias does not carry its constants, so the
+	// action and mode values have to be re-exported explicitly.
+	McpServerElicitationActionAccept  = protocol.McpServerElicitationActionAccept
+	McpServerElicitationActionDecline = protocol.McpServerElicitationActionDecline
+	McpServerElicitationActionCancel  = protocol.McpServerElicitationActionCancel
+
+	McpServerElicitationModeForm             = protocol.McpServerElicitationModeForm
+	McpServerElicitationModeOpenAIForm       = protocol.McpServerElicitationModeOpenAIForm
+	McpServerElicitationModeUserVerification = protocol.McpServerElicitationModeUserVerification
+
 	PluginShareUpdateDiscoverabilityPRIVATE = schematypes.PluginShareUpdateDiscoverabilityPRIVATE
 	PluginShareUpdateDiscoverabilityLISTED  = schematypes.PluginShareUpdateDiscoverabilityLISTED
 )

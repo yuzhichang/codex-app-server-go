@@ -1,2 +1,1 @@
 # Methods the SDK still wires up that upstream no longer declares (decision R3: remove them).
-server_request_handler   item/mcp/requestApproval

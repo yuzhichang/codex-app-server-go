@@ -2262,10 +2262,14 @@ func TestRemovedNotificationFallsBackToRaw(t *testing.T) {
 	}
 }
 
-// ---- Deliverable 1: TestMCPApprovalDispatcher ----
+// ---- Deliverable 1: MCP elicitation dispatcher ----
 
-func TestMCPApprovalDispatcher(t *testing.T) {
-	// Dispatcher with nil MCP handler; expect default "decline" response.
+// This replaced the former `item/mcp/requestApproval` handler (plan T1.5 / D3).
+//
+// With no Elicitation handler installed the reply must be a *decline*, not an error:
+// refusing an elicitation is a valid protocol answer that lets the turn continue
+// (decision R9).
+func TestElicitationDispatcherDeclinesWhenUnhandled(t *testing.T) {
 	dispatcher := &codexgo.Dispatcher{}
 
 	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(dispatcher))
@@ -2275,25 +2279,84 @@ func TestMCPApprovalDispatcher(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result, err := mock.RequestAndWait(ctx, 301, "item/mcp/requestApproval", map[string]any{
-		"toolName":   "my_mcp_tool",
-		"serverName": "my_server",
-		"input":      map[string]any{"arg": "val"},
-		"threadId":   "t-mcp",
-		"turnId":     "turn-mcp",
+	result, err := mock.RequestAndWait(ctx, 301, "mcpServer/elicitation/request", map[string]any{
+		"threadId":        "t-mcp",
+		"turnId":          "turn-mcp",
+		"serverName":      "my_server",
+		"mode":            "form",
+		"message":         "Pick a branch",
+		"requestedSchema": map[string]any{"type": "object"},
 	})
 	if err != nil {
 		t.Fatalf("RequestAndWait: %v", err)
 	}
 
-	var resp struct {
-		Decision string `json:"decision"`
-	}
+	var resp codexgo.McpServerElicitationRequestResponse
 	if err := json.Unmarshal(result, &resp); err != nil {
 		t.Fatalf("unmarshal response: %v (raw: %s)", err, string(result))
 	}
-	if resp.Decision != "decline" {
-		t.Fatalf("expected decision=decline, got %q", resp.Decision)
+	if resp.Action != codexgo.McpServerElicitationActionDecline {
+		t.Fatalf("action = %q, want decline", resp.Action)
+	}
+}
+
+type recordingElicitationHandler struct {
+	got chan codexgo.McpServerElicitationRequestParams
+}
+
+func (h *recordingElicitationHandler) HandleElicitation(_ context.Context, req codexgo.McpServerElicitationRequestParams) (codexgo.McpServerElicitationRequestResponse, error) {
+	h.got <- req
+	return codexgo.McpServerElicitationRequestResponse{
+		Action:  codexgo.McpServerElicitationActionAccept,
+		Content: json.RawMessage(`{"branch":"main"}`),
+	}, nil
+}
+
+// An installed handler receives the flattened request -- mode discriminator included --
+// and its answer is relayed back verbatim.
+func TestElicitationDispatcherRoutesToHandler(t *testing.T) {
+	handler := &recordingElicitationHandler{got: make(chan codexgo.McpServerElicitationRequestParams, 1)}
+	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(&codexgo.Dispatcher{Elicitation: handler}))
+
+	time.Sleep(20 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := mock.RequestAndWait(ctx, 302, "mcpServer/elicitation/request", map[string]any{
+		"threadId":   "t-el",
+		"serverName": "srv",
+		"mode":       "openai/userVerification",
+		"title":      "Verify device",
+		"challenge":  "ch-1",
+	})
+	if err != nil {
+		t.Fatalf("RequestAndWait: %v", err)
+	}
+
+	select {
+	case req := <-handler.got:
+		if req.Mode != codexgo.McpServerElicitationModeUserVerification {
+			t.Errorf("mode = %q, want openai/userVerification", req.Mode)
+		}
+		// The flattened union must survive decoding: title/challenge belong to the
+		// userVerification arm only.
+		if req.ServerName != "srv" || req.Challenge != "ch-1" || req.Title != "Verify device" {
+			t.Errorf("flattened union not preserved: %+v", req)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("handler was never invoked")
+	}
+
+	var resp codexgo.McpServerElicitationRequestResponse
+	if err := json.Unmarshal(result, &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.Action != codexgo.McpServerElicitationActionAccept {
+		t.Fatalf("action = %q, want accept", resp.Action)
+	}
+	if string(resp.Content) != `{"branch":"main"}` {
+		t.Fatalf("content = %s", resp.Content)
 	}
 }
 

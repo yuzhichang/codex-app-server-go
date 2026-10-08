@@ -1584,5 +1584,15 @@
       "internal/protocol/decode.go"
     ],
     "test": "client_stdio_test.go"
+  },
+  {
+    "method": "mcpServer/elicitation/request",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go",
+      "internal/protocol/decode.go"
+    ],
+    "test": "sdk_v2_test.go"
   }
 ]

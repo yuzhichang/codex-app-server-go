@@ -31,8 +31,8 @@ func DecodeServerRequest(method string, params json.RawMessage) (any, error) {
 			return nil, err
 		}
 		return req, nil
-	case MethodItemMCPRequestApproval:
-		var req MCPToolCallApprovalRequest
+	case MethodMcpServerElicitationRequest:
+		var req McpServerElicitationRequestParams
 		if err := json.Unmarshal(params, &req); err != nil {
 			return nil, err
 		}

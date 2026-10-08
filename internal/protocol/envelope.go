@@ -43,7 +43,6 @@ const (
 	MethodItemPermissionsRequestApproval      = "item/permissions/requestApproval"
 	MethodItemToolRequestUserInput            = "item/tool/requestUserInput"
 	MethodItemToolCall                        = "item/tool/call"
-	MethodItemMCPRequestApproval              = "item/mcp/requestApproval"
 
 	// Thread lifecycle
 	MethodThreadCompact    = "thread/compact/start"

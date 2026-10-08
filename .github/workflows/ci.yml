@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: go mod download
+
+      # `make ci` is deliberately the single entry point: the workflow and a local run
+      # cannot drift apart, and it includes the conformance gates. It also re-runs the
+      # generators and diffs the tree, so hand-edited or stale generated artifacts fail
+      # the build instead of silently diverging.
+      - name: Build, test and verify
+        run: make ci
+
+      - name: Race detector
+        run: go test -race ./...

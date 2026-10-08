@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck generate-types generate-client generate conformance conformance-strict build test
+.PHONY: sync verify diff-cli coverage typecheck generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -68,6 +68,29 @@ conformance: verify
 conformance-strict: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
 	@python3 $(SDK_DIR)/scripts/type_check.py check
+	@python3 $(SDK_DIR)/scripts/gen_readme_coverage.py --check
+
+# Rewrite the README's coverage tables from the audited artifacts. A hand-written table
+# describing machine-checked data always rots; this one is generated and CI-verified.
+readme-coverage:
+	python3 $(SDK_DIR)/scripts/gen_readme_coverage.py
+
+# Everything CI runs. Kept as one target so the workflow and a local run cannot drift.
+# The generator steps are re-run and then diffed: if they are not idempotent, or if someone
+# hand-edited generated output, the build fails rather than silently diverging.
+ci: build
+	go vet ./...
+	go test ./...
+	$(MAKE) verify
+	$(MAKE) typecheck
+	$(MAKE) generate-types generate-client
+	$(MAKE) readme-coverage
+	@git diff --exit-code --stat || { \
+		echo "ERROR: generated artifacts are stale or were hand-edited."; \
+		echo "       Run 'make generate' and 'make readme-coverage', then commit the result."; \
+		exit 1; \
+	}
+	$(MAKE) conformance-strict
 
 build:
 	cd $(SDK_DIR) && go build ./...

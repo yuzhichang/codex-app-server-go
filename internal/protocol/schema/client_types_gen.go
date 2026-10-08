@@ -536,10 +536,18 @@ type ThreadRevertResponse struct {
 
 // --- Turn steer ---
 
+// TurnSteerParams adds input to a turn that is already running.
+//
+// ExpectedTurnID is REQUIRED upstream. The field used to be named TurnID and was sent as
+// "turnId", which upstream does not define on this request -- so the required expectedTurnId
+// was omitted entirely and every steer was rejected. It had no omitempty, so the wrong field
+// was always sent.
 type TurnSteerParams struct {
 	ThreadID string `json:"threadId"`
-	TurnID   string `json:"turnId"`
-	Input    string `json:"input"`
+	// ExpectedTurnID is the turn this input is steered into. Required.
+	ExpectedTurnID      string `json:"expectedTurnId"`
+	Input               string `json:"input"`
+	ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
 }
 
 // --- Review ---

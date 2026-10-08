@@ -2070,9 +2070,9 @@ func TestSessionThreadSteer(t *testing.T) {
 	})
 
 	type steerParams struct {
-		ThreadID string `json:"threadId"`
-		TurnID   string `json:"turnId"`
-		Input    []struct {
+		ThreadID       string `json:"threadId"`
+		ExpectedTurnID string `json:"expectedTurnId"`
+		Input          []struct {
 			Type string `json:"type"`
 			Text string `json:"text"`
 		} `json:"input"`
@@ -2106,8 +2106,10 @@ func TestSessionThreadSteer(t *testing.T) {
 		if req.ThreadID != "thread-steer" {
 			t.Fatalf("unexpected threadId in steer request: %q", req.ThreadID)
 		}
-		if req.TurnID != "turn-steer-1" {
-			t.Fatalf("unexpected turnId in steer request: %q", req.TurnID)
+		// Upstream requires expectedTurnId; `turnId` is not a field on this request, so the
+		// old assertion pinned the bug.
+		if req.ExpectedTurnID != "turn-steer-1" {
+			t.Fatalf("unexpected expectedTurnId in steer request: %q", req.ExpectedTurnID)
 		}
 		if len(req.Input) != 1 || req.Input[0].Type != "text" || req.Input[0].Text != "additional context" {
 			t.Fatalf("unexpected input in steer request: %+v", req.Input)
@@ -2856,5 +2858,57 @@ func TestTurnStartSendsApprovalsReviewerSeparately(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("turn/start was never called")
+	}
+}
+
+// ---- turn/steer: the required expectedTurnId, not an invented turnId ----
+
+// Upstream requires {expectedTurnId, input, threadId}. The SDK sent `turnId` (which upstream
+// does not define here) and omitted expectedTurnId, so every steer was rejected -- and
+// because the field had no omitempty, the wrong one was always sent.
+func TestTurnSteerSendsExpectedTurnID(t *testing.T) {
+	client, mock := newClientFromMock(t)
+
+	got := make(chan map[string]json.RawMessage, 1)
+	mock.Handle("turn/steer", func(params json.RawMessage) (any, error) {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(params, &raw); err != nil {
+			return nil, err
+		}
+		got <- raw
+		return map[string]any{"turnId": "turn-x"}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	resp, err := client.TurnSteer(ctx, codexgo.TurnSteerParams{
+		ThreadID:       "thr-x",
+		ExpectedTurnID: "turn-x",
+		Input:          "also check the tests",
+	})
+	if err != nil {
+		t.Fatalf("TurnSteer: %v", err)
+	}
+
+	select {
+	case raw := <-got:
+		if v := string(raw["expectedTurnId"]); v != `"turn-x"` {
+			t.Errorf("expectedTurnId = %s, want %q", v, "turn-x")
+		}
+		if _, ok := raw["turnId"]; ok {
+			t.Error("turnId is not an upstream field on turn/steer and must not be sent")
+		}
+		// Input still goes through the multi-part encoder.
+		if v := string(raw["input"]); v != `[{"text":"also check the tests","type":"text"}]` {
+			t.Errorf("input = %s", v)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("turn/steer was never called")
+	}
+
+	// The response used to be discarded.
+	if resp.TurnID != "turn-x" {
+		t.Errorf("response TurnID = %q, want turn-x", resp.TurnID)
 	}
 }

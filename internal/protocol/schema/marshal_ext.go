@@ -54,14 +54,16 @@ func wireInput(s string) any {
 // server expects and passes all other fields through unchanged.
 func (r TurnSteerParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		ThreadID string `json:"threadId"`
-		TurnID   string `json:"turnId"`
-		Input    any    `json:"input"`
+		ThreadID            string `json:"threadId"`
+		ExpectedTurnID      string `json:"expectedTurnId"`
+		Input               any    `json:"input"`
+		ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
 	}
 	return json.Marshal(alias{
-		ThreadID: r.ThreadID,
-		TurnID:   r.TurnID,
-		Input:    wireInput(r.Input),
+		ThreadID:            r.ThreadID,
+		ExpectedTurnID:      r.ExpectedTurnID,
+		Input:               wireInput(r.Input),
+		ClientUserMessageID: r.ClientUserMessageID,
 	})
 }
 

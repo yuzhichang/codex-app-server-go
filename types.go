@@ -32,6 +32,7 @@ type (
 	ReviewStartParams      = schematypes.ReviewStartParams
 	SandboxPolicy          = schematypes.SandboxPolicy
 	ReviewStartResponse    = schematypes.ReviewStartResponse
+	TurnSteerResponse      = schematypes.TurnSteerResponse
 	ReviewTarget           = schematypes.ReviewTarget
 	ReviewDelivery         = schematypes.ReviewDelivery
 	Thread                 = protocol.Thread

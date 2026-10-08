@@ -395,8 +395,13 @@ func (c *Client) ThreadRevert(ctx context.Context, req ThreadRevertParams) (Thre
 	return resp, nil
 }
 
-func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) error {
-	return c.transport.Call(ctx, protocol.MethodTurnSteer, req, nil)
+func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) (TurnSteerResponse, error) {
+	// The response carries the turn id and used to be discarded.
+	var resp TurnSteerResponse
+	if err := c.transport.Call(ctx, protocol.MethodTurnSteer, req, &resp); err != nil {
+		return TurnSteerResponse{}, err
+	}
+	return resp, nil
 }
 
 // ReviewStart starts a review and returns the review thread plus its first turn.

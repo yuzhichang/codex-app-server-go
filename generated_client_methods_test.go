@@ -280,7 +280,7 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			return err
 		}},
 		{"TurnSteer", "turn/steer", func(ctx context.Context, c *codexgo.Client) error {
-			err := c.TurnSteer(ctx, *new(codexgo.TurnSteerParams))
+			_, err := c.TurnSteer(ctx, *new(codexgo.TurnSteerParams))
 			return err
 		}},
 		{"TurnInterrupt", "turn/interrupt", func(ctx context.Context, c *codexgo.Client) error {

@@ -246,21 +246,23 @@ func (t *SessionThread) Compact(ctx context.Context) error {
 // Only valid while a turn is active. Does not require the turn mutex because
 // steering is sent to an already-running turn, not starting a new one.
 func (t *SessionThread) Steer(ctx context.Context, turnID, input string) error {
-	return t.client.TurnSteer(ctx, TurnSteerParams{
-		ThreadID: t.threadID,
-		TurnID:   turnID,
-		Input:    input,
+	_, err := t.client.TurnSteer(ctx, TurnSteerParams{
+		ThreadID:       t.threadID,
+		ExpectedTurnID: turnID,
+		Input:          input,
 	})
+	return err
 }
 
 // SteerInputs sends typed multi-part input to an in-progress turn, mirroring
 // Steer but accepting TurnInput items instead of a plain string.
 func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs ...TurnInput) error {
-	return t.client.TurnSteer(ctx, TurnSteerParams{
-		ThreadID: t.threadID,
-		TurnID:   turnID,
-		Input:    encodeInputs(inputs),
+	_, err := t.client.TurnSteer(ctx, TurnSteerParams{
+		ThreadID:       t.threadID,
+		ExpectedTurnID: turnID,
+		Input:          encodeInputs(inputs),
 	})
+	return err
 }
 
 // Fork creates a new thread branching from this thread at the given turnID.

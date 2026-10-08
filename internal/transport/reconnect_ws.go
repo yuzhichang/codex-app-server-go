@@ -24,6 +24,11 @@ type ReconnectingWS struct {
 	requests chan *Request
 	done     chan struct{}
 	doneOnce sync.Once
+	// reconnects is a merged (cap 1) signal fired after each successful re-dial. A transport
+	// reconnect restores the socket but not the protocol session, so a higher layer needs to
+	// know it happened; consumers should count attempts themselves rather than rely on the
+	// number of signals.
+	reconnects chan struct{}
 
 	closedMu sync.Mutex
 	closed   bool
@@ -37,13 +42,14 @@ func NewReconnectingWS(ctx context.Context, url string, opts ...WSOption) (*Reco
 		return nil, err
 	}
 	r := &ReconnectingWS{
-		url:      url,
-		opts:     opts,
-		current:  first,
-		ready:    make(chan struct{}),
-		notes:    make(chan Notification, 32),
-		requests: make(chan *Request, 32),
-		done:     make(chan struct{}),
+		url:        url,
+		opts:       opts,
+		current:    first,
+		ready:      make(chan struct{}),
+		notes:      make(chan Notification, 32),
+		requests:   make(chan *Request, 32),
+		done:       make(chan struct{}),
+		reconnects: make(chan struct{}, 1),
 	}
 	close(r.ready) // the initial connection is usable
 	go r.fanNotifications(first)
@@ -113,9 +119,24 @@ func (r *ReconnectingWS) watchLoop() {
 		go r.fanNotifications(next)
 		go r.fanRequests(next)
 
+		// Announce the reconnection so a session layer can re-establish protocol state
+		// (initialize handshake, thread subscriptions). Merged: a pending signal is enough.
+		select {
+		case r.reconnects <- struct{}{}:
+		default:
+		}
+
 		backoff = reconnectInitialBackoff()
 	}
 }
+
+// Reconnects fires once after each successful re-dial. It never closes; the channel returned
+// by Done() signals permanent shutdown.
+//
+// A re-dial restores the socket only. The app-server treats the new connection as a new
+// client, so the initialize handshake and every thread subscription must be re-established
+// by the caller -- see Client's auto-reconnect support.
+func (r *ReconnectingWS) Reconnects() <-chan struct{} { return r.reconnects }
 
 func (r *ReconnectingWS) fanNotifications(t *WebSocketTransport) {
 	src := t.Notifications()

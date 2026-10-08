@@ -71,6 +71,28 @@ type clientConfig struct {
 	// full delivery buffer before its subscription is terminated. Zero means the default
 	// (5s).
 	eventStallTimeout time.Duration
+
+	// autoReconnect re-establishes protocol state (initialize handshake + thread
+	// resumption) each time the transport reconnects.
+	autoReconnect bool
+}
+
+// WithAutoReconnect re-establishes the protocol session after a transport-level reconnect.
+//
+// A redial restores the socket only. The app-server treats a new connection as a new client,
+// so without this the SDK keeps issuing calls on a connection the server has no session for
+// -- which can look like success against a fresh, empty session rather than failing cleanly.
+//
+// Requires a transport that reports its own reconnections, such as NewReconnectingWS;
+// New() returns an error otherwise rather than silently doing nothing.
+//
+// Recovery progress is reported as events on Events(): sdk/reconnectStarted,
+// sdk/sessionRecovered, sdk/reconnectSucceeded and sdk/reconnectFailed.
+func WithAutoReconnect() Option {
+	return func(cfg *clientConfig) error {
+		cfg.autoReconnect = true
+		return nil
+	}
 }
 
 // WithEventSubscriberTimeout sets how long a subscriber that has stopped reading may hold a

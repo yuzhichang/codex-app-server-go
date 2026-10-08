@@ -95,6 +95,11 @@ type SessionThread struct {
 // Close is idempotent and safe to call from multiple goroutines.
 func (t *SessionThread) Close() {
 	t.closeOnce.Do(func() {
+		// Stop tracking before releasing the slot, so a reconnect racing with Close does not
+		// try to resume a thread the caller has finished with.
+		if t.client != nil {
+			t.client.supervisor.untrackThread(t.threadID)
+		}
 		if t.release != nil {
 			t.release()
 		}

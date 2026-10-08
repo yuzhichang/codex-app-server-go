@@ -33,6 +33,11 @@ type Client struct {
 
 	threadSem chan struct{} // nil means unlimited
 
+	// supervisor re-establishes protocol state after a transport reconnect. Non-nil only
+	// when WithAutoReconnect was supplied.
+	supervisor       *sessionSupervisor
+	supervisorCancel context.CancelFunc
+
 	proc *process.ManagedProcess
 }
 
@@ -80,6 +85,22 @@ func New(opts ...Option) (*Client, error) {
 		}
 		client.events = newEventBroker(brokerCfg)
 		go client.notificationLoop(source.Notifications())
+	}
+
+	if cfg.autoReconnect {
+		// Fail loudly rather than silently doing nothing: without a transport that reports
+		// its own reconnections there is no signal to act on, and the caller would believe
+		// sessions were being recovered when they were not.
+		signals, ok := cfg.transport.(reconnectNotify)
+		if !ok {
+			return nil, fmt.Errorf(
+				"WithAutoReconnect requires a transport that can re-establish itself "+
+					"(such as NewReconnectingWS); %T cannot", cfg.transport)
+		}
+		client.supervisor = newSessionSupervisor(client)
+		supCtx, supCancel := context.WithCancel(context.Background())
+		client.supervisorCancel = supCancel
+		go client.supervisor.run(supCtx, signals.Reconnects())
 	}
 
 	maxThreads := cfg.maxThreads
@@ -208,6 +229,9 @@ func (c *Client) Close() error {
 	if c.events != nil {
 		c.events.close()
 	}
+	if c.supervisorCancel != nil {
+		c.supervisorCancel()
+	}
 	err := c.transport.Close()
 	if c.proc != nil {
 		_ = c.proc.Shutdown(context.Background())
@@ -215,6 +239,10 @@ func (c *Client) Close() error {
 	return err
 }
 
+// Initialize runs the handshake: `initialize` followed by the `initialized` notification.
+//
+// With auto-reconnect enabled the request is remembered, because the handshake has to be
+// replayed for every new connection -- the app-server does not carry a session across one.
 func (c *Client) Initialize(ctx context.Context, req InitializeParams) (InitializeResponse, error) {
 	var result InitializeResponse
 	if err := c.transport.Call(ctx, protocol.MethodInitialize, req, &result); err != nil {
@@ -222,6 +250,9 @@ func (c *Client) Initialize(ctx context.Context, req InitializeParams) (Initiali
 	}
 	if err := c.transport.Notify(ctx, protocol.MethodInitialized, nil); err != nil {
 		return InitializeResponse{}, err
+	}
+	if c.supervisor != nil {
+		c.supervisor.setInitRequest(req)
 	}
 	return result, nil
 }
@@ -363,6 +394,9 @@ func (c *Client) StartThread(ctx context.Context, opts ...ThreadOption) (*Sessio
 		return nil, err
 	}
 	st := &SessionThread{client: c, threadID: thread.ID, release: release}
+	// Register before running the first turn: an auto-reconnect during that turn should
+	// already know this thread is meant to be open.
+	c.supervisor.trackThread(thread.ID)
 	if cfg.initialInput != "" {
 		if _, err := st.Run(ctx, cfg.initialInput); err != nil {
 			st.Close()
@@ -386,6 +420,7 @@ func (c *Client) ResumeThread(ctx context.Context, threadID string, opts ...Thre
 		return nil, err
 	}
 	st := &SessionThread{client: c, threadID: threadID, release: release}
+	c.supervisor.trackThread(threadID)
 	if cfg.initialInput != "" {
 		if _, err := st.Run(ctx, cfg.initialInput); err != nil {
 			st.Close()

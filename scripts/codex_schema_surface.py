@@ -203,17 +203,31 @@ _VARIANT_BARE = re.compile(r"^([A-Z][A-Za-z0-9_]*)\s*,")
 
 
 def parse_source(common_rs: str) -> list[dict]:
-    """Parse the four macro invocations into a flat, ordered method list."""
+    """Parse the four macro invocations into a flat, ordered method list.
+
+    Also captures each entry's `params`/`response` Rust type names, which the Go client
+    generator needs to bind a typed method to the wire name.
+    """
     methods: list[dict] = []
     for face, marker in BLOCK_MARKERS.items():
         block = _extract_braced_block(common_rs, marker)
         pending_exp: str | None = None
         pending_wire: str | None = None
+        current: dict | None = None
+        body: list[str] = []
+
+        def flush():
+            if current is None:
+                return
+            joined = "\n".join(body)
+            current["params_type"] = _rust_type(joined, "params")
+            current["response_type"] = _rust_type(joined, "response")
+            methods.append(dict(current))
+
         for raw_line in block.splitlines():
             s = raw_line.strip()
             if not s or s.startswith("//"):
                 continue
-            # Consume leading attributes; some are on the same line as the variant.
             while True:
                 m = _ATTR.match(s)
                 if not m:
@@ -228,27 +242,63 @@ def parse_source(common_rs: str) -> list[dict]:
                         pending_wire = found.group(1)
                 if not s:
                     break
-            if not s:
-                continue
 
             vm = _VARIANT.match(s) or _VARIANT_BARE.match(s)
-            if not vm:
-                continue
-            variant = vm.group(1)
-            explicit = vm.group(2) if vm.re is _VARIANT else None
-            wire = explicit or pending_wire or _camel(variant)
-            methods.append(
-                {
-                    "method": wire,
+            if vm:
+                flush()
+                variant = vm.group(1)
+                explicit = vm.group(2) if vm.re is _VARIANT else None
+                current = {
+                    "method": explicit or pending_wire or _camel(variant),
                     "face": face,
                     "variant": variant,
                     "experimental": pending_exp is not None,
                     "experimental_reason": pending_exp,
                 }
-            )
-            pending_exp = None
-            pending_wire = None
+                body = [s]
+                pending_exp = None
+                pending_wire = None
+                continue
+            if current is not None:
+                body.append(s)
+        flush()
     return methods
+
+
+# Capture to end of line: attributes on these lines contain commas, so a comma-delimited
+# capture would stop inside `#[ts(optional, as = ...)]` and yield "optional" as the type.
+_PARAMS = re.compile(r"\bparams\s*:\s*(.+)")
+_RESPONSE = re.compile(r"\bresponse\s*:\s*(.+)")
+
+# Words that can only come from an attribute, never a type name.
+_ATTR_WORDS = {"optional", "nullable", "inline", "default", "undefined", "skip_serializing_if"}
+
+
+def _rust_type(body: str, key: str) -> str | None:
+    """Extract `params: v2::Foo` / `response: v2::Bar` and reduce it to the bare type name.
+
+    Returns None when the field is absent, is a unit/`Option<()>` placeholder, or when the
+    line only carries attributes -- i.e. the method takes no params.
+    """
+    m = (_PARAMS if key == "params" else _RESPONSE).search(body)
+    if not m:
+        return None
+    raw = m.group(1).strip()
+    raw = re.sub(r"#\[.*?\]", "", raw).strip()  # non-greedy: attributes may span the line
+    if "Option<()>" in raw or raw in {"()", ""}:
+        return None
+    # Drop the trailing separator first: the macro entries end with a comma, so splitting
+    # before trimming would leave an empty final segment and lose the type entirely.
+    raw = raw.rstrip().rstrip(",").strip()
+    # The type is the last path component, e.g. `v2::NullableFooParams` -> NullableFooParams.
+    last = raw.split("::")[-1].strip()
+    found = re.search(r"(\w+)", last)
+    if not found:
+        return None
+    name = found.group(1)
+    if name in {"Option", "Vec"} or name in _ATTR_WORDS:
+        return None
+    return name
 
 
 # --------------------------------------------------------------------------------------

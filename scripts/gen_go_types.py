@@ -24,6 +24,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SDK_ROOT = SCRIPT_DIR.parent
 DEFAULT_SCHEMA = SDK_ROOT / "internal" / "protocol" / "schema" / "codex_app_server_protocol.v2.schemas.json"
+GEN_DIR = SDK_ROOT / "gen"
 
 _STRUCT = re.compile(r"^type (\w+)\b", re.M)
 
@@ -187,14 +188,19 @@ def emit_definition(name: str, spec: dict, defs: dict) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--match", default=".", help="regex over definition names")
+    ap.add_argument("--match", help="regex over definition names")
+    ap.add_argument("--from-surface", action="store_true",
+                    help="generate every params/response type used by a non-experimental method")
     ap.add_argument("--out", required=True, help="Go file to write")
     ap.add_argument("--schema", default=str(DEFAULT_SCHEMA))
     args = ap.parse_args()
 
+    if not args.match and not args.from_surface:
+        ap.error("one of --match or --from-surface is required")
+
     schema = json.loads(Path(args.schema).read_text())
     defs = schema.get("definitions") or {}
-    rx = re.compile(args.match)
+    rx = re.compile(args.match) if args.match else None
 
     dest = Path(args.out)
     if not dest.is_absolute():
@@ -213,7 +219,19 @@ def main() -> int:
 
     # Generate the matched definitions plus anything they transitively reference, so the
     # output compiles on its own.
-    wanted: set[str] = {n for n in defs if rx.search(n) and n not in existing}
+    if args.from_surface:
+        surface = json.loads((GEN_DIR / "method-surface.json").read_text())["methods"]
+        wanted_names: set[str] = set()
+        for m in surface:
+            if m.get("experimental"):
+                continue
+            for key in ("params_type", "response_type"):
+                name = m.get(key)
+                if name and name in defs:
+                    wanted_names.add(name)
+        wanted: set[str] = {n for n in wanted_names if n not in existing}
+    else:
+        wanted = {n for n in defs if rx.search(n) and n not in existing}
     pending = list(wanted)
     while pending:
         n = pending.pop()

@@ -5,12 +5,13 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck generate-types conformance conformance-strict build test
+.PHONY: sync verify diff-cli coverage typecheck generate-types generate-client generate conformance conformance-strict build test
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
 sync:
 	python3 $(SDK_DIR)/scripts/codex_schema_surface.py sync --codex-src $(CODEX_SRC)
+	gofmt -w $(SDK_DIR)/internal/protocol/schema/version.go
 
 # CI-safe reconciliation: needs no codex checkout, no `zstandard`, no network. Runs the six
 # set assertions over the checked-in gen/*.json + .codex-schema/exports/*.
@@ -42,7 +43,20 @@ generate-types:
 	python3 $(SDK_DIR)/scripts/gen_go_types.py \
 		--match '^(App|Plugin|Marketplace)' \
 		--out internal/protocol/schema/generated_plugins.go
+	python3 $(SDK_DIR)/scripts/gen_go_types.py \
+		--from-surface \
+		--out internal/protocol/schema/generated_surface.go
 	gofmt -w $(SDK_DIR)/internal/protocol/schema/generated_*.go
+
+# Generate typed Client bindings (plus their tests) for stable requests that have no
+# hand-written method. Deterministic: a no-op re-run leaves git clean.
+generate-client:
+	python3 $(SDK_DIR)/scripts/gen_go_client.py
+	gofmt -w $(SDK_DIR)/generated_client_methods.go \
+		$(SDK_DIR)/generated_client_methods_test.go \
+		$(SDK_DIR)/internal/protocol/generated_methods.go
+
+generate: generate-types generate-client
 
 # Mid-implementation: reconciliation must pass; coverage gaps are reported but not fatal.
 conformance: verify

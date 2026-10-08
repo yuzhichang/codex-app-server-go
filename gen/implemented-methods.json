@@ -9,6 +9,46 @@
     "test": "account_test.go"
   },
   {
+    "method": "account/gatewayOAuth/cancel",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "account/gatewayOAuth/login",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "account/gatewayOAuth/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "account/login/cancel",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "account.go",
+      "generated_client_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "account/login/start",
     "face": "client_request",
     "kind": "client_method",
@@ -27,6 +67,26 @@
     "test": "account_test.go"
   },
   {
+    "method": "account/rateLimitResetCredit/consume",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "account/rateLimits/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "account/read",
     "face": "client_request",
     "kind": "client_method",
@@ -34,6 +94,36 @@
       "account.go"
     ],
     "test": "account_test.go"
+  },
+  {
+    "method": "account/sendAddCreditsNudgeEmail",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "account/usage/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "account/workspaceMessages/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "app/installed",
@@ -70,6 +160,66 @@
       "mcp.go"
     ],
     "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "configRequirements/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "externalAgentConfig/detect",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "externalAgentConfig/import",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "externalAgentConfig/import/readHistories",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "externalAgentConfig/import/recordHistory",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "feedback/upload",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "fs/copy",
@@ -235,6 +385,16 @@
     "test": "client_test.go"
   },
   {
+    "method": "permissionProfile/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "plugin/install",
     "face": "client_request",
     "kind": "client_method",
@@ -352,14 +512,55 @@
     "test": "sdk_v2_test.go"
   },
   {
+    "method": "thread/attachment/add",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/attachment/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/attachment/remove",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/attachmentOwner/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "thread/compact/start",
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
+      "generated_client_methods.go",
       "thread.go",
       "turn.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/fork",
@@ -369,6 +570,16 @@
       "client.go"
     ],
     "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "thread/items/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/list",
@@ -409,6 +620,16 @@
     "test": "sdk_v2_test.go"
   },
   {
+    "method": "thread/section/move",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "thread/start",
     "face": "client_request",
     "kind": "client_method",
@@ -417,6 +638,56 @@
       "client_test_helpers.go"
     ],
     "test": "client_extended_test.go"
+  },
+  {
+    "method": "thread/turns/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "threadSection/create",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "threadSection/delete",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "threadSection/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "threadSection/update",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "turn/interrupt",
@@ -445,6 +716,26 @@
       "client.go"
     ],
     "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "windowsSandbox/readiness",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "windowsSandbox/setupStart",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "account/login/completed",

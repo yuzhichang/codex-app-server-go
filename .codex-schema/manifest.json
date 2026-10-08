@@ -7,7 +7,7 @@
     "internal/protocol/schema/version.go": "fab44e0fe6f9c064e0672e88aed1b564c356c5fd9654c5bf180d20d61d5de34f",
     ".codex-schema/exports/stable-methods.json": "ebf4bddce59d064913d4ab3fb51a7626e366808b5155193f097018f2bc87aa1f",
     ".codex-schema/exports/experimental-methods.json": "2a6122845b2f7eb1857b39a60affa509786520c83a8f8c8b3743d34f58b6f4e2",
-    "gen/method-surface.json": "026a387334667cbad19cbf104f241c894f01f007740593cf6c82169972358f94",
+    "gen/method-surface.json": "9bfa964223be83ac7f128c0b8856d373e3a84e4415106129c4c05dc342aeb284",
     "gen/export-exclusions.json": "c29ba85acd28e4e66c33d99fb15e4efacfaaa1cac4141e552f81a48648b4d768"
   },
   "measured": {

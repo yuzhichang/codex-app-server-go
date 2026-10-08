@@ -85,9 +85,18 @@ def _iter_go_files() -> list[Path]:
 
 
 def load_consts() -> dict[str, str]:
-    """wire method name -> Go constant name, parsed from envelope.go."""
-    text = (SDK_ROOT / "internal/protocol/envelope.go").read_text()
-    return {wire: name for name, wire in _CONST_DECL.findall(text)}
+    """wire method name -> Go constant name.
+
+    Scans every declaration file in the protocol package, not just envelope.go: method
+    constants may also be generated (internal/protocol/generated_methods.go), and reading
+    only envelope.go made every generated binding invisible to the gate.
+    """
+    out: dict[str, str] = {}
+    for path in (SDK_ROOT / "internal" / "protocol").glob("*.go"):
+        if path.name.endswith("_test.go"):
+            continue
+        out.update({wire: name for name, wire in _CONST_DECL.findall(path.read_text(errors="replace"))})
+    return out
 
 
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")

@@ -17,6 +17,8 @@
       "variant": "Initialize",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "InitializeParams",
+      "response_type": "InitializeResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -27,6 +29,8 @@
       "variant": "ServerDiagnostics",
       "experimental": true,
       "experimental_reason": "server/diagnostics",
+      "params_type": "ServerDiagnosticsParams",
+      "response_type": "ServerDiagnosticsResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -37,6 +41,8 @@
       "variant": "UserVerificationStatus",
       "experimental": true,
       "experimental_reason": "userVerification/status",
+      "params_type": "UserVerificationStatusParams",
+      "response_type": "UserVerificationStatusResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -47,6 +53,8 @@
       "variant": "UserVerificationEnroll",
       "experimental": true,
       "experimental_reason": "userVerification/enroll",
+      "params_type": "UserVerificationEnrollParams",
+      "response_type": "UserVerificationEnrollResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -57,6 +65,8 @@
       "variant": "UserVerificationDelete",
       "experimental": true,
       "experimental_reason": "userVerification/delete",
+      "params_type": "UserVerificationDeleteParams",
+      "response_type": "UserVerificationDeleteResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -67,6 +77,8 @@
       "variant": "UserVerificationVerify",
       "experimental": true,
       "experimental_reason": "userVerification/verify",
+      "params_type": "UserVerificationVerifyParams",
+      "response_type": "UserVerificationVerifyResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -77,6 +89,8 @@
       "variant": "UserVerificationCancel",
       "experimental": true,
       "experimental_reason": "userVerification/cancel",
+      "params_type": "UserVerificationCancelParams",
+      "response_type": "UserVerificationCancelResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -87,6 +101,8 @@
       "variant": "ThreadStart",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadStartParams",
+      "response_type": "ThreadStartResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -97,6 +113,8 @@
       "variant": "ThreadResume",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadResumeParams",
+      "response_type": "ThreadResumeResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -107,6 +125,8 @@
       "variant": "ThreadFork",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadForkParams",
+      "response_type": "ThreadForkResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -117,6 +137,8 @@
       "variant": "ThreadArchive",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadArchiveParams",
+      "response_type": "ThreadArchiveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -127,6 +149,8 @@
       "variant": "ThreadDelete",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadDeleteParams",
+      "response_type": "ThreadDeleteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -137,6 +161,8 @@
       "variant": "ThreadUnsubscribe",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadUnsubscribeParams",
+      "response_type": "ThreadUnsubscribeResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -147,6 +173,8 @@
       "variant": "ThreadIncrementElicitation",
       "experimental": true,
       "experimental_reason": "thread/increment_elicitation",
+      "params_type": "ThreadIncrementElicitationParams",
+      "response_type": "ThreadIncrementElicitationResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -157,6 +185,8 @@
       "variant": "ThreadDecrementElicitation",
       "experimental": true,
       "experimental_reason": "thread/decrement_elicitation",
+      "params_type": "ThreadDecrementElicitationParams",
+      "response_type": "ThreadDecrementElicitationResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -167,6 +197,8 @@
       "variant": "ThreadSetName",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadSetNameParams",
+      "response_type": "ThreadSetNameResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -177,6 +209,8 @@
       "variant": "ThreadPredictionRequest",
       "experimental": true,
       "experimental_reason": "thread/prediction/request",
+      "params_type": "ThreadPredictionRequestParams",
+      "response_type": "ThreadPredictionRequestResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -187,6 +221,8 @@
       "variant": "ThreadGoalSet",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadGoalSetParams",
+      "response_type": "ThreadGoalSetResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -197,6 +233,8 @@
       "variant": "ThreadGoalGet",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadGoalGetParams",
+      "response_type": "ThreadGoalGetResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -207,6 +245,8 @@
       "variant": "ThreadGoalClear",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadGoalClearParams",
+      "response_type": "ThreadGoalClearResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -217,6 +257,8 @@
       "variant": "ThreadQueueAdd",
       "experimental": true,
       "experimental_reason": "thread/queue/add",
+      "params_type": "ThreadQueueAddParams",
+      "response_type": "ThreadQueueAddResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -227,6 +269,8 @@
       "variant": "ThreadQueueList",
       "experimental": true,
       "experimental_reason": "thread/queue/list",
+      "params_type": "ThreadQueueListParams",
+      "response_type": "ThreadQueueListResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -237,6 +281,8 @@
       "variant": "ThreadQueueUpdate",
       "experimental": true,
       "experimental_reason": "thread/queue/update",
+      "params_type": "ThreadQueueUpdateParams",
+      "response_type": "ThreadQueueUpdateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -247,6 +293,8 @@
       "variant": "ThreadQueueDelete",
       "experimental": true,
       "experimental_reason": "thread/queue/delete",
+      "params_type": "ThreadQueueDeleteParams",
+      "response_type": "ThreadQueueDeleteResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -257,6 +305,8 @@
       "variant": "ThreadQueueReorder",
       "experimental": true,
       "experimental_reason": "thread/queue/reorder",
+      "params_type": "ThreadQueueReorderParams",
+      "response_type": "ThreadQueueReorderResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -267,6 +317,8 @@
       "variant": "ThreadQueueStart",
       "experimental": true,
       "experimental_reason": "thread/queue/start",
+      "params_type": "ThreadQueueStartParams",
+      "response_type": "ThreadQueueStartResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -277,6 +329,8 @@
       "variant": "ThreadMetadataUpdate",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadMetadataUpdateParams",
+      "response_type": "ThreadMetadataUpdateResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -287,6 +341,8 @@
       "variant": "ThreadAttachmentAdd",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadAttachmentAddParams",
+      "response_type": "ThreadAttachmentAddResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -297,6 +353,8 @@
       "variant": "ThreadAttachmentList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadAttachmentListParams",
+      "response_type": "ThreadAttachmentListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -307,6 +365,8 @@
       "variant": "ThreadAttachmentOwnerList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadAttachmentOwnerListParams",
+      "response_type": "ThreadAttachmentOwnerListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -317,6 +377,8 @@
       "variant": "ThreadAttachmentRemove",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadAttachmentRemoveParams",
+      "response_type": "ThreadAttachmentRemoveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -327,6 +389,8 @@
       "variant": "ThreadSectionMove",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadSectionMoveParams",
+      "response_type": "ThreadSectionMoveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -337,6 +401,8 @@
       "variant": "ThreadSettingsUpdate",
       "experimental": true,
       "experimental_reason": "thread/settings/update",
+      "params_type": "ThreadSettingsUpdateParams",
+      "response_type": "ThreadSettingsUpdateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -347,6 +413,8 @@
       "variant": "ThreadMemoryModeSet",
       "experimental": true,
       "experimental_reason": "thread/memoryMode/set",
+      "params_type": "ThreadMemoryModeSetParams",
+      "response_type": "ThreadMemoryModeSetResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -357,6 +425,8 @@
       "variant": "MemoryStatus",
       "experimental": true,
       "experimental_reason": "memory/status",
+      "params_type": "MemoryStatusParams",
+      "response_type": "MemoryStatusResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -367,6 +437,8 @@
       "variant": "MemoryReset",
       "experimental": true,
       "experimental_reason": "memory/reset",
+      "params_type": null,
+      "response_type": "MemoryResetResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -377,6 +449,8 @@
       "variant": "RolloutCompress",
       "experimental": true,
       "experimental_reason": "rollout/compress",
+      "params_type": null,
+      "response_type": "RolloutCompressResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -387,6 +461,8 @@
       "variant": "ThreadUnarchive",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadUnarchiveParams",
+      "response_type": "ThreadUnarchiveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -397,6 +473,8 @@
       "variant": "ThreadCompactStart",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadCompactStartParams",
+      "response_type": "ThreadCompactStartResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -407,6 +485,8 @@
       "variant": "ThreadShellCommand",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadShellCommandParams",
+      "response_type": "ThreadShellCommandResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -417,6 +497,8 @@
       "variant": "ThreadApproveGuardianDeniedAction",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadApproveGuardianDeniedActionParams",
+      "response_type": "ThreadApproveGuardianDeniedActionResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -427,6 +509,8 @@
       "variant": "ThreadBackgroundTerminalsClean",
       "experimental": true,
       "experimental_reason": "thread/backgroundTerminals/clean",
+      "params_type": "ThreadBackgroundTerminalsCleanParams",
+      "response_type": "ThreadBackgroundTerminalsCleanResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -437,6 +521,8 @@
       "variant": "ThreadBackgroundTerminalsList",
       "experimental": true,
       "experimental_reason": "thread/backgroundTerminals/list",
+      "params_type": "ThreadBackgroundTerminalsListParams",
+      "response_type": "ThreadBackgroundTerminalsListResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -447,6 +533,8 @@
       "variant": "ThreadBackgroundTerminalsTerminate",
       "experimental": true,
       "experimental_reason": "thread/backgroundTerminals/terminate",
+      "params_type": "ThreadBackgroundTerminalsTerminateParams",
+      "response_type": "ThreadBackgroundTerminalsTerminateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -457,6 +545,8 @@
       "variant": "ThreadRevert",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadRevertParams",
+      "response_type": "ThreadRevertResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -467,6 +557,8 @@
       "variant": "ThreadList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadListParams",
+      "response_type": "ThreadListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -477,6 +569,8 @@
       "variant": "ProjectList",
       "experimental": true,
       "experimental_reason": "project/list",
+      "params_type": "ProjectListParams",
+      "response_type": "ProjectListResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -487,6 +581,8 @@
       "variant": "ProjectRead",
       "experimental": true,
       "experimental_reason": "project/read",
+      "params_type": "ProjectReadParams",
+      "response_type": "ProjectReadResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -497,6 +593,8 @@
       "variant": "ProjectCreate",
       "experimental": true,
       "experimental_reason": "project/create",
+      "params_type": "ProjectCreateParams",
+      "response_type": "ProjectCreateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -507,6 +605,8 @@
       "variant": "ProjectImport",
       "experimental": true,
       "experimental_reason": "project/import",
+      "params_type": "ProjectImportParams",
+      "response_type": "ProjectImportResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -517,6 +617,8 @@
       "variant": "ProjectUpdate",
       "experimental": true,
       "experimental_reason": "project/update",
+      "params_type": "ProjectUpdateParams",
+      "response_type": "ProjectUpdateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -527,6 +629,8 @@
       "variant": "ProjectMove",
       "experimental": true,
       "experimental_reason": "project/move",
+      "params_type": "ProjectMoveParams",
+      "response_type": "ProjectMoveResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -537,6 +641,8 @@
       "variant": "ProjectDelete",
       "experimental": true,
       "experimental_reason": "project/delete",
+      "params_type": "ProjectDeleteParams",
+      "response_type": "ProjectDeleteResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -547,6 +653,8 @@
       "variant": "ThreadSectionList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadSectionListParams",
+      "response_type": "ThreadSectionListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -557,6 +665,8 @@
       "variant": "ThreadSectionCreate",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadSectionCreateParams",
+      "response_type": "ThreadSectionCreateResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -567,6 +677,8 @@
       "variant": "ThreadSectionUpdate",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadSectionUpdateParams",
+      "response_type": "ThreadSectionUpdateResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -577,6 +689,8 @@
       "variant": "ThreadSectionDelete",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadSectionDeleteParams",
+      "response_type": "ThreadSectionDeleteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -587,6 +701,8 @@
       "variant": "ThreadSearch",
       "experimental": true,
       "experimental_reason": "thread/search",
+      "params_type": "ThreadSearchParams",
+      "response_type": "ThreadSearchResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -597,6 +713,8 @@
       "variant": "ThreadSearchOccurrences",
       "experimental": true,
       "experimental_reason": "thread/searchOccurrences",
+      "params_type": "ThreadSearchOccurrencesParams",
+      "response_type": "ThreadSearchOccurrencesResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -607,6 +725,8 @@
       "variant": "ThreadLoadedList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadLoadedListParams",
+      "response_type": "ThreadLoadedListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -617,6 +737,8 @@
       "variant": "ThreadRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadReadParams",
+      "response_type": "ThreadReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -627,6 +749,8 @@
       "variant": "ThreadTurnsList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadTurnsListParams",
+      "response_type": "ThreadTurnsListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -637,6 +761,8 @@
       "variant": "ThreadItemsList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadItemsListParams",
+      "response_type": "ThreadItemsListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -647,6 +773,8 @@
       "variant": "ThreadInjectItems",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ThreadInjectItemsParams",
+      "response_type": "ThreadInjectItemsResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -657,6 +785,8 @@
       "variant": "SkillsList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "SkillsListParams",
+      "response_type": "SkillsListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -667,6 +797,8 @@
       "variant": "SkillsExtraRootsSet",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "SkillsExtraRootsSetParams",
+      "response_type": "SkillsExtraRootsSetResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -677,6 +809,8 @@
       "variant": "HooksList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "HooksListParams",
+      "response_type": "HooksListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -687,6 +821,8 @@
       "variant": "MarketplaceAdd",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "MarketplaceAddParams",
+      "response_type": "MarketplaceAddResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -697,6 +833,8 @@
       "variant": "MarketplaceRemove",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "MarketplaceRemoveParams",
+      "response_type": "MarketplaceRemoveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -707,6 +845,8 @@
       "variant": "MarketplaceUpgrade",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "MarketplaceUpgradeParams",
+      "response_type": "MarketplaceUpgradeResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -717,6 +857,8 @@
       "variant": "PluginList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginListParams",
+      "response_type": "PluginListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -727,6 +869,8 @@
       "variant": "PluginSearch",
       "experimental": true,
       "experimental_reason": "plugin/search",
+      "params_type": "PluginSearchParams",
+      "response_type": "PluginSearchResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -737,6 +881,8 @@
       "variant": "PluginInstalled",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginInstalledParams",
+      "response_type": "PluginInstalledResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -747,6 +893,8 @@
       "variant": "PluginReconcile",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginReconcileParams",
+      "response_type": "PluginReconcileResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -757,6 +905,8 @@
       "variant": "PluginRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginReadParams",
+      "response_type": "PluginReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -767,6 +917,8 @@
       "variant": "PluginSkillRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginSkillReadParams",
+      "response_type": "PluginSkillReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -777,6 +929,8 @@
       "variant": "PluginShareSave",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginShareSaveParams",
+      "response_type": "PluginShareSaveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -787,6 +941,8 @@
       "variant": "PluginShareUpdateTargets",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginShareUpdateTargetsParams",
+      "response_type": "PluginShareUpdateTargetsResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -797,6 +953,8 @@
       "variant": "PluginShareList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginShareListParams",
+      "response_type": "PluginShareListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -807,6 +965,8 @@
       "variant": "PluginShareCheckout",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginShareCheckoutParams",
+      "response_type": "PluginShareCheckoutResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -817,6 +977,8 @@
       "variant": "PluginShareDelete",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginShareDeleteParams",
+      "response_type": "PluginShareDeleteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -827,6 +989,8 @@
       "variant": "AppsRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "AppsReadParams",
+      "response_type": "AppsReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -837,6 +1001,8 @@
       "variant": "AppsList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "AppsListParams",
+      "response_type": "AppsListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -847,6 +1013,8 @@
       "variant": "AppsInstalled",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "AppsInstalledParams",
+      "response_type": "AppsInstalledResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -857,6 +1025,8 @@
       "variant": "FsReadFile",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsReadFileParams",
+      "response_type": "FsReadFileResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -867,6 +1037,8 @@
       "variant": "FsWriteFile",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsWriteFileParams",
+      "response_type": "FsWriteFileResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -877,6 +1049,8 @@
       "variant": "FsCreateDirectory",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsCreateDirectoryParams",
+      "response_type": "FsCreateDirectoryResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -887,6 +1061,8 @@
       "variant": "FsGetMetadata",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsGetMetadataParams",
+      "response_type": "FsGetMetadataResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -897,6 +1073,8 @@
       "variant": "FsReadDirectory",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsReadDirectoryParams",
+      "response_type": "FsReadDirectoryResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -907,6 +1085,8 @@
       "variant": "FsRemove",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsRemoveParams",
+      "response_type": "FsRemoveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -917,6 +1097,8 @@
       "variant": "FsCopy",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsCopyParams",
+      "response_type": "FsCopyResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -927,6 +1109,8 @@
       "variant": "FsWatch",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsWatchParams",
+      "response_type": "FsWatchResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -937,6 +1121,8 @@
       "variant": "FsUnwatch",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FsUnwatchParams",
+      "response_type": "FsUnwatchResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -947,6 +1133,8 @@
       "variant": "SkillsConfigWrite",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "SkillsConfigWriteParams",
+      "response_type": "SkillsConfigWriteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -957,6 +1145,8 @@
       "variant": "PluginInstall",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginInstallParams",
+      "response_type": "PluginInstallResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -967,6 +1157,8 @@
       "variant": "PluginUninstall",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PluginUninstallParams",
+      "response_type": "PluginUninstallResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -977,6 +1169,8 @@
       "variant": "TurnStart",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "TurnStartParams",
+      "response_type": "TurnStartResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -987,6 +1181,8 @@
       "variant": "TurnSettingsUpdate",
       "experimental": true,
       "experimental_reason": "turn/settings/update",
+      "params_type": "TurnSettingsUpdateParams",
+      "response_type": "TurnSettingsUpdateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -997,6 +1193,8 @@
       "variant": "TurnSteer",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "TurnSteerParams",
+      "response_type": "TurnSteerResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1007,6 +1205,8 @@
       "variant": "TurnInterrupt",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "TurnInterruptParams",
+      "response_type": "TurnInterruptResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1017,6 +1217,8 @@
       "variant": "ThreadRealtimeStart",
       "experimental": true,
       "experimental_reason": "thread/realtime/start",
+      "params_type": "ThreadRealtimeStartParams",
+      "response_type": "ThreadRealtimeStartResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1027,6 +1229,8 @@
       "variant": "ThreadRealtimeAppendAudio",
       "experimental": true,
       "experimental_reason": "thread/realtime/appendAudio",
+      "params_type": "ThreadRealtimeAppendAudioParams",
+      "response_type": "ThreadRealtimeAppendAudioResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1037,6 +1241,8 @@
       "variant": "ThreadRealtimeAppendText",
       "experimental": true,
       "experimental_reason": "thread/realtime/appendText",
+      "params_type": "ThreadRealtimeAppendTextParams",
+      "response_type": "ThreadRealtimeAppendTextResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1047,6 +1253,8 @@
       "variant": "ThreadRealtimeAppendSpeech",
       "experimental": true,
       "experimental_reason": "thread/realtime/appendSpeech",
+      "params_type": "ThreadRealtimeAppendSpeechParams",
+      "response_type": "ThreadRealtimeAppendSpeechResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1057,6 +1265,8 @@
       "variant": "ThreadRealtimeStop",
       "experimental": true,
       "experimental_reason": "thread/realtime/stop",
+      "params_type": "ThreadRealtimeStopParams",
+      "response_type": "ThreadRealtimeStopResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1067,6 +1277,8 @@
       "variant": "ThreadTimelineList",
       "experimental": true,
       "experimental_reason": "thread/timeline/list",
+      "params_type": "ThreadTimelineListParams",
+      "response_type": "ThreadTimelineListResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1077,6 +1289,8 @@
       "variant": "ThreadRealtimeListVoices",
       "experimental": true,
       "experimental_reason": "thread/realtime/listVoices",
+      "params_type": "ThreadRealtimeListVoicesParams",
+      "response_type": "ThreadRealtimeListVoicesResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1087,6 +1301,8 @@
       "variant": "ReviewStart",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ReviewStartParams",
+      "response_type": "ReviewStartResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1097,6 +1313,8 @@
       "variant": "ModelList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ModelListParams",
+      "response_type": "ModelListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1107,6 +1325,8 @@
       "variant": "GatewayOAuthRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "GatewayOAuthReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1117,6 +1337,8 @@
       "variant": "GatewayOAuthLogin",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "GatewayOAuthLoginResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1127,6 +1349,8 @@
       "variant": "GatewayOAuthCancel",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "GatewayOAuthCancelResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1137,6 +1361,8 @@
       "variant": "ModelProviderCapabilitiesRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ModelProviderCapabilitiesReadParams",
+      "response_type": "ModelProviderCapabilitiesReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1147,6 +1373,8 @@
       "variant": "ExperimentalFeatureList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ExperimentalFeatureListParams",
+      "response_type": "ExperimentalFeatureListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1157,6 +1385,8 @@
       "variant": "PermissionProfileList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PermissionProfileListParams",
+      "response_type": "PermissionProfileListResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1167,6 +1397,8 @@
       "variant": "ExperimentalFeatureEnablementSet",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ExperimentalFeatureEnablementSetParams",
+      "response_type": "ExperimentalFeatureEnablementSetResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1177,6 +1409,8 @@
       "variant": "RemoteControlEnable",
       "experimental": true,
       "experimental_reason": "remoteControl/enable",
+      "params_type": "NullableRemoteControlEnableParams",
+      "response_type": "RemoteControlEnableResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1187,6 +1421,8 @@
       "variant": "RemoteControlDisable",
       "experimental": true,
       "experimental_reason": "remoteControl/disable",
+      "params_type": "NullableRemoteControlDisableParams",
+      "response_type": "RemoteControlDisableResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1197,6 +1433,8 @@
       "variant": "RemoteControlStatusRead",
       "experimental": true,
       "experimental_reason": "remoteControl/status/read",
+      "params_type": null,
+      "response_type": "RemoteControlStatusReadResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1207,6 +1445,8 @@
       "variant": "RemoteControlPairingStart",
       "experimental": true,
       "experimental_reason": "remoteControl/pairing/start",
+      "params_type": "RemoteControlPairingStartParams",
+      "response_type": "RemoteControlPairingStartResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1217,6 +1457,8 @@
       "variant": "RemoteControlPairingStatus",
       "experimental": true,
       "experimental_reason": "remoteControl/pairing/status",
+      "params_type": "RemoteControlPairingStatusParams",
+      "response_type": "RemoteControlPairingStatusResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1227,6 +1469,8 @@
       "variant": "RemoteControlClientsList",
       "experimental": true,
       "experimental_reason": "remoteControl/client/list",
+      "params_type": "RemoteControlClientsListParams",
+      "response_type": "RemoteControlClientsListResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1237,6 +1481,8 @@
       "variant": "RemoteControlClientsRevoke",
       "experimental": true,
       "experimental_reason": "remoteControl/client/revoke",
+      "params_type": "RemoteControlClientsRevokeParams",
+      "response_type": "RemoteControlClientsRevokeResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1247,6 +1493,8 @@
       "variant": "CollaborationModeList",
       "experimental": true,
       "experimental_reason": "collaborationMode/list",
+      "params_type": "CollaborationModeListParams",
+      "response_type": "CollaborationModeListResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1257,6 +1505,8 @@
       "variant": "MockExperimentalMethod",
       "experimental": true,
       "experimental_reason": "mock/experimentalMethod",
+      "params_type": "MockExperimentalMethodParams",
+      "response_type": "MockExperimentalMethodResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1267,6 +1517,8 @@
       "variant": "EnvironmentAdd",
       "experimental": true,
       "experimental_reason": "environment/add",
+      "params_type": "EnvironmentAddParams",
+      "response_type": "EnvironmentAddResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1277,6 +1529,8 @@
       "variant": "EnvironmentInfo",
       "experimental": true,
       "experimental_reason": "environment/info",
+      "params_type": "EnvironmentInfoParams",
+      "response_type": "EnvironmentInfoResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1287,6 +1541,8 @@
       "variant": "EnvironmentStatus",
       "experimental": true,
       "experimental_reason": "environment/status",
+      "params_type": "EnvironmentStatusParams",
+      "response_type": "EnvironmentStatusResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1297,6 +1553,8 @@
       "variant": "McpServerOauthLogin",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "McpServerOauthLoginParams",
+      "response_type": "McpServerOauthLoginResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1307,6 +1565,8 @@
       "variant": "McpServerRefresh",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "McpServerRefreshResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1317,6 +1577,8 @@
       "variant": "McpServerStatusList",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ListMcpServerStatusParams",
+      "response_type": "ListMcpServerStatusResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1327,6 +1589,8 @@
       "variant": "McpResourceRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "McpResourceReadParams",
+      "response_type": "McpResourceReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1337,6 +1601,8 @@
       "variant": "McpServerEventStreamStart",
       "experimental": true,
       "experimental_reason": "mcpServer/event/stream/start",
+      "params_type": "McpServerEventStreamStartParams",
+      "response_type": "McpServerEventStreamStartResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1347,6 +1613,8 @@
       "variant": "McpServerEventStreamStop",
       "experimental": true,
       "experimental_reason": "mcpServer/event/stream/stop",
+      "params_type": "McpServerEventStreamStopParams",
+      "response_type": "McpServerEventStreamStopResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1357,6 +1625,8 @@
       "variant": "McpServerToolCall",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "McpServerToolCallParams",
+      "response_type": "McpServerToolCallResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1367,6 +1637,8 @@
       "variant": "WindowsSandboxSetupStart",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "WindowsSandboxSetupStartParams",
+      "response_type": "WindowsSandboxSetupStartResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1377,6 +1649,8 @@
       "variant": "WindowsSandboxReadiness",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "WindowsSandboxReadinessResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1387,6 +1661,8 @@
       "variant": "LoginAccount",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "LoginAccountParams",
+      "response_type": "LoginAccountResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1397,6 +1673,8 @@
       "variant": "BedrockDiscover",
       "experimental": true,
       "experimental_reason": "account/bedrock/discover",
+      "params_type": "BedrockDiscoverParams",
+      "response_type": "BedrockDiscoverResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1407,6 +1685,8 @@
       "variant": "BedrockSetup",
       "experimental": true,
       "experimental_reason": "account/bedrock/setup",
+      "params_type": "BedrockSetupParams",
+      "response_type": "BedrockSetupResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1417,6 +1697,8 @@
       "variant": "BedrockCheckGovCloudRequirements",
       "experimental": true,
       "experimental_reason": "account/bedrock/checkGovCloudRequirements",
+      "params_type": "BedrockCheckGovCloudRequirementsParams",
+      "response_type": "BedrockCheckGovCloudRequirementsResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1427,6 +1709,8 @@
       "variant": "CancelLoginAccount",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "CancelLoginAccountParams",
+      "response_type": "CancelLoginAccountResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1437,6 +1721,8 @@
       "variant": "LogoutAccount",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "LogoutAccountResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1447,6 +1733,8 @@
       "variant": "GetAccountRateLimits",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "NullableGetAccountRateLimitsParams",
+      "response_type": "GetAccountRateLimitsResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1457,6 +1745,8 @@
       "variant": "ConsumeAccountRateLimitResetCredit",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ConsumeAccountRateLimitResetCreditParams",
+      "response_type": "ConsumeAccountRateLimitResetCreditResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1467,6 +1757,8 @@
       "variant": "GetAccountTokenUsage",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "NullableGetAccountTokenUsageParams",
+      "response_type": "GetAccountTokenUsageResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1477,6 +1769,8 @@
       "variant": "GetWorkspaceMessages",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "GetWorkspaceMessagesResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1487,6 +1781,8 @@
       "variant": "SendAddCreditsNudgeEmail",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "SendAddCreditsNudgeEmailParams",
+      "response_type": "SendAddCreditsNudgeEmailResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1497,6 +1793,8 @@
       "variant": "FeedbackUpload",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FeedbackUploadParams",
+      "response_type": "FeedbackUploadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1507,6 +1805,8 @@
       "variant": "OneOffCommandExec",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "CommandExecParams",
+      "response_type": "CommandExecResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1517,6 +1817,8 @@
       "variant": "CommandExecWrite",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "CommandExecWriteParams",
+      "response_type": "CommandExecWriteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1527,6 +1829,8 @@
       "variant": "CommandExecTerminate",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "CommandExecTerminateParams",
+      "response_type": "CommandExecTerminateResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1537,6 +1841,8 @@
       "variant": "CommandExecResize",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "CommandExecResizeParams",
+      "response_type": "CommandExecResizeResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1547,6 +1853,8 @@
       "variant": "ProcessSpawn",
       "experimental": true,
       "experimental_reason": "process/spawn",
+      "params_type": "ProcessSpawnParams",
+      "response_type": "ProcessSpawnResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1557,6 +1865,8 @@
       "variant": "ProcessWriteStdin",
       "experimental": true,
       "experimental_reason": "process/writeStdin",
+      "params_type": "ProcessWriteStdinParams",
+      "response_type": "ProcessWriteStdinResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1567,6 +1877,8 @@
       "variant": "ProcessKill",
       "experimental": true,
       "experimental_reason": "process/kill",
+      "params_type": "ProcessKillParams",
+      "response_type": "ProcessKillResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1577,6 +1889,8 @@
       "variant": "ProcessResizePty",
       "experimental": true,
       "experimental_reason": "process/resizePty",
+      "params_type": "ProcessResizePtyParams",
+      "response_type": "ProcessResizePtyResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1587,6 +1901,8 @@
       "variant": "ConfigRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ConfigReadParams",
+      "response_type": "ConfigReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1597,6 +1913,8 @@
       "variant": "ExternalAgentConfigDetect",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ExternalAgentConfigDetectParams",
+      "response_type": "ExternalAgentConfigDetectResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1607,6 +1925,8 @@
       "variant": "ExternalAgentConfigImport",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ExternalAgentConfigImportParams",
+      "response_type": "ExternalAgentConfigImportResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1617,6 +1937,8 @@
       "variant": "ExternalAgentConfigImportHistoryRecord",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ExternalAgentConfigImportHistoryRecordParams",
+      "response_type": "ExternalAgentConfigImportHistoryRecordResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1627,6 +1949,8 @@
       "variant": "ExternalAgentConfigImportHistoriesRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "ExternalAgentConfigImportHistoriesReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1637,6 +1961,8 @@
       "variant": "ConfigValueWrite",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ConfigValueWriteParams",
+      "response_type": "ConfigWriteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1647,6 +1973,8 @@
       "variant": "ConfigBatchWrite",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ConfigBatchWriteParams",
+      "response_type": "ConfigWriteResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1657,6 +1985,8 @@
       "variant": "ConfigRequirementsRead",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": "ConfigRequirementsReadResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1667,6 +1997,8 @@
       "variant": "GetAccount",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "GetAccountParams",
+      "response_type": "GetAccountResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1677,6 +2009,8 @@
       "variant": "GetConversationSummary",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "GetConversationSummaryParams",
+      "response_type": "GetConversationSummaryResponse",
       "in_export_stable": false,
       "in_export_experimental": false,
       "export_excluded": true
@@ -1687,6 +2021,8 @@
       "variant": "GitDiffToRemote",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "GitDiffToRemoteParams",
+      "response_type": "GitDiffToRemoteResponse",
       "in_export_stable": false,
       "in_export_experimental": false,
       "export_excluded": true
@@ -1697,6 +2033,8 @@
       "variant": "GetAuthStatus",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "GetAuthStatusParams",
+      "response_type": "GetAuthStatusResponse",
       "in_export_stable": false,
       "in_export_experimental": false,
       "export_excluded": true
@@ -1707,6 +2045,8 @@
       "variant": "FuzzyFileSearch",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FuzzyFileSearchParams",
+      "response_type": "FuzzyFileSearchResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1717,6 +2057,8 @@
       "variant": "FuzzyFileSearchSessionStart",
       "experimental": true,
       "experimental_reason": "fuzzyFileSearch/sessionStart",
+      "params_type": "FuzzyFileSearchSessionStartParams",
+      "response_type": "FuzzyFileSearchSessionStartResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1727,6 +2069,8 @@
       "variant": "FuzzyFileSearchSessionUpdate",
       "experimental": true,
       "experimental_reason": "fuzzyFileSearch/sessionUpdate",
+      "params_type": "FuzzyFileSearchSessionUpdateParams",
+      "response_type": "FuzzyFileSearchSessionUpdateResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1737,6 +2081,8 @@
       "variant": "FuzzyFileSearchSessionStop",
       "experimental": true,
       "experimental_reason": "fuzzyFileSearch/sessionStop",
+      "params_type": "FuzzyFileSearchSessionStopParams",
+      "response_type": "FuzzyFileSearchSessionStopResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1747,6 +2093,8 @@
       "variant": "CommandExecutionRequestApproval",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "CommandExecutionRequestApprovalParams",
+      "response_type": "CommandExecutionRequestApprovalResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1757,6 +2105,8 @@
       "variant": "FileChangeRequestApproval",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "FileChangeRequestApprovalParams",
+      "response_type": "FileChangeRequestApprovalResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1767,6 +2117,8 @@
       "variant": "ToolRequestUserInput",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ToolRequestUserInputParams",
+      "response_type": "ToolRequestUserInputResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1777,6 +2129,8 @@
       "variant": "McpServerElicitationRequest",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "McpServerElicitationRequestParams",
+      "response_type": "McpServerElicitationRequestResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1787,6 +2141,8 @@
       "variant": "PermissionsRequestApproval",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "PermissionsRequestApprovalParams",
+      "response_type": "PermissionsRequestApprovalResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1797,6 +2153,8 @@
       "variant": "DynamicToolCall",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "DynamicToolCallParams",
+      "response_type": "DynamicToolCallResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1807,6 +2165,8 @@
       "variant": "ChatgptAuthTokensRefresh",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ChatgptAuthTokensRefreshParams",
+      "response_type": "ChatgptAuthTokensRefreshResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1817,6 +2177,8 @@
       "variant": "AttestationGenerate",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "AttestationGenerateParams",
+      "response_type": "AttestationGenerateResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1827,6 +2189,8 @@
       "variant": "CurrentTimeRead",
       "experimental": true,
       "experimental_reason": "currentTime/read",
+      "params_type": "CurrentTimeReadParams",
+      "response_type": "CurrentTimeReadResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1837,6 +2201,8 @@
       "variant": "ApplyPatchApproval",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ApplyPatchApprovalParams",
+      "response_type": "ApplyPatchApprovalResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1847,6 +2213,8 @@
       "variant": "ExecCommandApproval",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": "ExecCommandApprovalParams",
+      "response_type": "ExecCommandApprovalResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1857,6 +2225,8 @@
       "variant": "Error",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1867,6 +2237,8 @@
       "variant": "ThreadStarted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1877,6 +2249,8 @@
       "variant": "ThreadStatusChanged",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1887,6 +2261,8 @@
       "variant": "ThreadArchived",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1897,6 +2273,8 @@
       "variant": "ThreadDeleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1907,6 +2285,8 @@
       "variant": "ThreadUnarchived",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1917,6 +2297,8 @@
       "variant": "ThreadClosed",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1927,6 +2309,8 @@
       "variant": "ThreadReverted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1937,6 +2321,8 @@
       "variant": "SkillsChanged",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1947,6 +2333,8 @@
       "variant": "ThreadNameUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1957,6 +2345,8 @@
       "variant": "ThreadAttachmentUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1967,6 +2357,8 @@
       "variant": "ThreadGoalUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1977,6 +2369,8 @@
       "variant": "ThreadPredictionUpdated",
       "experimental": true,
       "experimental_reason": "thread/prediction/updated",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1987,6 +2381,8 @@
       "variant": "ThreadGoalCleared",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -1997,6 +2393,8 @@
       "variant": "ThreadQueueChanged",
       "experimental": true,
       "experimental_reason": "thread/queue/changed",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2007,6 +2405,8 @@
       "variant": "ProjectChanged",
       "experimental": true,
       "experimental_reason": "project/changed",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2017,6 +2417,8 @@
       "variant": "ThreadProjectUpdated",
       "experimental": true,
       "experimental_reason": "thread/project/updated",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2027,6 +2429,8 @@
       "variant": "EnvironmentConnected",
       "experimental": true,
       "experimental_reason": "thread/environment/connected",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2037,6 +2441,8 @@
       "variant": "EnvironmentDisconnected",
       "experimental": true,
       "experimental_reason": "thread/environment/disconnected",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2047,6 +2453,8 @@
       "variant": "ThreadSettingsUpdated",
       "experimental": true,
       "experimental_reason": "thread/settings/updated",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2057,6 +2465,8 @@
       "variant": "ThreadTokenUsageUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2067,6 +2477,8 @@
       "variant": "TurnStarted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2077,6 +2489,8 @@
       "variant": "HookStarted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2087,6 +2501,8 @@
       "variant": "TurnCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2097,6 +2513,8 @@
       "variant": "HookCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2107,6 +2525,8 @@
       "variant": "TurnDiffUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2117,6 +2537,8 @@
       "variant": "TurnPlanUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2127,6 +2549,8 @@
       "variant": "ItemStarted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2137,6 +2561,8 @@
       "variant": "ItemGuardianApprovalReviewStarted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2147,6 +2573,8 @@
       "variant": "ItemGuardianApprovalReviewCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2157,6 +2585,8 @@
       "variant": "StrictReviewRequired",
       "experimental": true,
       "experimental_reason": "autoApprovalReview/strictReviewRequired",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2167,6 +2597,8 @@
       "variant": "ItemCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2177,6 +2609,8 @@
       "variant": "RawResponseItemCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": false,
       "in_export_experimental": false,
       "export_excluded": true
@@ -2187,6 +2621,8 @@
       "variant": "RawResponseCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": false,
       "in_export_experimental": false,
       "export_excluded": true
@@ -2197,6 +2633,8 @@
       "variant": "AgentMessageDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2207,6 +2645,8 @@
       "variant": "PlanDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2217,6 +2657,8 @@
       "variant": "CommandExecOutputDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2227,6 +2669,8 @@
       "variant": "ProcessOutputDelta",
       "experimental": true,
       "experimental_reason": "process/outputDelta",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2237,6 +2681,8 @@
       "variant": "ProcessExited",
       "experimental": true,
       "experimental_reason": "process/exited",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2247,6 +2693,8 @@
       "variant": "CommandExecutionOutputDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2257,6 +2705,8 @@
       "variant": "TerminalInteraction",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2267,6 +2717,8 @@
       "variant": "FileChangeOutputDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2277,6 +2729,8 @@
       "variant": "FileChangePatchUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2287,6 +2741,8 @@
       "variant": "ServerRequestResolved",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2297,6 +2753,8 @@
       "variant": "McpToolCallProgress",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2307,6 +2765,8 @@
       "variant": "McpServerOauthLoginCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2317,6 +2777,8 @@
       "variant": "McpServerStatusUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2327,6 +2789,8 @@
       "variant": "McpServerEventStream",
       "experimental": true,
       "experimental_reason": "mcpServer/event/stream/notification",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2337,6 +2801,8 @@
       "variant": "AccountUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2347,6 +2813,8 @@
       "variant": "GatewayOAuthChanged",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2357,6 +2825,8 @@
       "variant": "AccountRateLimitsUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2367,6 +2837,8 @@
       "variant": "AppListUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2377,6 +2849,8 @@
       "variant": "RemoteControlStatusChanged",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2387,6 +2861,8 @@
       "variant": "ExternalAgentConfigImportProgress",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2397,6 +2873,8 @@
       "variant": "ExternalAgentConfigImportCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2407,6 +2885,8 @@
       "variant": "FsChanged",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2417,6 +2897,8 @@
       "variant": "ReasoningSummaryTextDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2427,6 +2909,8 @@
       "variant": "ReasoningSummaryPartAdded",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2437,6 +2921,8 @@
       "variant": "ReasoningTextDelta",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2447,6 +2933,8 @@
       "variant": "ContextCompacted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2457,6 +2945,8 @@
       "variant": "ModelRerouted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2467,6 +2957,8 @@
       "variant": "ModelVerification",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2477,6 +2969,8 @@
       "variant": "AuthRecoveryStarted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2487,6 +2981,8 @@
       "variant": "AuthRecoveryCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2497,6 +2993,8 @@
       "variant": "TurnModerationMetadata",
       "experimental": true,
       "experimental_reason": "turn/moderationMetadata",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2507,6 +3005,8 @@
       "variant": "ModelSafetyBufferingUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2517,6 +3017,8 @@
       "variant": "Warning",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2527,6 +3029,8 @@
       "variant": "GuardianWarning",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2537,6 +3041,8 @@
       "variant": "DeprecationNotice",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2547,6 +3053,8 @@
       "variant": "ConfigWarning",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2557,6 +3065,8 @@
       "variant": "FuzzyFileSearchSessionUpdated",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2567,6 +3077,8 @@
       "variant": "FuzzyFileSearchSessionCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2577,6 +3089,8 @@
       "variant": "ThreadRealtimeStarted",
       "experimental": true,
       "experimental_reason": "thread/realtime/started",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2587,6 +3101,8 @@
       "variant": "ThreadRealtimeItemAdded",
       "experimental": true,
       "experimental_reason": "thread/realtime/itemAdded",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2597,6 +3113,8 @@
       "variant": "ThreadRealtimeItemStarted",
       "experimental": true,
       "experimental_reason": "thread/realtime/item/started",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2607,6 +3125,8 @@
       "variant": "ThreadRealtimeItemTranscriptDelta",
       "experimental": true,
       "experimental_reason": "thread/realtime/item/transcript/delta",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2617,6 +3137,8 @@
       "variant": "ThreadRealtimeItemCompleted",
       "experimental": true,
       "experimental_reason": "thread/realtime/item/completed",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2627,6 +3149,8 @@
       "variant": "ThreadRealtimeTranscriptDelta",
       "experimental": true,
       "experimental_reason": "thread/realtime/transcript/delta",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2637,6 +3161,8 @@
       "variant": "ThreadRealtimeTranscriptDone",
       "experimental": true,
       "experimental_reason": "thread/realtime/transcript/done",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2647,6 +3173,8 @@
       "variant": "ThreadRealtimeOutputAudioDelta",
       "experimental": true,
       "experimental_reason": "thread/realtime/outputAudio/delta",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2657,6 +3185,8 @@
       "variant": "ThreadRealtimeSdp",
       "experimental": true,
       "experimental_reason": "thread/realtime/sdp",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2667,6 +3197,8 @@
       "variant": "ThreadRealtimeError",
       "experimental": true,
       "experimental_reason": "thread/realtime/error",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2677,6 +3209,8 @@
       "variant": "ThreadRealtimeClosed",
       "experimental": true,
       "experimental_reason": "thread/realtime/closed",
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2687,6 +3221,8 @@
       "variant": "WindowsWorldWritableWarning",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2697,6 +3233,8 @@
       "variant": "WindowsSandboxSetupCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2707,6 +3245,8 @@
       "variant": "AccountLoginCompleted",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2717,6 +3257,8 @@
       "variant": "Initialized",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false

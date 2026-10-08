@@ -330,7 +330,7 @@
 
 | 类型 | 问题 | 性质 |
 |---|---|---|
-| `ReviewStartParams` | 缺 **required** 的 `Target`（上游 `ReviewTarget`），且无 marshaller | **很可能是真断的**：发不出合法 review/start |
+| `ReviewStartParams` | 缺 **required** 的 `Target`（上游 `ReviewTarget`），且无 marshaller | **已确认为真断的**：上游 `required: [target, threadId]`，而 SDK 只发 `{threadId, turnId}` ⇒ 服务端必然拒绝。另：`Client.ReviewStart` **丢弃响应**（`nil`），上游实际会返回 review 结果。**为何一直没被发现**：唯一覆盖它的是一个**生成的冒烟测试**，而 mock server 对任意载荷都回成功 ⇒ **断言不了载荷合法性**。修复需要：建模 `ReviewTarget` tagged union + `ReviewDelivery`，改字段集与调用方。 |
 | `ThreadResumeParams.ExcludeTurns` | 手写 `[]string`，上游 **`bool`** | **类型不匹配**，发出的 JSON 形状错误 |
 | `TurnError` | 缺 `CodexErrorInfo`/`AdditionalDetails`/`Misalignment`，多出 `Code`/`Data` | **解码丢字段** + 自造字段 |
 | `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached` 全部自造；上游是 `originUrl`/`sha` | **自造结构**，解码全空 |

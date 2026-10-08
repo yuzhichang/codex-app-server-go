@@ -26,8 +26,17 @@ A name-only gate cannot see any of this. This script can.
   python3 scripts/type_shape_check.py report   # list every diverging field (default)
   python3 scripts/type_shape_check.py check    # non-zero if any divergence is unlisted
 
-Divergences are allow-listed in gen/type-shape-allowlist.json with a reason, so the known
-ones stay visible and a new one cannot slip in unnoticed.
+Divergences are allow-listed in gen/type-shape-allowlist.json with a reason and a status, so
+the known ones stay visible and a new one cannot slip in unnoticed:
+
+  deliberate  reviewed, and the divergence is correct (a documented design decision, or a
+              type nothing can reach)
+  pending     known, and still awaiting a decision -- surface the upstream fields, or
+              allow-list it for good
+
+Both keep the gate green. Only an UNLISTED divergence fails. The split exists so the gate
+can be a tripwire without pretending the pending work is finished; `report` prints the
+counts.
 """
 
 from __future__ import annotations
@@ -122,19 +131,28 @@ def main(argv: list[str] | None = None) -> int:
     found = divergences()
     allow = {}
     if ALLOWLIST.is_file():
-        allow = {e["name"]: e["reason"] for e in json.loads(ALLOWLIST.read_text())}
+        allow = {e["name"]: e for e in json.loads(ALLOWLIST.read_text())}
 
     print(f"type shape check: {len(found)} struct(s) diverge from the upstream schema")
     for name in sorted(found):
-        mark = "listed" if name in allow else "UNLISTED"
-        print(f"\n  [{mark:8s}] {name}")
+        entry = allow.get(name)
+        mark = "UNLISTED" if entry is None else entry.get("status", "listed")
+        print(f"\n  [{mark:10s}] {name}")
         for note in found[name]:
             print(f"      {note}")
-        if name in allow:
-            print(f"      reason: {allow[name]}")
+        if entry:
+            print(f"      reason: {entry['reason']}")
 
     unlisted = [n for n in found if n not in allow]
     stale = [n for n in allow if n not in found]
+    pending = sorted(n for n, e in allow.items() if e.get("status") == "pending" and n in found)
+
+    # A tripwire, not a sign-off: an entry is "deliberate" when the divergence has been
+    # reviewed and is correct, and "pending" when it is known and still awaiting a decision
+    # (补齐 the field set, or allow-list it for good). Both keep the gate green; only an
+    # UNLISTED entry fails, so a new divergence cannot appear silently.
+    print(f"\n  allow-listed: {len(allow) - len(pending)} deliberate, {len(pending)} pending")
+
     if args.cmd == "report":
         return 0
 
@@ -143,9 +161,9 @@ def main(argv: list[str] | None = None) -> int:
         ok = False
         print(f"\n  [FAIL] {len(unlisted)} diverging struct(s) without an allow-list entry: {unlisted}")
         print(f"         Either generate the type from the schema, or add it to {ALLOWLIST.name}")
-        print("         with a reason explaining why the hand-written shape is correct.")
+        print("         with a reason and a status.")
     else:
-        print("\n  [PASS] every diverging struct is allow-listed with a reason")
+        print("\n  [PASS] every diverging struct is allow-listed, with a reason")
     if stale:
         ok = False
         print(f"  [FAIL] stale allow-list entries (no longer diverge): {stale}")

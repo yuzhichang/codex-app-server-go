@@ -1,0 +1,117 @@
+[
+  {
+    "name": "ClientInfo",
+    "status": "pending",
+    "reason": "2 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+  },
+  {
+    "name": "InitializeCapabilities",
+    "status": "pending",
+    "reason": "1 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "InitializeParams",
+    "status": "pending",
+    "reason": "1 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "SkillInterface",
+    "status": "pending",
+    "reason": "2 upstream field(s) not surfaced (capability gap); 2 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "SkillMetadata",
+    "status": "pending",
+    "reason": "1 upstream field(s) not surfaced (capability gap); 1 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "SkillSummary",
+    "status": "pending",
+    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+  },
+  {
+    "name": "SkillsConfigWriteParams",
+    "status": "pending",
+    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+  },
+  {
+    "name": "SkillsExtraRootsSetParams",
+    "status": "pending",
+    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+  },
+  {
+    "name": "SkillsListParams",
+    "status": "pending",
+    "reason": "1 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "Thread",
+    "status": "deliberate",
+    "reason": "Not reachable: the runtime type is protocol.Thread, which carries the custom UnmarshalJSON for flexible timestamps. Nothing aliases or decodes this copy."
+  },
+  {
+    "name": "ThreadForkParams",
+    "status": "pending",
+    "reason": "14 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "ThreadForkResponse",
+    "status": "pending",
+    "reason": "10 upstream field(s) not surfaced (capability gap). Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "ThreadGoal",
+    "status": "pending",
+    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+  },
+  {
+    "name": "ThreadGoalClearParams",
+    "status": "pending",
+    "reason": "1 upstream field(s) not surfaced (capability gap). Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "ThreadGoalSetParams",
+    "status": "pending",
+    "reason": "1 upstream field(s) not surfaced (capability gap); 1 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "ThreadListParams",
+    "status": "pending",
+    "reason": "11 upstream field(s) not surfaced (capability gap); 1 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+  },
+  {
+    "name": "ThreadListResponse",
+    "status": "deliberate",
+    "reason": "Not reachable: Client.ThreadList decodes into its own anonymous {data} struct, so this type is never used."
+  },
+  {
+    "name": "ThreadResumeParams",
+    "status": "deliberate",
+    "reason": "Input fields keep the SDK's ergonomic types (string) rather than the generated enum/union types, which live in an internal package and therefore cannot be constructed by an external caller. Documented at each field."
+  },
+  {
+    "name": "ThreadRevertResponse",
+    "status": "pending",
+    "reason": "2 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+  },
+  {
+    "name": "ThreadStartParams",
+    "status": "deliberate",
+    "reason": "Hand-written marshaller owns the wire shape; the differences are the SDK's ergonomic field types on input fields."
+  },
+  {
+    "name": "Turn",
+    "status": "deliberate",
+    "reason": "Not reachable: the runtime type is protocol.Turn, for the same reason as Thread."
+  },
+  {
+    "name": "TurnStartParams",
+    "status": "deliberate",
+    "reason": "Input is a string encoded by the hand-written wireInput marshaller, which emits the required [{\"type\":\"text\",...}] array. The remaining extras are fields upstream does not reject but does not define either."
+  },
+  {
+    "name": "TurnSteerParams",
+    "status": "deliberate",
+    "reason": "Same Input design as TurnStartParams, for the same reason."
+  }
+]

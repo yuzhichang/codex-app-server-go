@@ -34,13 +34,14 @@ coverage:
 typecheck:
 	python3 $(SDK_DIR)/scripts/type_check.py report
 
-# Field-level reconciliation. Names matching is not the same as shapes matching: 26 structs
-# still carry hand-written field shapes that differ from the schema, and name comparison is
-# blind to all of them (it hid SessionThread.Run sending the wrong `input` shape).
+# Field-level reconciliation. Names matching is not the same as shapes matching: 23 structs
+# carry hand-written field shapes that differ from the schema, and name comparison was blind
+# to all of them (it hid SessionThread.Run sending the wrong `input` shape, and five other
+# bugs that sent values the server does not accept).
 #
-# Deliberately a *report*, not a gate: this is the outstanding work of the T1.2 migration,
-# and there is no allow-list yet because the divergence has not been triaged. Add it to
-# conformance-strict once the hand-written structs have been generated or allow-listed.
+# Now a gate. gen/type-shape-allowlist.json lists every known divergence with a status:
+# `deliberate` (reviewed and correct) or `pending` (known, awaiting a decision). Only an
+# UNLISTED divergence fails, so a new one cannot appear silently.
 type-shape-check:
 	python3 $(SDK_DIR)/scripts/type_shape_check.py report
 

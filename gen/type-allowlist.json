@@ -22,5 +22,9 @@
   {
     "name": "ItemKind",
     "reason": "Names the item discriminator upstream expresses structurally: ThreadItem is a tagged enum whose variants carry a camelCase `type` value, and there is no named enum for it in the schema. The SDK needs a name to switch on, so it keeps one; the string values are exactly the upstream tags."
+  },
+  {
+    "name": "AskForApprovalGranular",
+    "reason": "The granular arm of AskForApproval is an INLINE anonymous object upstream (AskForApproval is oneOf [enum string, {granular: {...}}]), so there is no named definition to match. Go still needs a name for the type, and it cannot be inlined because the three required fields need json tags."
   }
 ]

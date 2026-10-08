@@ -323,18 +323,44 @@ func TestMockServerTurnInterrupt(t *testing.T) {
 
 // ---- Integration: SetModel ----
 
+// configWriteRequest mirrors the params the setters must produce.
+type configWriteRequest struct {
+	KeyPath         string          `json:"keyPath"`
+	Value           json.RawMessage `json:"value"`
+	MergeStrategy   string          `json:"mergeStrategy"`
+	ExpectedVersion string          `json:"expectedVersion"`
+}
+
+// newConfigWriteMock stubs config/read (reporting version "v7" for every key) and captures
+// the config/value/write params the setters issue.
+func newConfigWriteMock(t *testing.T, mock *testutil.MockServer) <-chan configWriteRequest {
+	t.Helper()
+	mock.Handle("config/read", func(json.RawMessage) (any, error) {
+		return map[string]any{
+			"config": map[string]any{"model": "old-model"},
+			"origins": map[string]any{
+				"model":           map[string]any{"name": "user", "version": "v7"},
+				"approval_policy": map[string]any{"name": "user", "version": "v7"},
+				"sandbox_mode":    map[string]any{"name": "user", "version": "v7"},
+			},
+		}, nil
+	})
+	got := make(chan configWriteRequest, 4)
+	mock.Handle("config/value/write", func(params json.RawMessage) (any, error) {
+		var req configWriteRequest
+		testutil.MustReadParams(params, &req)
+		got <- req
+		return map[string]any{"filePath": "/tmp/config.toml", "status": "ok"}, nil
+	})
+	return got
+}
+
+// The setters used to call the removed `config/update` RPC. They now write a single config
+// key via config/value/write, carrying the version read from config/read as expectedVersion
+// so a concurrent external edit fails the write rather than being overwritten.
 func TestMockServerSetModel(t *testing.T) {
 	client, mock := newClientFromMock(t)
-
-	var capturedModel string
-	mock.Handle("config/update", func(params json.RawMessage) (any, error) {
-		var req struct {
-			Model string `json:"model"`
-		}
-		testutil.MustReadParams(params, &req)
-		capturedModel = req.Model
-		return nil, nil
-	})
+	got := newConfigWriteMock(t, mock)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -342,34 +368,63 @@ func TestMockServerSetModel(t *testing.T) {
 	if err := client.SetModel(ctx, "gpt-5.1"); err != nil {
 		t.Fatalf("SetModel(): %v", err)
 	}
-	if capturedModel != "gpt-5.1" {
-		t.Fatalf("unexpected model: %q", capturedModel)
+
+	select {
+	case req := <-got:
+		if req.KeyPath != "model" {
+			t.Errorf("keyPath = %q, want model", req.KeyPath)
+		}
+		if string(req.Value) != `"gpt-5.1"` {
+			t.Errorf("value = %s, want a JSON string", req.Value)
+		}
+		if req.MergeStrategy != string(codexgo.MergeStrategyReplace) {
+			t.Errorf("mergeStrategy = %q, want replace", req.MergeStrategy)
+		}
+		if req.ExpectedVersion != "v7" {
+			t.Errorf("expectedVersion = %q, want v7 (read from config/read origins)", req.ExpectedVersion)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for config/value/write")
 	}
 }
 
-// ---- Integration: SetApprovalPolicy ----
-
-func TestMockServerSetApprovalPolicy(t *testing.T) {
-	client, mock := newClientFromMock(t)
-
-	var capturedPolicy string
-	mock.Handle("config/update", func(params json.RawMessage) (any, error) {
-		var req struct {
-			ApprovalPolicy string `json:"approvalPolicy"`
-		}
-		testutil.MustReadParams(params, &req)
-		capturedPolicy = req.ApprovalPolicy
-		return nil, nil
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	if err := client.SetApprovalPolicy(ctx, "on-failure"); err != nil {
-		t.Fatalf("SetApprovalPolicy(): %v", err)
+// The config key for each setter must be the upstream Config key (snake_case), not the
+// camelCase RPC param name of the same concept. SetSandbox is the one that regressed: the
+// removed config/update payload used `sandboxPolicy`, which is not a Config key at all.
+func TestMockServerSetterConfigKeys(t *testing.T) {
+	cases := []struct {
+		name    string
+		keyPath string
+		call    func(context.Context, *codexgo.Client) error
+	}{
+		{"SetApprovalPolicy", "approval_policy", func(ctx context.Context, c *codexgo.Client) error {
+			return c.SetApprovalPolicy(ctx, "on-failure")
+		}},
+		{"SetSandbox", "sandbox_mode", func(ctx context.Context, c *codexgo.Client) error {
+			return c.SetSandbox(ctx, "workspace-write")
+		}},
 	}
-	if capturedPolicy != "on-failure" {
-		t.Fatalf("unexpected approval policy: %q", capturedPolicy)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, mock := newClientFromMock(t)
+			got := newConfigWriteMock(t, mock)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			if err := tc.call(ctx, client); err != nil {
+				t.Fatalf("%s: %v", tc.name, err)
+			}
+			select {
+			case req := <-got:
+				if req.KeyPath != tc.keyPath {
+					t.Fatalf("keyPath = %q, want %q", req.KeyPath, tc.keyPath)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("timeout waiting for config/value/write")
+			}
+		})
 	}
 }
 

@@ -410,19 +410,59 @@ func (c *Client) acquireThreadSlot(ctx context.Context) (func(), error) {
 	}
 }
 
-// SetModel sends a config/update request that changes the active model.
+// Config key paths written by the Set* helpers below. These are top-level keys of the
+// upstream `Config` definition, which is snake_case -- deliberately different from the
+// camelCase RPC params of similar names.
+const (
+	configKeyModel          = "model"
+	configKeyApprovalPolicy = "approval_policy"
+	configKeySandboxMode    = "sandbox_mode"
+)
+
+// SetModel writes the `model` config key.
+//
+// This replaces the removed `config/update` RPC (plan T1.5): upstream now exposes per-key
+// writes, so the value is persisted through config/value/write rather than applied as a
+// single blob-shaped update.
 func (c *Client) SetModel(ctx context.Context, model string) error {
-	return c.transport.Call(ctx, protocol.MethodConfigUpdate, configUpdateRequest{Model: model}, nil)
+	return c.setConfigValue(ctx, configKeyModel, model)
 }
 
-// SetApprovalPolicy sends a config/update request that changes the approval policy.
+// SetApprovalPolicy writes the `approval_policy` config key.
 func (c *Client) SetApprovalPolicy(ctx context.Context, policy string) error {
-	return c.transport.Call(ctx, protocol.MethodConfigUpdate, configUpdateRequest{ApprovalPolicy: policy}, nil)
+	return c.setConfigValue(ctx, configKeyApprovalPolicy, policy)
 }
 
-// SetSandbox sends a config/update request that changes the sandbox policy.
+// SetSandbox writes the `sandbox_mode` config key.
+//
+// Note the key is `sandbox_mode`, not `sandbox_policy`: the removed config/update payload
+// used the latter spelling, which does not exist in the upstream Config definition.
 func (c *Client) SetSandbox(ctx context.Context, sandbox string) error {
-	return c.transport.Call(ctx, protocol.MethodConfigUpdate, configUpdateRequest{SandboxPolicy: sandbox}, nil)
+	return c.setConfigValue(ctx, configKeySandboxMode, sandbox)
+}
+
+// setConfigValue performs a read-modify-write of a single top-level config key.
+//
+// It reads the config first to obtain that key's layer version and passes it as
+// expectedVersion, so a concurrent external edit fails the write instead of being silently
+// overwritten. When the key has no recorded origin the version stays empty and is omitted,
+// which means "no precondition" -- the same guarantee the removed config/update offered.
+func (c *Client) setConfigValue(ctx context.Context, keyPath, value string) error {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	read, err := c.ConfigRead(ctx, ConfigReadParams{})
+	if err != nil {
+		return err
+	}
+	_, err = c.ConfigValueWrite(ctx, ConfigValueWriteParams{
+		KeyPath:         keyPath,
+		Value:           raw,
+		MergeStrategy:   MergeStrategyReplace,
+		ExpectedVersion: read.Origins[keyPath].Version,
+	})
+	return err
 }
 
 func NewStdioTransport(stdin io.ReadCloser, stdout io.WriteCloser) Transport {

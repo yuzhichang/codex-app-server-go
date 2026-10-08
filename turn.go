@@ -127,18 +127,10 @@ func applyTurnOptions(req *TurnStartParams, opts []TurnOption) {
 	}
 }
 
-// configUpdateRequest is the payload for the config/update RPC call.
-type configUpdateRequest struct {
-	Model          string `json:"model,omitempty"`
-	ApprovalPolicy string `json:"approvalPolicy,omitempty"`
-	SandboxPolicy  string `json:"sandboxPolicy,omitempty"`
-}
-
 // threadCompactRequest is the payload for the thread/compact RPC call.
 type threadCompactRequest struct {
 	ThreadID string `json:"threadId"`
 }
 
 // Ensure protocol constants are used (avoids import cycle if they're ever split).
-var _ = protocol.MethodConfigUpdate
 var _ = protocol.MethodThreadCompact

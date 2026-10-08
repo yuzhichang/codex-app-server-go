@@ -404,7 +404,7 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			return err
 		}},
 		{"ConfigRead", "config/read", func(ctx context.Context, c *codexgo.Client) error {
-			_, err := c.ConfigRead(ctx, *new(codexgo.ConfigReadRequest))
+			_, err := c.ConfigRead(ctx, *new(codexgo.ConfigReadParams))
 			return err
 		}},
 		{"ExternalAgentConfigDetect", "externalAgentConfig/detect", func(ctx context.Context, c *codexgo.Client) error {
@@ -424,11 +424,11 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			return err
 		}},
 		{"ConfigValueWrite", "config/value/write", func(ctx context.Context, c *codexgo.Client) error {
-			err := c.ConfigValueWrite(ctx, *new(codexgo.ConfigValueWriteRequest))
+			_, err := c.ConfigValueWrite(ctx, *new(codexgo.ConfigValueWriteParams))
 			return err
 		}},
 		{"ConfigBatchWrite", "config/batchWrite", func(ctx context.Context, c *codexgo.Client) error {
-			err := c.ConfigBatchWrite(ctx, *new(codexgo.ConfigBatchWriteRequest))
+			_, err := c.ConfigBatchWrite(ctx, *new(codexgo.ConfigBatchWriteParams))
 			return err
 		}},
 		{"ConfigRequirementsRead", "configRequirements/read", func(ctx context.Context, c *codexgo.Client) error {

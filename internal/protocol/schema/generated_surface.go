@@ -139,9 +139,9 @@ const (
 
 // BrowserUseConfig mirrors the upstream `BrowserUseConfig` definition.
 type BrowserUseConfig struct {
-	AllowHistoryAccess  bool                          `json:"allow_history_access,omitempty"`
-	DefaultOriginPolicy *BrowserUseOriginPolicyConfig `json:"default_origin_policy,omitempty"`
-	Origins             map[string]any                `json:"origins,omitempty"`
+	AllowHistoryAccess  bool                                    `json:"allow_history_access,omitempty"`
+	DefaultOriginPolicy *BrowserUseOriginPolicyConfig           `json:"default_origin_policy,omitempty"`
+	Origins             map[string]BrowserUseOriginPolicyConfig `json:"origins,omitempty"`
 }
 
 // BrowserUseExtensionRequirements mirrors the upstream `BrowserUseExtensionRequirements` definition.
@@ -170,13 +170,13 @@ type BrowserUseOriginPolicyConfig struct {
 
 // BrowserUseRequirements mirrors the upstream `BrowserUseRequirements` definition.
 type BrowserUseRequirements struct {
-	AllowGlobalPersistentApproval bool                             `json:"allowGlobalPersistentApproval,omitempty"`
-	AllowHistoryAccess            bool                             `json:"allowHistoryAccess,omitempty"`
-	AllowWebmcp                   bool                             `json:"allowWebmcp,omitempty"`
-	DefaultOriginPolicy           *BrowserUseOriginPolicy          `json:"defaultOriginPolicy,omitempty"`
-	DisableAutoReview             bool                             `json:"disableAutoReview,omitempty"`
-	Extension                     *BrowserUseExtensionRequirements `json:"extension,omitempty"`
-	Origins                       map[string]any                   `json:"origins,omitempty"`
+	AllowGlobalPersistentApproval bool                              `json:"allowGlobalPersistentApproval,omitempty"`
+	AllowHistoryAccess            bool                              `json:"allowHistoryAccess,omitempty"`
+	AllowWebmcp                   bool                              `json:"allowWebmcp,omitempty"`
+	DefaultOriginPolicy           *BrowserUseOriginPolicy           `json:"defaultOriginPolicy,omitempty"`
+	DisableAutoReview             bool                              `json:"disableAutoReview,omitempty"`
+	Extension                     *BrowserUseExtensionRequirements  `json:"extension,omitempty"`
+	Origins                       map[string]BrowserUseOriginPolicy `json:"origins,omitempty"`
 }
 
 // CancelLoginAccountParams mirrors the upstream `CancelLoginAccountParams` definition.
@@ -230,7 +230,7 @@ type CommandExecParams struct {
 	CWD                string                   `json:"cwd,omitempty"`
 	DisableOutputCap   bool                     `json:"disableOutputCap,omitempty"`
 	DisableTimeout     bool                     `json:"disableTimeout,omitempty"`
-	Env                map[string]any           `json:"env,omitempty"`
+	Env                map[string]string        `json:"env,omitempty"`
 	OutputBytesCap     int64                    `json:"outputBytesCap,omitempty"`
 	ProcessID          string                   `json:"processId,omitempty"`
 	SandboxPolicy      *SandboxPolicy           `json:"sandboxPolicy,omitempty"`
@@ -303,12 +303,12 @@ type ComputerUseConfig struct {
 
 // ComputerUseMacosConfig mirrors the upstream `ComputerUseMacosConfig` definition.
 type ComputerUseMacosConfig struct {
-	BundleIDs map[string]any `json:"bundle_ids,omitempty"`
+	BundleIDs map[string]AllowDenyRequirement `json:"bundle_ids,omitempty"`
 }
 
 // ComputerUseMacosRequirements mirrors the upstream `ComputerUseMacosRequirements` definition.
 type ComputerUseMacosRequirements struct {
-	BundleIDs map[string]any `json:"bundleIds,omitempty"`
+	BundleIDs map[string]AllowDenyRequirement `json:"bundleIds,omitempty"`
 }
 
 // ComputerUseRequirements mirrors the upstream `ComputerUseRequirements` definition.
@@ -322,8 +322,8 @@ type ComputerUseRequirements struct {
 
 // ComputerUseWindowsConfig mirrors the upstream `ComputerUseWindowsConfig` definition.
 type ComputerUseWindowsConfig struct {
-	Aumids map[string]any                `json:"aumids,omitempty"`
-	Exes   []ComputerUseWindowsExeConfig `json:"exes,omitempty"`
+	Aumids map[string]AllowDenyRequirement `json:"aumids,omitempty"`
+	Exes   []ComputerUseWindowsExeConfig   `json:"exes,omitempty"`
 }
 
 // ComputerUseWindowsExeConfig mirrors the upstream `ComputerUseWindowsExeConfig` definition.
@@ -344,7 +344,7 @@ type ComputerUseWindowsExeRequirement struct {
 
 // ComputerUseWindowsRequirements mirrors the upstream `ComputerUseWindowsRequirements` definition.
 type ComputerUseWindowsRequirements struct {
-	Aumids map[string]any                     `json:"aumids,omitempty"`
+	Aumids map[string]AllowDenyRequirement    `json:"aumids,omitempty"`
 	Exes   []ComputerUseWindowsExeRequirement `json:"exes,omitempty"`
 }
 
@@ -417,9 +417,9 @@ type ConfigReadParams struct {
 
 // ConfigReadResponse mirrors the upstream `ConfigReadResponse` definition.
 type ConfigReadResponse struct {
-	Config  Config         `json:"config"`
-	Layers  []ConfigLayer  `json:"layers,omitempty"`
-	Origins map[string]any `json:"origins"`
+	Config  Config                         `json:"config"`
+	Layers  []ConfigLayer                  `json:"layers,omitempty"`
+	Origins map[string]ConfigLayerMetadata `json:"origins"`
 }
 
 // ConfigRequirements mirrors the upstream `ConfigRequirements` definition.
@@ -432,7 +432,7 @@ type ConfigRequirements struct {
 	AllowRemoteControl                   bool                           `json:"allowRemoteControl,omitempty"`
 	AllowedApprovalPolicies              []AskForApproval               `json:"allowedApprovalPolicies,omitempty"`
 	AllowedLoginMethods                  []ForcedLoginMethod            `json:"allowedLoginMethods,omitempty"`
-	AllowedPermissionProfiles            map[string]any                 `json:"allowedPermissionProfiles,omitempty"`
+	AllowedPermissionProfiles            map[string]bool                `json:"allowedPermissionProfiles,omitempty"`
 	AllowedSandboxModes                  []SandboxMode                  `json:"allowedSandboxModes,omitempty"`
 	AllowedWebSearchModes                []WebSearchMode                `json:"allowedWebSearchModes,omitempty"`
 	AllowedWindowsSandboxImplementations []WindowsSandboxImplementation `json:"allowedWindowsSandboxImplementations,omitempty"`
@@ -444,7 +444,7 @@ type ConfigRequirements struct {
 	ComputerUse                          *ComputerUseRequirements       `json:"computerUse,omitempty"`
 	DefaultPermissions                   string                         `json:"defaultPermissions,omitempty"`
 	EnforceResidency                     *ResidencyRequirement          `json:"enforceResidency,omitempty"`
-	FeatureRequirements                  map[string]any                 `json:"featureRequirements,omitempty"`
+	FeatureRequirements                  map[string]bool                `json:"featureRequirements,omitempty"`
 	Feedback                             *FeedbackRequirements          `json:"feedback,omitempty"`
 	InAppBrowser                         *InAppBrowserRequirements      `json:"inAppBrowser,omitempty"`
 	LogDir                               string                         `json:"logDir,omitempty"`
@@ -564,12 +564,12 @@ type ExperimentalFeature struct {
 
 // ExperimentalFeatureEnablementSetParams mirrors the upstream `ExperimentalFeatureEnablementSetParams` definition.
 type ExperimentalFeatureEnablementSetParams struct {
-	Enablement map[string]any `json:"enablement"`
+	Enablement map[string]bool `json:"enablement"`
 }
 
 // ExperimentalFeatureEnablementSetResponse mirrors the upstream `ExperimentalFeatureEnablementSetResponse` definition.
 type ExperimentalFeatureEnablementSetResponse struct {
-	Enablement map[string]any `json:"enablement"`
+	Enablement map[string]bool `json:"enablement"`
 }
 
 // ExperimentalFeatureListParams mirrors the upstream `ExperimentalFeatureListParams` definition.
@@ -758,12 +758,12 @@ type FeedbackRequirements struct {
 
 // FeedbackUploadParams mirrors the upstream `FeedbackUploadParams` definition.
 type FeedbackUploadParams struct {
-	Classification string         `json:"classification"`
-	ExtraLogFiles  []string       `json:"extraLogFiles,omitempty"`
-	IncludeLogs    bool           `json:"includeLogs,omitempty"`
-	Reason         string         `json:"reason,omitempty"`
-	Tags           map[string]any `json:"tags,omitempty"`
-	ThreadID       string         `json:"threadId,omitempty"`
+	Classification string            `json:"classification"`
+	ExtraLogFiles  []string          `json:"extraLogFiles,omitempty"`
+	IncludeLogs    bool              `json:"includeLogs,omitempty"`
+	Reason         string            `json:"reason,omitempty"`
+	Tags           map[string]string `json:"tags,omitempty"`
+	ThreadID       string            `json:"threadId,omitempty"`
 }
 
 // FeedbackUploadResponse mirrors the upstream `FeedbackUploadResponse` definition.
@@ -921,7 +921,7 @@ type GetAccountRateLimitsResponse struct {
 	RateLimitResetCredits *RateLimitResetCreditsSummary `json:"rateLimitResetCredits,omitempty"`
 	RateLimitUpsell       json.RawMessage               `json:"rateLimitUpsell,omitempty"`
 	RateLimits            RateLimitSnapshot             `json:"rateLimits"`
-	RateLimitsByLimitID   map[string]any                `json:"rateLimitsByLimitId,omitempty"`
+	RateLimitsByLimitID   map[string]RateLimitSnapshot  `json:"rateLimitsByLimitId,omitempty"`
 }
 
 // GetAccountResponse mirrors the upstream `GetAccountResponse` definition.

@@ -100,6 +100,17 @@ type (
 	// below point at the same Go type.
 	ModelProviderAuthRecoveryStartedEvent   = schematypes.AuthRecoveryNotification
 	ModelProviderAuthRecoveryCompletedEvent = schematypes.AuthRecoveryNotification
+
+	// Config RPC types. Upstream names, replacing the SDK's former hand-written
+	// ConfigReadRequest / ConfigReadResult / ConfigValueWriteRequest / ConfigBatchWriteRequest.
+	Config                 = schematypes.Config
+	ConfigReadParams       = schematypes.ConfigReadParams
+	ConfigReadResponse     = schematypes.ConfigReadResponse
+	ConfigLayerMetadata    = schematypes.ConfigLayerMetadata
+	ConfigValueWriteParams = schematypes.ConfigValueWriteParams
+	ConfigBatchWriteParams = schematypes.ConfigBatchWriteParams
+	ConfigWriteResponse    = schematypes.ConfigWriteResponse
+	MergeStrategy          = schematypes.MergeStrategy
 	// NOTE: McpServerOauthLoginCompletedEvent and McpServerStatusUpdatedEvent already
 	// exist in events_extra.go. Do not re-alias them here.
 
@@ -188,8 +199,12 @@ const (
 	// Plugin sharing enum values. Note the wire values are SCREAMING_CASE upstream, so the
 	// constants keep that shape rather than being re-cased locally.
 	PluginShareUpdateDiscoverabilityUNLISTED = schematypes.PluginShareUpdateDiscoverabilityUNLISTED
-	PluginShareUpdateDiscoverabilityPRIVATE  = schematypes.PluginShareUpdateDiscoverabilityPRIVATE
-	PluginShareUpdateDiscoverabilityLISTED   = schematypes.PluginShareUpdateDiscoverabilityLISTED
+
+	// Config merge strategies (upstream enum values).
+	MergeStrategyReplace                    = schematypes.MergeStrategyReplace
+	MergeStrategyUpsert                     = schematypes.MergeStrategyUpsert
+	PluginShareUpdateDiscoverabilityPRIVATE = schematypes.PluginShareUpdateDiscoverabilityPRIVATE
+	PluginShareUpdateDiscoverabilityLISTED  = schematypes.PluginShareUpdateDiscoverabilityLISTED
 )
 
 const (

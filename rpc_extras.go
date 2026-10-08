@@ -8,66 +8,49 @@ import (
 	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
 )
 
-// MergeStrategy controls how ConfigValueWrite merges a value into an existing key.
-type MergeStrategy string
+// Config RPCs.
+//
+// These replace the removed `config/update` (see gen/unknown-methods.txt and plan T1.5):
+// upstream now exposes granular, per-key writes with optional optimistic concurrency via
+// `expectedVersion`, rather than a single blob-shaped update.
+//
+// The request/response types are the schema-derived ones and keep their upstream names
+// (`*Params`/`Response`); they are aliased in types.go. The SDK's former hand-written
+// ConfigReadRequest/ConfigReadResult/ConfigValueWriteRequest/ConfigBatchWriteRequest
+// duplicates were removed rather than kept alongside them.
 
-const (
-	// MergeStrategyReplace overwrites the existing value at the key path.
-	MergeStrategyReplace MergeStrategy = "replace"
-	// MergeStrategyUpsert merges into the existing value (e.g. table merge).
-	MergeStrategyUpsert MergeStrategy = "upsert"
-)
-
-// ConfigReadRequest reads the effective config (optionally with layer breakdown).
-type ConfigReadRequest struct {
-	CWD           string `json:"cwd,omitempty"`
-	IncludeLayers bool   `json:"includeLayers,omitempty"`
-}
-
-// ConfigReadResult holds the resolved config. The nested config, layers, and
-// origins documents are passed through as raw JSON; decode them as needed.
-type ConfigReadResult struct {
-	Config  json.RawMessage `json:"config"`
-	Layers  json.RawMessage `json:"layers,omitempty"`
-	Origins json.RawMessage `json:"origins,omitempty"`
-}
-
-// ConfigValueWriteRequest writes a single value at a dotted key path.
-type ConfigValueWriteRequest struct {
-	FilePath        string          `json:"filePath,omitempty"`
-	KeyPath         string          `json:"keyPath"`
-	Value           json.RawMessage `json:"value"`
-	MergeStrategy   MergeStrategy   `json:"mergeStrategy,omitempty"`
-	ExpectedVersion string          `json:"expectedVersion,omitempty"`
-}
-
-// ConfigBatchWriteRequest applies multiple edits atomically. Edits is the raw
-// JSON array of edit objects as defined by the protocol.
-type ConfigBatchWriteRequest struct {
-	FilePath         string          `json:"filePath,omitempty"`
-	Edits            json.RawMessage `json:"edits"`
-	ExpectedVersion  string          `json:"expectedVersion,omitempty"`
-	ReloadUserConfig bool            `json:"reloadUserConfig,omitempty"`
-}
-
-// ConfigRead returns the effective configuration. When IncludeLayers is set the
-// per-layer breakdown and value origins are included.
-func (c *Client) ConfigRead(ctx context.Context, req ConfigReadRequest) (ConfigReadResult, error) {
-	var resp ConfigReadResult
+// ConfigRead returns the effective configuration.
+//
+// Set IncludeLayers to also get the per-layer breakdown. Origins maps a key path to the
+// layer that supplied it together with that layer's version -- the version is what
+// ConfigValueWrite needs as ExpectedVersion for an unconditional read-modify-write.
+func (c *Client) ConfigRead(ctx context.Context, req ConfigReadParams) (ConfigReadResponse, error) {
+	var resp ConfigReadResponse
 	if err := c.transport.Call(ctx, protocol.MethodConfigRead, req, &resp); err != nil {
-		return ConfigReadResult{}, err
+		return ConfigReadResponse{}, err
 	}
 	return resp, nil
 }
 
 // ConfigValueWrite writes a single configuration value at the given key path.
-func (c *Client) ConfigValueWrite(ctx context.Context, req ConfigValueWriteRequest) error {
-	return c.transport.Call(ctx, protocol.MethodConfigValueWrite, req, nil)
+//
+// The response reports which file was written and whether the write was overridden by a
+// higher-precedence layer -- check Status rather than assuming success.
+func (c *Client) ConfigValueWrite(ctx context.Context, req ConfigValueWriteParams) (ConfigWriteResponse, error) {
+	var resp ConfigWriteResponse
+	if err := c.transport.Call(ctx, protocol.MethodConfigValueWrite, req, &resp); err != nil {
+		return ConfigWriteResponse{}, err
+	}
+	return resp, nil
 }
 
-// ConfigBatchWrite applies a batch of configuration edits.
-func (c *Client) ConfigBatchWrite(ctx context.Context, req ConfigBatchWriteRequest) error {
-	return c.transport.Call(ctx, protocol.MethodConfigBatchWrite, req, nil)
+// ConfigBatchWrite applies a batch of configuration edits atomically.
+func (c *Client) ConfigBatchWrite(ctx context.Context, req ConfigBatchWriteParams) (ConfigWriteResponse, error) {
+	var resp ConfigWriteResponse
+	if err := c.transport.Call(ctx, protocol.MethodConfigBatchWrite, req, &resp); err != nil {
+		return ConfigWriteResponse{}, err
+	}
+	return resp, nil
 }
 
 type (

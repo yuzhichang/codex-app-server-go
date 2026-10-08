@@ -61,7 +61,6 @@ const (
 	MethodThreadGoalGet   = "thread/goal/get"
 
 	// Config mutations (slash-command equivalents)
-	MethodConfigUpdate = "config/update"
 
 	// Config CRUD RPCs
 	MethodConfigRead       = "config/read"

@@ -34,21 +34,21 @@ type AppConfig struct {
 
 // AppInfo mirrors the upstream `AppInfo` definition.
 type AppInfo struct {
-	AppMetadata         *AppMetadata   `json:"appMetadata,omitempty"`
-	Branding            *AppBranding   `json:"branding,omitempty"`
-	Description         string         `json:"description,omitempty"`
-	DistributionChannel string         `json:"distributionChannel,omitempty"`
-	IconAssets          map[string]any `json:"iconAssets,omitempty"`
-	IconDarkAssets      map[string]any `json:"iconDarkAssets,omitempty"`
-	ID                  string         `json:"id"`
-	InstallURL          string         `json:"installUrl,omitempty"`
-	IsAccessible        bool           `json:"isAccessible,omitempty"`
-	IsEnabled           bool           `json:"isEnabled,omitempty"`
-	Labels              map[string]any `json:"labels,omitempty"`
-	LogoURL             string         `json:"logoUrl,omitempty"`
-	LogoURLDark         string         `json:"logoUrlDark,omitempty"`
-	Name                string         `json:"name"`
-	PluginDisplayNames  []string       `json:"pluginDisplayNames,omitempty"`
+	AppMetadata         *AppMetadata      `json:"appMetadata,omitempty"`
+	Branding            *AppBranding      `json:"branding,omitempty"`
+	Description         string            `json:"description,omitempty"`
+	DistributionChannel string            `json:"distributionChannel,omitempty"`
+	IconAssets          map[string]string `json:"iconAssets,omitempty"`
+	IconDarkAssets      map[string]string `json:"iconDarkAssets,omitempty"`
+	ID                  string            `json:"id"`
+	InstallURL          string            `json:"installUrl,omitempty"`
+	IsAccessible        bool              `json:"isAccessible,omitempty"`
+	IsEnabled           bool              `json:"isEnabled,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	LogoURL             string            `json:"logoUrl,omitempty"`
+	LogoURLDark         string            `json:"logoUrlDark,omitempty"`
+	Name                string            `json:"name"`
+	PluginDisplayNames  []string          `json:"pluginDisplayNames,omitempty"`
 }
 
 // AppLinkConfig mirrors the upstream `AppLinkConfig` definition.
@@ -153,8 +153,8 @@ type AppToolsConfig = struct{}
 
 // ApplicationNetworkRequirements mirrors the upstream `ApplicationNetworkRequirements` definition.
 type ApplicationNetworkRequirements struct {
-	Domains map[string]any `json:"domains"`
-	Enabled bool           `json:"enabled"`
+	Domains map[string]NetworkDomainPermission `json:"domains"`
+	Enabled bool                               `json:"enabled"`
 }
 
 // ApplicationRequirements mirrors the upstream `ApplicationRequirements` definition.

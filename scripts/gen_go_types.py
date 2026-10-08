@@ -141,9 +141,21 @@ def go_type(spec: dict, defs: dict, optional: bool) -> str:
     if t == "array":
         return "[]" + go_type(spec.get("items", {}), defs, False)
     if t == "object":
+        # A typed map (`additionalProperties: {$ref: X}`) should keep its value type;
+        # collapsing it to map[string]any loses the shape callers need. ConfigReadResponse
+        # .origins is the motivating case: map[string]ConfigLayerMetadata, whose `version`
+        # is what optimistic concurrency (expectedVersion) is read from.
+        addl = spec.get("additionalProperties")
+        if isinstance(addl, dict):
+            ref = addl.get("$ref")
+            if isinstance(ref, str):
+                return "map[string]" + ref.split("/")[-1]
+            inner = go_type(addl, defs, False)
+            if inner != "struct{}":
+                return "map[string]" + inner
         # An object with no properties is an upstream empty response struct (`{}`), not a
         # free-form map.
-        if not isinstance(spec.get("properties"), dict) and "additionalProperties" not in spec:
+        if not isinstance(spec.get("properties"), dict) and addl is None:
             return "struct{}"
         return "map[string]any"
     if t is None and isinstance(spec.get("properties"), dict):

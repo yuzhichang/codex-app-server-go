@@ -26,7 +26,7 @@ func TestConfigReadRPC(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 
-	res, err := h.Client.ConfigRead(ctx, codexgo.ConfigReadRequest{
+	res, err := h.Client.ConfigRead(ctx, codexgo.ConfigReadParams{
 		CWD:           h.Workspace(),
 		IncludeLayers: true,
 	})
@@ -34,12 +34,18 @@ func TestConfigReadRPC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConfigRead: %v", err)
 	}
-	if len(res.Config) == 0 {
-		t.Fatal("ConfigRead returned empty config document")
+	// Config is the schema-derived schema.Config, not a raw document.
+	raw, err := json.Marshal(res.Config)
+	if err != nil {
+		t.Fatalf("marshalling config: %v", err)
 	}
-	// Config should be a JSON object.
-	if !json.Valid(res.Config) {
-		t.Fatalf("ConfigRead config is not valid JSON: %s", res.Config)
+	if len(raw) == 0 || string(raw) == "{}" {
+		t.Fatalf("ConfigRead returned an empty config document")
+	}
+	// origins maps each key path to the layer that supplied it, including that layer's
+	// version -- the value the setters feed back as expectedVersion.
+	if len(res.Origins) == 0 {
+		t.Fatal("ConfigRead returned no origins")
 	}
 }
 

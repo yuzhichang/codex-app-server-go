@@ -216,12 +216,24 @@ thread, _ := client.StartThread(ctx, codexgo.WithThreadModel("claude-opus-4-8"))
 
 ### Streaming
 
+`RunStreamed` returns a channel of `ThreadEvent`. Each carries the wire method in `Kind` and
+the decoded event in `Raw`, so switch on the latter for the typed form:
+
 ```go
 ch, _ := thread.RunStreamed(ctx, "Explain this codebase.")
-for delta := range ch {
-    fmt.Print(delta.Text)
+for ev := range ch {
+    switch e := ev.Raw.(type) {
+    case codexgo.ItemAgentMessageDeltaEvent:
+        fmt.Print(e.Text)
+    case codexgo.ItemCommandExecutionOutputDeltaEvent:
+        fmt.Fprint(os.Stderr, e.Output)
+    }
 }
 ```
+
+The channel closes when the turn ends. It can also close if this consumer falls far enough
+behind, which is why a long-lived reader should check `Err()` — see
+[Reliability](#event-delivery-never-blocks-the-publisher--and-it-can-refuse-you).
 
 ### Structured output
 
@@ -238,41 +250,36 @@ _, _ = client.WaitForStructuredOutput(ctx, thread.ID(), turn.ID, &out)
 
 ## Full Protocol Coverage
 
-Verified against **codex-cli `0.142.0`** · schema sha256 `935c753c…`
+The table in [What's Implemented](#whats-implemented) is generated from
+`gen/method-surface.json` and `gen/implemented-methods.json` and is verified by
+`make conformance-strict`, so it cannot drift from reality.
 
-| Axis | Covered | Total | % |
-|---|---:|---:|---:|
-| RPC request methods | 43 | 84 | **51%** |
-| Server notifications (typed-decoded) | 65 | 68 | **~96%** |
-| Full message surface | ~108 | 152 | **~71%** |
+There used to be a second, hand-written coverage table here. It claimed 51% of RPC methods
+and 0% of filesystem/MCP — off by more than a hundred methods — because two tables describing
+the same machine-checked data will always diverge. It has been removed rather than updated.
 
-**RPC by group:**
-
-| Group | Covered | Total | % |
-|---|---:|---:|---:|
-| Thread | 20 | 22 | 91% |
-| Turn | 3 | 4 | 75% |
-| Account | 3 | 4 | 75% |
-| Core + Review | 2 | 2 | 100% |
-| Models | 2 | 2 | 100% |
-| Config CRUD | 3 | 3 | 100% |
-| Skills | 3 | 3 | 100% |
-| Experimental | 2 | 2 | 100% |
-| Hooks | 1 | 1 | 100% |
-| Command exec (PTY) | 4 | 4 | 100% |
-| Filesystem | 0 | 10 | 0% |
-| Plugins / marketplace | 0 | 14 | 0% |
-| Misc | 0 | 7 | 0% |
-| MCP lifecycle | 0 | 4 | 0% |
-| Remote control | 0 | 2 | 0% |
-
-See [`gen/conformance-report.md`](gen/conformance-report.md) for the full method-by-method breakdown.
+For the method-by-method breakdown, see [`gen/conformance-report.md`](gen/conformance-report.md);
+for the anchor commit and schema revision, see
+[`internal/protocol/schema/version.go`](internal/protocol/schema/version.go).
 
 ## Documentation
 
 - [`docs/index.md`](docs/index.md) — guide, transports, SessionThread, wait helpers
 - [`docs/api-reference.md`](docs/api-reference.md) — full type & method reference
 - [`llms.txt`](llms.txt) / [`llms-full.txt`](llms-full.txt) — machine-readable references
+
+## Examples
+
+Runnable programs under [`examples/`](examples). Each is `package main`, so
+`go run ./examples/<name>` works.
+
+| Example | Shows |
+|---|---|
+| [`simple`](examples/simple) | the basics: find the binary, start a thread, run a prompt |
+| [`reconnect-supervisor`](examples/reconnect-supervisor) | `WithAutoReconnect`, and consuming the `sdk/*` recovery events |
+| [`approval-over-websocket`](examples/approval-over-websocket) | a `Dispatcher` that allows, denies and answers — and why refusing is not an error |
+| [`fs-and-mcp`](examples/fs-and-mcp) | the `fs/*` and `mcpServer*` RPCs, including the connection-scoped `fs/watch` |
+| [`streaming-to-sse`](examples/streaming-to-sse) | forwarding a turn to a browser, and handling a subscription that ends on its own |
 
 ## Protocol reference
 

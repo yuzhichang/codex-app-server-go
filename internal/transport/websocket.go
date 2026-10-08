@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"nhooyr.io/websocket"
 )
@@ -15,6 +16,9 @@ type WebSocketTransport struct {
 	url        string
 	headers    http.Header
 	httpClient *http.Client
+
+	// pingInterval is the keepalive period. Zero means the default; <= 0 disables pings.
+	pingInterval time.Duration
 
 	conn    *websocket.Conn
 	mu      sync.Mutex
@@ -57,14 +61,26 @@ func WithWSHTTPClient(c *http.Client) WSOption {
 	return func(w *WebSocketTransport) { w.httpClient = c }
 }
 
+// defaultWSPingInterval is the WebSocket keepalive period. Long-lived connections through
+// proxies and load balancers are otherwise dropped silently: the socket looks open but no
+// traffic flows, and the failure only surfaces on the next RPC.
+const defaultWSPingInterval = 30 * time.Second
+
+// WithWSPingInterval overrides the keepalive period. A value <= 0 disables pings, which is
+// useful against servers that do not answer control frames.
+func WithWSPingInterval(d time.Duration) WSOption {
+	return func(w *WebSocketTransport) { w.pingInterval = d }
+}
+
 // NewWebSocket dials the given ws:// URL and starts the read loop.
 func NewWebSocket(ctx context.Context, url string, opts ...WSOption) (*WebSocketTransport, error) {
 	w := &WebSocketTransport{
-		url:      url,
-		pending:  make(map[uint64]chan callResult),
-		requests: make(chan *Request, 32),
-		notes:    make(chan Notification, 32),
-		done:     make(chan struct{}),
+		url:          url,
+		pending:      make(map[uint64]chan callResult),
+		requests:     make(chan *Request, 32),
+		notes:        make(chan Notification, 32),
+		done:         make(chan struct{}),
+		pingInterval: defaultWSPingInterval,
 	}
 	for _, opt := range opts {
 		opt(w)
@@ -84,7 +100,43 @@ func NewWebSocket(ctx context.Context, url string, opts ...WSOption) (*WebSocket
 	loopCtx, cancel := context.WithCancel(context.Background())
 	w.cancel = cancel
 	go w.readLoop(loopCtx)
+	if w.pingInterval > 0 {
+		go w.pingLoop(loopCtx)
+	}
 	return w, nil
+}
+
+// pingLoop keeps the connection honest. A connection that a proxy has silently dropped still
+// looks open to the OS, so without an application-level ping the failure is only discovered
+// when the next RPC is attempted -- possibly minutes later.
+//
+// A failed ping terminates the transport, which is what lets ReconnectingWS notice and
+// re-dial instead of waiting for traffic that will never arrive.
+func (w *WebSocketTransport) pingLoop(ctx context.Context) {
+	ticker := time.NewTicker(w.pingInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-w.done:
+			return
+		case <-ticker.C:
+			// Serialised against ordinary writes: the ping is a write, and the pong has to
+			// be read by readLoop, which is already running.
+			w.writeMu.Lock()
+			pingCtx, cancel := context.WithTimeout(ctx, w.pingInterval)
+			err := w.conn.Ping(pingCtx)
+			cancel()
+			w.writeMu.Unlock()
+
+			if err != nil {
+				w.terminate()
+				return
+			}
+		}
+	}
 }
 
 func (w *WebSocketTransport) readLoop(ctx context.Context) {

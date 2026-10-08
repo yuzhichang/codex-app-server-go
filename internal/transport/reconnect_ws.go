@@ -15,6 +15,10 @@ type ReconnectingWS struct {
 
 	mu      sync.RWMutex
 	current *WebSocketTransport
+	// ready is closed while `current` is usable and replaced with a fresh open channel the
+	// moment the current connection is observed dead, so Call can wait out a re-dial rather
+	// than being handed the dead transport.
+	ready chan struct{}
 
 	notes    chan Notification
 	requests chan *Request
@@ -36,10 +40,12 @@ func NewReconnectingWS(ctx context.Context, url string, opts ...WSOption) (*Reco
 		url:      url,
 		opts:     opts,
 		current:  first,
+		ready:    make(chan struct{}),
 		notes:    make(chan Notification, 32),
 		requests: make(chan *Request, 32),
 		done:     make(chan struct{}),
 	}
+	close(r.ready) // the initial connection is usable
 	go r.fanNotifications(first)
 	go r.fanRequests(first)
 	go r.watchLoop()
@@ -69,6 +75,12 @@ func (r *ReconnectingWS) watchLoop() {
 			return
 		}
 
+		// Mark not-ready before re-dialing: from here until the replacement is installed,
+		// Call must wait rather than use the dead transport.
+		r.mu.Lock()
+		r.ready = make(chan struct{})
+		r.mu.Unlock()
+
 		// Re-dial, retrying with back-off until it succeeds or we close.
 		var next *WebSocketTransport
 		for {
@@ -95,6 +107,7 @@ func (r *ReconnectingWS) watchLoop() {
 
 		r.mu.Lock()
 		r.current = next
+		close(r.ready)
 		r.mu.Unlock()
 
 		go r.fanNotifications(next)
@@ -146,12 +159,31 @@ func (r *ReconnectingWS) fanRequests(t *WebSocketTransport) {
 	}
 }
 
-// Call delegates to the current inner transport.
+// Call delegates to the current inner transport, waiting out a re-dial if one is in progress.
+//
+// The wait matters: during the window between a connection dropping and its replacement being
+// installed, `current` still points at the dead transport, so a naive delegation would fail
+// immediately -- or hang on a socket that will never carry anything again. Callers that want
+// the failure surfaced instead of absorbed should pass a ctx with a deadline.
 func (r *ReconnectingWS) Call(ctx context.Context, method string, params any, result any) error {
-	r.mu.RLock()
-	cur := r.current
-	r.mu.RUnlock()
-	return cur.Call(ctx, method, params, result)
+	for {
+		r.mu.RLock()
+		ready := r.ready
+		r.mu.RUnlock()
+
+		select {
+		case <-ready:
+			// Read current *after* readiness: it may have been replaced while we waited.
+			r.mu.RLock()
+			cur := r.current
+			r.mu.RUnlock()
+			return cur.Call(ctx, method, params, result)
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-r.done:
+			return ErrClosed
+		}
+	}
 }
 
 // Notify delegates to the current inner transport.

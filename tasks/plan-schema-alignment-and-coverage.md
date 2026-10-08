@@ -416,6 +416,26 @@
 
 **能力缺口（GAP）仍未分诊**：共 73 个缺失字段，最多为 `ThreadForkParams`(14)、`ThreadListParams`(11)、`ThreadForkResponse`(10)、`ThreadStartParams`(9)、`Thread`(8)、`TurnStartParams`(7)。性质是"**用户无法表达**"而非"发错值"。
 
+### T1.2 剩余部分（清理，非修 bug）—— 已度量，**不建议直接开工**
+
+**度量方法**：把生成器输出到**空目录**（`existing={}` 被清空）得到"整个 surface 能生成什么"，再与手写子集比对。
+
+| | 数 |
+|---|---|
+| `client_types_gen.go` 手写类型 | 58（794 行） |
+| 生成器**也能产出** | **52** |
+| 其中与手写**逐字节相同** | **23**（纯重复，删除零行为变化） |
+| 必须手写 | 6（`AskForApprovalGranular`/`CommandExecutionApprovalDecision`/`FileChangeApprovalDecision`/`InitializeResponse`/`ItemKind`/`PermissionGrantScope`，均已在名称白名单） |
+
+> ⚠️ **不能整体迁移 —— 会回退三个真实修复。** 生成器把 **tagged union 退化为 `json.RawMessage`**：
+> `type SandboxPolicy = json.RawMessage`、`type AskForApproval = json.RawMessage`、`type ReviewTarget = json.RawMessage`。
+> 而这三个手写版本是**判别结构体**，正是 `fadc033`/`51c2260`/`dc46d71` 三个 commit 修的东西（`sandboxPolicy` 对象 vs 字符串、`ApprovalMode` 混两个枚举、`ReviewStartParams` 缺 required 的 `target`）。
+> **先让生成器会产出判别联合体，再谈迁移**；否则迁移就是回退。
+>
+> ⚠️ **另一处使迁移非机械的原因**：生成器的注释曾声称"被跳过的类型仍会被遍历"，**但代码并不遍历** —— 遍历从 `wanted` 出发，而 `wanted` 已排除 `existing`。后果：**仅被其它手写类型引用的类型，删掉后不会被重新生成**，且失败是静默的（生成器什么都不产出，编译器报未定义名）。因此迁移必须**按引用链整体进行**，不能逐类型删。注释已更正。
+
+**结论**：这是**清理**而非正确性工作，且需要先补生成器的判别联合体能力。不建议在无明确目标时开工。
+
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：

@@ -231,8 +231,19 @@ def main() -> int:
 
     # Never emit a type the package already declares. `client_types_gen.go` still holds the
     # hand-written subset, and a handful of those (e.g. PluginSkillReadParams) already match
-    # upstream -- re-emitting them would not compile. Skipped names are still traversed, so
-    # references from generated types resolve to the existing declaration.
+    # upstream -- re-emitting them would not compile.
+    #
+    # An earlier version of this comment claimed skipped names are still traversed. They are
+    # NOT: the traversal below walks outward from `wanted`, which already excludes `existing`,
+    # so nothing behind a hand-written declaration is ever reached. This matters when
+    # migrating a type out of client_types_gen.go: a type referenced only by another
+    # hand-written type will NOT be regenerated, the reference chain has to be removed as a
+    # unit, and the failure is silent -- the generator just emits nothing and the package
+    # fails to compile on the now-undefined name.
+    #
+    # (Excluding existing types from traversal is deliberate: dragging them back in as
+    # transitive dependencies produced duplicate AbsolutePathBuf / SkillSummary declarations.
+    # The behaviour is right; only the comment was wrong.)
     existing: set[str] = set()
     if dest.parent.is_dir():
         for path in dest.parent.glob("*.go"):

@@ -43,6 +43,34 @@ func (e *RPCError) Error() string {
 type Notification struct {
 	Method string
 	Params json.RawMessage
+	// EmittedAtMs is the envelope-level timestamp upstream attaches to a notification.
+	//
+	// It is a SIBLING of `method`/`params` on the wire --
+	// {"method":...,"params":{...},"emittedAtMs":123} -- because upstream flattens the
+	// notification and adds the field alongside it. It is therefore NOT part of Params, and
+	// was silently dropped by every reader that only looked at raw["params"]. Zero means the
+	// server did not send one.
+	//
+	// Covered by the WebSocket and HTTP read loops. NOT covered on stdio, which is backed by
+	// jrpc2: it parses the envelope itself and exposes only method and params, so a sibling
+	// field never reaches the SDK there. Use WebSocket if the timestamp matters.
+	EmittedAtMs int64
+}
+
+// envelopeEmittedAtMs extracts the envelope-level timestamp from a raw notification.
+//
+// Centralised so the three read loops (websocket, http, jsonrpc) cannot drift: a field that
+// is easy to forget once is easy to forget in two of three places.
+func envelopeEmittedAtMs(raw map[string]json.RawMessage) int64 {
+	value, ok := raw["emittedAtMs"]
+	if !ok {
+		return 0
+	}
+	var ms int64
+	if err := json.Unmarshal(value, &ms); err != nil {
+		return 0
+	}
+	return ms
 }
 
 // DecodeParams decodes the notification params into v.
@@ -402,7 +430,7 @@ func (t *JSONRPCTransport) readLoop(conn io.ReadWriteCloser, sid uint64, ctx con
 					return
 				}
 			} else {
-				if !t.deliverNotification(sid, Notification{Method: method, Params: params}) {
+				if !t.deliverNotification(sid, Notification{Method: method, Params: params, EmittedAtMs: envelopeEmittedAtMs(raw)}) {
 					return
 				}
 			}

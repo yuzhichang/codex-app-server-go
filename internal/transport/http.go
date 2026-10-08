@@ -238,7 +238,7 @@ func (h *HTTPTransport) dispatch(ctx context.Context, data []byte) bool {
 	}
 
 	select {
-	case h.notes <- Notification{Method: method, Params: params}:
+	case h.notes <- Notification{Method: method, Params: params, EmittedAtMs: envelopeEmittedAtMs(raw)}:
 		return true
 	case <-h.done:
 		return false

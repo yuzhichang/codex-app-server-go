@@ -206,7 +206,7 @@ func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...T
 				if !eventMatchesTurn(event, t.threadID, turn.ID) {
 					continue
 				}
-				te := ThreadEvent{Kind: event.Method, Raw: event.Value}
+				te := ThreadEvent{Kind: event.Method, Raw: event.Value, EmittedAtMs: event.EmittedAtMs}
 				select {
 				case out <- te:
 				case <-ctx.Done():

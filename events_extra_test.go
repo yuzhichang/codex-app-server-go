@@ -68,7 +68,7 @@ func TestDecodeExtraNotifications(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.method, func(t *testing.T) {
-			ev := decodeEvent(tc.method, json.RawMessage(tc.raw))
+			ev := decodeEvent(tc.method, json.RawMessage(tc.raw), 0)
 			if ev.Method != tc.method {
 				t.Fatalf("method = %q, want %q", ev.Method, tc.method)
 			}

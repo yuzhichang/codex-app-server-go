@@ -281,7 +281,7 @@
 - ✅ **T1.2 部分落地**：新增 `scripts/gen_go_types.py` + `make generate-types`，从 vendor 的聚合 schema 生成 Go 类型（**只生成 SDK 缺失的定义**，避免与 `client_types_gen.go` 的既有 55 个手写结构体冲突；全量替换仍属 T1.2 剩余工作）。已处理 schemars 的两个坑：单元素 `allOf` 包裹的 `$ref` 必须解包（否则每个带 description 的路径字段都会退化成 `json.RawMessage`），以及无 properties 的 `object` 应生成 `struct{}` 而非 `map[string]any`。
 - ✅ **§5.2 fs 完成（9 RPC + 1 通知）**：`fs.go` 提供 `FSReadFile`/`FSWriteFile`/`FSCreateDirectory`/`FSGetMetadata`/`FSReadDirectory`/`FSRemove`/`FSCopy`/`FSWatch`/`FSUnwatch`，外加 `FSReadFileBytes`/`FSWriteFileBytes` 做 base64 往返。`fs/changed` 通知**此前已实现**（`events_extra.go` 早有 `FsChangedEvent` 与解码分支）——即通知面先于 RPC 面存在。
 - ✅ **§5.3 MCP 完成（5 RPC）**：`mcp.go` 提供 `MCPServerOauthLogin`/`MCPServerStatusList`/`MCPServerResourceRead`/`MCPServerToolCall`/`ConfigMCPServerReload`；两个通知 (`mcpServer/oauthLogin/completed`、`mcpServer/startupStatus/updated`) 同样**此前已实现**。
-- ⏳ **MCP elicitation 待办**：`mcpServer/elicitation/request` 的方法本身是 **stable**，但其**载荷类型完全不在 vendor 的 schema 里** —— 因为 `McpServerElicitationRequestParams.request` 带 `#[experimental(nested)]`，导出一并省略。因此这几个类型必须**照 Rust 源码手写**（属"真正需要才自造"的正当情形，需在 `gen/type-allowlist.json` 登记理由），并同时完成 `item/mcp/requestApproval` → `mcpServer/elicitation/request` 的 dispatcher 替换（R3/D3）。
+- ✅ **MCP elicitation 已实施**（`f5f43e0`）：`Dispatcher.Elicitation` 已接线；`item/mcp/requestApproval` → `mcpServer/elicitation/request` 替换完成；无 handler 时回 **decline**（R9）。类型**必须手写**的原因仍然成立：`mcpServer/elicitation/request` 的方法本身是 **stable**，但其**载荷类型完全不在 vendor 的 schema 里** —— 因为 `McpServerElicitationRequestParams.request` 带 `#[experimental(nested)]`，导出一并省略。因此这几个类型必须**照 Rust 源码手写**（属"真正需要才自造"的正当情形，需在 `gen/type-allowlist.json` 登记理由），并同时完成 `item/mcp/requestApproval` → `mcpServer/elicitation/request` 的 dispatcher 替换（R3/D3）。
 - ⚠️ **门禁自身修了一个会漏报的 bug**：`coverage_gate.py` 原来用**硬编码文件清单**判断 client_method 的接线证据，导致实现于新文件（`fs.go`/`mcp.go`）的方法**完全不可见**（80 项被漏报）。已改为**按角色定位**：client_method = 除解码层/处理层与生成物之外的任意调用点；notification_decoder / server_request_handler 仍限定在各自层次内。修复后 implemented **60 → 74**。
 
 ### M4 实施状态（2026-10-08）
@@ -468,16 +468,16 @@
 - ✅ **T2.2 会话重建（已实施，含一处与原设计的偏离）**：新增 `sessionSupervisor`（`supervisor.go`）—— 监听**传输层重连信号** → **重跑 `initialize`+`initialized`** → 对**期望订阅集**内每个 thread 调 `thread/resume`；提供 `WithAutoReconnect`。
   - ⚠️ **偏离原设计**：原计划写"监听 `Done()` → 重拨"，但 `ReconnectingWS.Done()` **只在永久关闭时关闭**，连接掉线时并不关闭（重拨是透明的）。故改为在传输层新增 **`Reconnects() <-chan struct{}`**（每次重拨成功后触发一次，cap=1 合并），supervisor 消费它。这也修正了一个概念错误：**"重拨"≠"会话恢复"** —— 重拨只恢复 socket，而 app-server 把新连接视为**全新客户端**；不重跑握手就会在服务端没有会话的连接上继续发请求（更糟的是可能"看起来成功"，实际打在空会话上）。
   - ✅ `WithAutoReconnect` 在传输**无法报告重连**时**显式报错**（而非静默无效），否则调用方会误以为会话在被恢复。
-  - ⏳ **未实施**：事件缺口回填（`thread/turns/list` + `thread/items/list`）。重连后**不重放**丢失的通知，只恢复握手与 thread 订阅；上游无重放，回填需自行拉取历史。
+  - ✅ **事件缺口回填已实施**：`sdk/sessionBackfilled` 携带**每个已恢复 thread 的权威历史**（`thread/turns/list`）。**刻意是"历史"而非"重放错过的通知"** —— 若发出线路形状的事件，将与实时通知无法区分，**在断连前已收到部分 turn 的消费者会重复计数**；契约是"按 turn id 合并"。默认每 thread 20 个 turn，`WithSessionBackfill(n)` 可调、`0` 禁用。
+    - ⚠️ 采用 `thread/turns/list` 时暴露一个**真 bug**：`schema.Turn` 曾把 `startedAt`/`completedAt` 类型化为 `*time.Time`，而**上游发 int64 Unix 秒** ⇒ **真实 turn 解码失败**，回填对任何带时间戳的 turn 都不会触发。原测试 fixture 恰好**没有时间戳**，故未暴露。已修（`Turn` 改为生成）并补真实时间戳断言。
 - **T2.3 在途操作**：修正 `retry.go:125-127`（`ErrClosed` 不可重试导致掉线瞬间全硬失败）；区分只读可重试 / 写不重试；`Notify` 与 server-request 回包不重试。
 - ✅ **T2.4 审批跨重连（已实施）**：`requestLoop` 原先用 `_ = req.Reply(...)` **丢弃所有回包错误** —— 这是**处理器自身无法察觉**的失效：它可能已经做出决定（甚至批准了命令），而该决定被丢弃。现检查回包错误并发出 `sdk/pendingApprovalLost`（含 method 与尽力提取的 thread/turn id）；同一请求的**二次回包被过滤**（那是编程错误，不是"落空"）。
   - ⚠️ **覆盖范围caveat（已写在调用点注释）**：stdio 传输底层是 jrpc2，它把回包交给自己的 channel，因此那里丢失的回包可能表现为**正常返回**。故 WebSocket/HTTP 上检测可靠，stdio 上为**尽力而为**。
   - ⏳ 未做：approval 可配置超时。
 - ✅ **T2.5 可观测性事件（已完成）**：`ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）/ `UnhandledServerRequestEvent` / `PendingApprovalLostEvent`。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
   - ✅ `EventsLostError`/`EventsLostEvent` 新增 **`GapFrom`/`GapTo`**：界定被丢弃事件的时间窗口。**刻意用时间戳而非序号** —— 上游通知**不带序号**，"按位置命名缺口"根本无法导出；时间是**可导出**的，且足以把丢失与同期发生的事关联起来。窗口只覆盖**终止时仍在排队**的事件（已交给消费者的事件不算丢失 —— 测试显式钉住了这点，我第一版断言就把一个**已经投递**的事件算了进去）。
-  - ⏳ **未做**：跨重连**重放**丢失的通知（上游无重放，需经 `thread/turns/list` + `thread/items/list` 回填历史，属独立工作）。
-- ✅ **T2.5 可观测性事件（部分已实施）**：已实现 `ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**（`sdk/reconnectStarted` 等）投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
-  - ⏳ 未实施：`EventsLost{GapFrom, GapTo}`（丢失量目前由 `EventsLostError.LostCount` 报告，但无"缺口区间"语义）、`PendingApprovalLost`、`UnhandledServerRequest`。
+  - ✅ **跨重连的缺口已由回填覆盖**（见上）；上游无重放，故回填是唯一手段。
+
 
 - **T2.6 事件投递：不静默丢、关闭有界、可观测（超时默认 5s）— 按 A2/A3/A8 重设计**
 

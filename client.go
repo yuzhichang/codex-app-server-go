@@ -791,7 +791,7 @@ func (c *Client) notificationLoop(ch <-chan transport.Notification) {
 		return
 	}
 	for note := range ch {
-		c.events.publish(decodeEvent(note.Method, note.Params))
+		c.events.publish(decodeEvent(note.Method, note.Params, note.EmittedAtMs))
 	}
 	c.events.close()
 }

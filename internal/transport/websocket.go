@@ -180,7 +180,7 @@ func (w *WebSocketTransport) readLoop(ctx context.Context) {
 			} else {
 				// Notification.
 				select {
-				case w.notes <- Notification{Method: method, Params: params}:
+				case w.notes <- Notification{Method: method, Params: params, EmittedAtMs: envelopeEmittedAtMs(raw)}:
 				case <-w.done:
 					return
 				}

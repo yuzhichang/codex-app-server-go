@@ -122,6 +122,12 @@ type Event struct {
 	Method string
 	Raw    json.RawMessage
 	Value  any
+	// EmittedAtMs is the server's envelope-level timestamp for this notification, in Unix
+	// milliseconds. Zero when the server sent none -- notably on the stdio transport, where
+	// jrpc2 parses the envelope itself and sibling fields never reach the SDK.
+	//
+	// It is NOT a client-side arrival time: a gap in delivery can be measured against it.
+	EmittedAtMs int64
 }
 
 // Decode unmarshals the raw notification payload into v.
@@ -141,12 +147,15 @@ func (e Event) Decode(v any) error {
 type ThreadEvent struct {
 	Kind string
 	Raw  any
+	// EmittedAtMs mirrors Event.EmittedAtMs; zero when the server sent no timestamp.
+	EmittedAtMs int64
 }
 
-func decodeEvent(method string, raw json.RawMessage) Event {
+func decodeEvent(method string, raw json.RawMessage, emittedAtMs int64) Event {
 	event := Event{
-		Method: method,
-		Raw:    cloneRawMessage(raw),
+		Method:      method,
+		Raw:         cloneRawMessage(raw),
+		EmittedAtMs: emittedAtMs,
 	}
 
 	var target any

@@ -13,8 +13,12 @@ type TurnResult struct {
 	Turn Turn
 	// Items accumulates all items observed during the turn via streaming events.
 	Items []Item
-	// Usage is the token-usage snapshot from the TurnCompleted event, if present.
-	Usage *TokenUsage
+	// Usage is the latest per-thread token-usage snapshot observed during the turn.
+	//
+	// It comes from the `thread/tokenUsage/updated` notification: upstream carries usage
+	// nowhere else (turn/completed sends only {threadId, turn}), so this is nil unless that
+	// notification arrived.
+	Usage *ThreadTokenUsage
 	// Error is the structured error from the TurnCompleted event, if any.
 	Error *TurnError
 	// DeltaText holds agent-message text reconstructed from streaming delta events.

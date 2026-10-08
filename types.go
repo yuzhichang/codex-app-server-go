@@ -38,7 +38,8 @@ type (
 	TurnStatus             = protocol.TurnStatus
 	TurnItemsView          = protocol.TurnItemsView
 	ItemKind               = protocol.ItemKind
-	TokenUsage             = protocol.TokenUsage
+	ThreadTokenUsage       = protocol.ThreadTokenUsage
+	TokenUsageBreakdown    = protocol.TokenUsageBreakdown
 	TurnError              = protocol.TurnError
 
 	// Filesystem RPC types (fs/*).

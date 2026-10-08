@@ -61,17 +61,16 @@ func TestReal_TurnUsage(t *testing.T) {
 	if _, err := client.WaitForFinalAgentMessage(ctx, thread.ID(), result.Turn.ID); err != nil {
 		t.Fatalf("WaitForFinalAgentMessage: %v", err)
 	}
-	turn, err := client.TurnRead(ctx, thread.ID(), result.Turn.ID)
-	if err != nil {
+	if _, err := client.TurnRead(ctx, thread.ID(), result.Turn.ID); err != nil {
 		t.Fatalf("TurnRead: %v", err)
 	}
-	// The localdev server does not populate usage in the turn read response.
-	// Skip rather than fail so the suite stays green while noting the gap.
-	if turn.Usage == nil {
-		t.Skip("server did not return usage for the turn; skipping usage assertion")
+	// Usage is not part of the turn read response: upstream carries it on
+	// thread/tokenUsage/updated, which TurnResult.Usage reflects.
+	if result.Usage == nil {
+		t.Skip("server did not send thread/tokenUsage/updated; skipping usage assertion")
 	}
-	if turn.Usage.InputTokens <= 0 {
-		t.Fatalf("Usage.InputTokens = %d, want > 0", turn.Usage.InputTokens)
+	if result.Usage.Total.TotalTokens <= 0 {
+		t.Fatalf("Usage.Total.TotalTokens = %d, want > 0", result.Usage.Total.TotalTokens)
 	}
 }
 

@@ -942,12 +942,27 @@ func TestMockServerThreadTokenUsageEvent(t *testing.T) {
 
 	time.Sleep(20 * time.Millisecond)
 
+	// Upstream shape: {threadId, turnId, tokenUsage:{last,total,modelContextWindow}}.
+	// The flat `usage` document this test used to send is not what the server emits.
 	_ = mock.Notify("thread/tokenUsage/updated", map[string]any{
 		"threadId": "t30",
-		"usage": map[string]any{
-			"inputTokens":  1000,
-			"outputTokens": 200,
-			"totalTokens":  1200,
+		"turnId":   "turn-30",
+		"tokenUsage": map[string]any{
+			"last": map[string]any{
+				"cachedInputTokens":     100,
+				"inputTokens":           1000,
+				"outputTokens":          200,
+				"reasoningOutputTokens": 50,
+				"totalTokens":           1200,
+			},
+			"total": map[string]any{
+				"cachedInputTokens":     400,
+				"inputTokens":           4000,
+				"outputTokens":          800,
+				"reasoningOutputTokens": 200,
+				"totalTokens":           4800,
+			},
+			"modelContextWindow": 128000,
 		},
 	})
 
@@ -960,8 +975,20 @@ func TestMockServerThreadTokenUsageEvent(t *testing.T) {
 		if !ok {
 			t.Fatalf("event.Value type = %T", event.Value)
 		}
-		if typed.Usage == nil || typed.Usage.InputTokens != 1000 {
-			t.Fatalf("unexpected usage: %+v", typed.Usage)
+		if typed.TurnID != "turn-30" {
+			t.Errorf("turnId = %q, want turn-30", typed.TurnID)
+		}
+		if typed.TokenUsage == nil {
+			t.Fatal("tokenUsage was not decoded")
+		}
+		if typed.TokenUsage.Last.InputTokens != 1000 {
+			t.Errorf("last.inputTokens = %d, want 1000", typed.TokenUsage.Last.InputTokens)
+		}
+		if typed.TokenUsage.Total.TotalTokens != 4800 {
+			t.Errorf("total.totalTokens = %d, want 4800", typed.TokenUsage.Total.TotalTokens)
+		}
+		if typed.TokenUsage.ModelContextWindow != 128000 {
+			t.Errorf("modelContextWindow = %d, want 128000", typed.TokenUsage.ModelContextWindow)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("timeout waiting for token usage event")

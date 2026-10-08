@@ -103,13 +103,6 @@ const (
 
 // --- Shared data types ---
 
-type TokenUsage struct {
-	InputTokens     int64 `json:"inputTokens,omitempty"`
-	OutputTokens    int64 `json:"outputTokens,omitempty"`
-	TotalTokens     int64 `json:"totalTokens,omitempty"`
-	ReasoningTokens int64 `json:"reasoningTokens,omitempty"`
-}
-
 type TurnError struct {
 	Message string          `json:"message,omitempty"`
 	Code    string          `json:"code,omitempty"`
@@ -134,10 +127,15 @@ type ThreadItem struct {
 	Type ItemKind `json:"type"`
 }
 
-// Turn mirrors the Turn definition from the schema.
+// Turn mirrors the upstream Turn definition.
 // For the full runtime type with flexible time parsing, see protocol.Turn.
+//
+// There is deliberately no Usage field: upstream Turn carries none, and turn/completed
+// sends only {threadId, turn}. Usage arrives on thread/tokenUsage/updated as
+// ThreadTokenUsage.
 type Turn struct {
 	ID          string        `json:"id,omitempty"`
+	RootTurnID  *string       `json:"rootTurnId,omitempty"`
 	Items       []ThreadItem  `json:"items,omitempty"`
 	ItemsView   TurnItemsView `json:"itemsView,omitempty"`
 	Status      TurnStatus    `json:"status,omitempty"`
@@ -145,7 +143,6 @@ type Turn struct {
 	StartedAt   *time.Time    `json:"startedAt,omitempty"`
 	CompletedAt *time.Time    `json:"completedAt,omitempty"`
 	DurationMS  int64         `json:"durationMs,omitempty"`
-	Usage       *TokenUsage   `json:"usage,omitempty"`
 }
 
 // Thread mirrors the Thread definition from the schema.

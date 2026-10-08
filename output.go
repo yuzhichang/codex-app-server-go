@@ -129,7 +129,7 @@ type outputCollector struct {
 	items           []Item
 	itemPayloads    [][]byte
 	agentTextDeltas []string
-	eventUsage      *TokenUsage // captured from TurnCompletedEvent.Usage (top-level field)
+	eventUsage      *ThreadTokenUsage // captured from the thread/tokenUsage/updated notification
 }
 
 func (c *outputCollector) captureTurn(turn Turn) {
@@ -164,8 +164,10 @@ func (c *outputCollector) captureEvent(event Event) {
 		if v.Turn != nil {
 			c.captureTurn(*v.Turn)
 		}
-		if v.Usage != nil {
-			c.eventUsage = v.Usage
+	case ThreadTokenUsageUpdatedEvent:
+		// The only channel that carries usage; turn/completed does not.
+		if v.TokenUsage != nil {
+			c.eventUsage = v.TokenUsage
 		}
 	}
 }
@@ -191,7 +193,7 @@ func (c *Client) retryReadTurnForItems(ctx context.Context, threadID, turnID str
 		}
 		col.captureTurn(refreshed)
 		best = refreshed
-		if len(refreshed.Items) > 0 || refreshed.Usage != nil {
+		if len(refreshed.Items) > 0 || col.eventUsage != nil {
 			return best
 		}
 	}

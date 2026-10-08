@@ -116,7 +116,6 @@ type Turn struct {
 	StartedAt   *time.Time      `json:"startedAt,omitempty"`
 	CompletedAt *time.Time      `json:"completedAt,omitempty"`
 	DurationMS  int64           `json:"durationMs,omitempty"`
-	Usage       *TokenUsage     `json:"usage,omitempty"`
 	Raw         json.RawMessage `json:"-"`
 }
 
@@ -130,7 +129,6 @@ func (t *Turn) UnmarshalJSON(data []byte) error {
 		StartedAt   *flexibleTime   `json:"startedAt,omitempty"`
 		CompletedAt *flexibleTime   `json:"completedAt,omitempty"`
 		DurationMS  int64           `json:"durationMs,omitempty"`
-		Usage       *TokenUsage     `json:"usage,omitempty"`
 	}
 	var v alias
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -143,7 +141,6 @@ func (t *Turn) UnmarshalJSON(data []byte) error {
 		Status:     v.Status,
 		Error:      v.Error,
 		DurationMS: v.DurationMS,
-		Usage:      v.Usage,
 	}
 	if v.StartedAt != nil {
 		t.StartedAt = &v.StartedAt.Time

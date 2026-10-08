@@ -139,15 +139,10 @@ func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOptio
 		items = collector.items
 	}
 
-	usage := completed.Usage
-	if usage == nil {
-		usage = collector.eventUsage
-	}
-
 	result := &TurnResult{
 		Turn:  completed,
 		Items: items,
-		Usage: usage,
+		Usage: collector.eventUsage,
 	}
 	if len(completed.Error) > 0 && string(completed.Error) != "null" {
 		var turnErr TurnError

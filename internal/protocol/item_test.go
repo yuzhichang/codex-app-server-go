@@ -81,7 +81,6 @@ func TestThreadMarshalRoundTrip(t *testing.T) {
 			{
 				ID:     "turn_1",
 				Status: TurnStatusCompleted,
-				Usage:  &TokenUsage{InputTokens: 12, OutputTokens: 7, TotalTokens: 19},
 			},
 		},
 	}
@@ -99,7 +98,7 @@ func TestThreadMarshalRoundTrip(t *testing.T) {
 	if decoded.ID != original.ID || decoded.Preview != original.Preview || decoded.Status != original.Status {
 		t.Fatalf("decoded mismatch: %+v", decoded)
 	}
-	if len(decoded.Turns) != 1 || decoded.Turns[0].ID != "turn_1" || decoded.Turns[0].Usage == nil || decoded.Turns[0].Usage.TotalTokens != 19 {
+	if len(decoded.Turns) != 1 || decoded.Turns[0].ID != "turn_1" || decoded.Turns[0].Status != TurnStatusCompleted {
 		t.Fatalf("turn mismatch: %+v", decoded.Turns)
 	}
 }

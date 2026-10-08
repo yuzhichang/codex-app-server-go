@@ -332,8 +332,13 @@ const (
 	PluginAuthPolicyONUSE     PluginAuthPolicy = "ON_USE"
 )
 
-// PluginAvailability mirrors the upstream `PluginAvailability` definition.
-type PluginAvailability = json.RawMessage
+// PluginAvailability mirrors the upstream `PluginAvailability` enum.
+type PluginAvailability string
+
+const (
+	PluginAvailabilityDISABLEDBYADMIN PluginAvailability = "DISABLED_BY_ADMIN"
+	PluginAvailabilityAVAILABLE       PluginAvailability = "AVAILABLE"
+)
 
 // PluginDetail mirrors the upstream `PluginDetail` definition.
 type PluginDetail struct {
@@ -667,8 +672,9 @@ type PluginSkillReadResponse struct {
 // PluginSource mirrors the upstream `PluginSource` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (git, local, npm, remote).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -731,8 +737,9 @@ type PluginsMigration struct {
 // ScheduledTaskSchedule mirrors the upstream `ScheduledTaskSchedule` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (daily, hourly, weekdays, weekly).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -784,5 +791,11 @@ type SkillInterface struct {
 	ShortDescription string           `json:"shortDescription,omitempty"`
 }
 
-// ToolExposureSurface mirrors the upstream `ToolExposureSurface` definition.
-type ToolExposureSurface = json.RawMessage
+// ToolExposureSurface mirrors the upstream `ToolExposureSurface` enum.
+type ToolExposureSurface string
+
+const (
+	ToolExposureSurfaceCodeMode ToolExposureSurface = "code_mode"
+	ToolExposureSurfaceDeferred ToolExposureSurface = "deferred"
+	ToolExposureSurfaceDirect   ToolExposureSurface = "direct"
+)

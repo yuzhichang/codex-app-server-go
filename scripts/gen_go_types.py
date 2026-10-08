@@ -171,6 +171,34 @@ def _enum_type_name(spec: dict) -> str:
     return spec.get("title") or ""
 
 
+def _string_enum_union(spec: dict):
+    """Return the merged values of a union whose arms are all string enums, else None.
+
+    Upstream documents `AuthMode` as oneOf of five single-value enums rather than one enum
+    with five values, and `ReasoningSummary` as two arms of three and one. The union of those
+    values is exactly a string enum, so it can be emitted as one -- no behaviour is lost, and
+    the type stops degrading to json.RawMessage.
+    """
+    variants = None
+    for key in ("oneOf", "anyOf"):
+        if isinstance(spec.get(key), list) and spec[key]:
+            variants = spec[key]
+            break
+    if variants is None:
+        return None
+    values: list[str] = []
+    for variant in variants:
+        if not isinstance(variant, dict) or variant.get("type") != "string":
+            return None
+        enum = variant.get("enum")
+        if not isinstance(enum, list) or not all(isinstance(v, str) for v in enum):
+            return None
+        for v in enum:
+            if v not in values:
+                values.append(v)
+    return values or None
+
+
 def _tagged_union(spec: dict):
     """Return the variants of a `type`-tagged object union, or None.
 
@@ -198,13 +226,20 @@ def _tagged_union(spec: dict):
         props = variant.get("properties")
         if not isinstance(props, dict):
             return None
-        tag = props.get("type")
-        if not isinstance(tag, dict) or not isinstance(tag.get("enum"), list):
+        # `type` is the usual discriminator, but upstream also uses `kind`
+        # (FileSystemSpecialPath) and there is no reason to treat that as a different thing.
+        for field in ("type", "kind"):
+            tag = props.get(field)
+            if isinstance(tag, dict) and isinstance(tag.get("enum"), list):
+                values = [v for v in tag["enum"] if isinstance(v, str)]
+                if len(values) == 1:
+                    out.append((field, values[0], props, _flattened_props(variant)))
+                    break
+        else:
             return None
-        values = [v for v in tag["enum"] if isinstance(v, str)]
-        if len(values) != 1:
-            return None
-        out.append((values[0], props, _flattened_props(variant)))
+    # One discriminator for the whole union, or it is not a tagged union.
+    if len({f for f, _, _, _ in out}) != 1:
+        return None
     return out
 
 
@@ -259,7 +294,7 @@ def _field_signature(spec: dict, defs: dict) -> str | None:
     return go_type(spec, defs, False)
 
 
-def emit_tagged_union(name: str, variants: list, defs: dict) -> list[str]:
+def emit_tagged_union(name: str, variants: list, defs: dict, tag_field: str = "type") -> list[str]:
     """Emit one flat discriminated struct for a tagged union.
 
     Field order is first-appearance across the variants, which is what the hand-written
@@ -269,9 +304,9 @@ def emit_tagged_union(name: str, variants: list, defs: dict) -> list[str]:
     """
     merged: dict[str, tuple[str, dict]] = {}
     order: list[str] = []
-    for _tag, props, flattened in variants:
+    for _field, _tag, props, flattened in variants:
         for field, sub in {**flattened, **props}.items():
-            if field == "type":
+            if field == tag_field:
                 continue
             signature = _field_signature(sub, defs)
             if field not in merged:
@@ -281,33 +316,36 @@ def emit_tagged_union(name: str, variants: list, defs: dict) -> list[str]:
                 # Same name, different shape: keep the bytes, do not pick a winner.
                 merged[field] = (None, sub)
 
-    variant_tags = [tag for tag, _, _ in variants]
+    variant_tags = [tag for _, tag, _, _ in variants]
     lines = [
         f"// {name} mirrors the upstream `{name}` definition.",
         "//",
-        f"// Upstream declares it as a `type`-tagged union of {len(variants)} variants "
+        f"// Upstream declares it as a `{tag_field}`-tagged union of {len(variants)} variants "
         f"({', '.join(sorted(variant_tags))}).",
-        "// It is modelled as one flat struct with an explicit Type discriminator plus the union",
-        "// of every variant's fields, so no field is dropped and no variant is rejected.",
+        f"// It is modelled as one flat struct with an explicit {go_name(tag_field)} discriminator",
+        "// plus the union of every variant's fields, so no field is dropped and no variant is",
+        "// rejected.",
         "//",
         "// Fields that disagree in type across variants, or that are themselves unions, are passed",
         "// through as json.RawMessage rather than guessed at.",
         f"type {name} struct {{",
-        '\tType string `json:"type"`',
+        f'\t{go_name(tag_field)} string `json:"{tag_field}"`',
     ]
     for field in order:
         signature, _ = merged[field]
         gofield = signature if signature is not None else "json.RawMessage"
-        # `Type` is the discriminator and is always sent; everything else is conditional on
-        # which variant is in play, which a flat struct cannot know.
+        # The discriminator is always sent; everything else is conditional on which variant
+        # is in play, which a flat struct cannot know.
         lines.append(f'\t{go_name(field)} {gofield} `json:"{field},omitempty"`')
     lines.append("}")
     lines.append("")
 
     lines.append(f"// {name} discriminator values, matching the upstream variant tags.")
     lines.append("const (")
+    width = max(len(go_name(tag)) for tag in variant_tags)
     for tag in variant_tags:
-        lines.append(f'\t{name}Type{go_name(tag)} = "{tag}"')
+        const = f"{name}{go_name(tag_field)}{go_name(tag)}"
+        lines.append(f'\t{const:<{len(const) + width - len(go_name(tag))}} = "{tag}"')
     lines.append(")")
     lines.append("")
     return lines
@@ -328,9 +366,21 @@ def emit_definition(name: str, spec: dict, defs: dict) -> list[str]:
             out.append("")
             return out
 
+    enum_values = _string_enum_union(spec)
+    if enum_values is not None:
+        out.append(f"// {name} mirrors the upstream `{name}` enum.")
+        out.append(f"type {name} string")
+        out.append("")
+        out.append("const (")
+        for v in enum_values:
+            out.append(f'\t{name}{go_name(v)} {name} = "{v}"')
+        out.append(")")
+        out.append("")
+        return out
+
     variant_defs = _tagged_union(spec)
     if variant_defs is not None:
-        return emit_tagged_union(name, variant_defs, defs)
+        return emit_tagged_union(name, variant_defs, defs, tag_field=variant_defs[0][0])
 
     props = spec.get("properties")
     if not isinstance(props, dict):

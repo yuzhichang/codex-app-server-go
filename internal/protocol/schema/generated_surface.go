@@ -12,8 +12,9 @@ import "encoding/json"
 // Account mirrors the upstream `Account` definition.
 //
 // Upstream declares it as a `type`-tagged union of 3 variants (amazonBedrock, apiKey, chatgpt).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -112,8 +113,9 @@ type AgentMessageDeltaNotification struct {
 // AgentMessageInputContent mirrors the upstream `AgentMessageInputContent` definition.
 //
 // Upstream declares it as a `type`-tagged union of 2 variants (encrypted_content, input_text).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -151,8 +153,19 @@ type AsyncUserInputQuestion struct {
 	Title   string   `json:"title"`
 }
 
-// AuthMode mirrors the upstream `AuthMode` definition.
-type AuthMode = json.RawMessage
+// AuthMode mirrors the upstream `AuthMode` enum.
+type AuthMode string
+
+const (
+	AuthModeApikey              AuthMode = "apikey"
+	AuthModeChatgpt             AuthMode = "chatgpt"
+	AuthModeChatgptAuthTokens   AuthMode = "chatgptAuthTokens"
+	AuthModeHeaders             AuthMode = "headers"
+	AuthModeAgentIdentity       AuthMode = "agentIdentity"
+	AuthModePersonalAccessToken AuthMode = "personalAccessToken"
+	AuthModeBedrockAPIKey       AuthMode = "bedrockApiKey"
+	AuthModeBedrockAccessKeys   AuthMode = "bedrockAccessKeys"
+)
 
 // AuthRecoveryNotification mirrors the upstream `AuthRecoveryNotification` definition.
 type AuthRecoveryNotification struct {
@@ -162,8 +175,13 @@ type AuthRecoveryNotification struct {
 	TurnID   string `json:"turnId"`
 }
 
-// AutoCompactTokenLimitScope mirrors the upstream `AutoCompactTokenLimitScope` definition.
-type AutoCompactTokenLimitScope = json.RawMessage
+// AutoCompactTokenLimitScope mirrors the upstream `AutoCompactTokenLimitScope` enum.
+type AutoCompactTokenLimitScope string
+
+const (
+	AutoCompactTokenLimitScopeTotal           AutoCompactTokenLimitScope = "total"
+	AutoCompactTokenLimitScopeBodyAfterPrefix AutoCompactTokenLimitScope = "body_after_prefix"
+)
 
 // AutoReviewDecisionSource mirrors the upstream `AutoReviewDecisionSource` enum.
 type AutoReviewDecisionSource string
@@ -318,8 +336,9 @@ type CollaborationMode struct {
 // CommandAction mirrors the upstream `CommandAction` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (listFiles, read, search, unknown).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -347,8 +366,13 @@ type CommandExecOutputDeltaNotification struct {
 	Stream      CommandExecOutputStream `json:"stream"`
 }
 
-// CommandExecOutputStream mirrors the upstream `CommandExecOutputStream` definition.
-type CommandExecOutputStream = json.RawMessage
+// CommandExecOutputStream mirrors the upstream `CommandExecOutputStream` enum.
+type CommandExecOutputStream string
+
+const (
+	CommandExecOutputStreamStdout CommandExecOutputStream = "stdout"
+	CommandExecOutputStreamStderr CommandExecOutputStream = "stderr"
+)
 
 // CommandExecParams mirrors the upstream `CommandExecParams` definition.
 type CommandExecParams struct {
@@ -555,8 +579,9 @@ type ConfigLayerMetadata struct {
 // ConfigLayerSource mirrors the upstream `ConfigLayerSource` definition.
 //
 // Upstream declares it as a `type`-tagged union of 9 variants (enterpriseManaged, legacyManagedConfigTomlFromFile, legacyManagedConfigTomlFromMdm, mdm, packagedDefaults, project, sessionFlags, system, user).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -666,8 +691,15 @@ type ConfigurationReasoning struct {
 	Effort ReasoningEffort `json:"effort"`
 }
 
-// ConsumeAccountRateLimitResetCreditOutcome mirrors the upstream `ConsumeAccountRateLimitResetCreditOutcome` definition.
-type ConsumeAccountRateLimitResetCreditOutcome = json.RawMessage
+// ConsumeAccountRateLimitResetCreditOutcome mirrors the upstream `ConsumeAccountRateLimitResetCreditOutcome` enum.
+type ConsumeAccountRateLimitResetCreditOutcome string
+
+const (
+	ConsumeAccountRateLimitResetCreditOutcomeReset           ConsumeAccountRateLimitResetCreditOutcome = "reset"
+	ConsumeAccountRateLimitResetCreditOutcomeNothingToReset  ConsumeAccountRateLimitResetCreditOutcome = "nothingToReset"
+	ConsumeAccountRateLimitResetCreditOutcomeNoCredit        ConsumeAccountRateLimitResetCreditOutcome = "noCredit"
+	ConsumeAccountRateLimitResetCreditOutcomeAlreadyRedeemed ConsumeAccountRateLimitResetCreditOutcome = "alreadyRedeemed"
+)
 
 // ConsumeAccountRateLimitResetCreditParams mirrors the upstream `ConsumeAccountRateLimitResetCreditParams` definition.
 type ConsumeAccountRateLimitResetCreditParams struct {
@@ -683,8 +715,9 @@ type ConsumeAccountRateLimitResetCreditResponse struct {
 // ContentItem mirrors the upstream `ContentItem` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (input_audio, input_image, input_text, output_text).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -743,8 +776,9 @@ const (
 // DynamicToolCallOutputContentItem mirrors the upstream `DynamicToolCallOutputContentItem` definition.
 //
 // Upstream declares it as a `type`-tagged union of 3 variants (inputAudio, inputImage, inputText).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -813,8 +847,16 @@ type ExperimentalFeatureListResponse struct {
 	NextCursor string                `json:"nextCursor,omitempty"`
 }
 
-// ExperimentalFeatureStage mirrors the upstream `ExperimentalFeatureStage` definition.
-type ExperimentalFeatureStage = json.RawMessage
+// ExperimentalFeatureStage mirrors the upstream `ExperimentalFeatureStage` enum.
+type ExperimentalFeatureStage string
+
+const (
+	ExperimentalFeatureStageBeta             ExperimentalFeatureStage = "beta"
+	ExperimentalFeatureStageUnderDevelopment ExperimentalFeatureStage = "underDevelopment"
+	ExperimentalFeatureStageStable           ExperimentalFeatureStage = "stable"
+	ExperimentalFeatureStageDeprecated       ExperimentalFeatureStage = "deprecated"
+	ExperimentalFeatureStageRemoved          ExperimentalFeatureStage = "removed"
+)
 
 // ExternalAgentConfigDetectParams mirrors the upstream `ExternalAgentConfigDetectParams` definition.
 type ExternalAgentConfigDetectParams struct {
@@ -1028,8 +1070,9 @@ const (
 // FileSystemPath mirrors the upstream `FileSystemPath` definition.
 //
 // Upstream declares it as a `type`-tagged union of 3 variants (glob_pattern, path, special).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1054,7 +1097,29 @@ type FileSystemSandboxEntry struct {
 }
 
 // FileSystemSpecialPath mirrors the upstream `FileSystemSpecialPath` definition.
-type FileSystemSpecialPath = json.RawMessage
+//
+// Upstream declares it as a `kind`-tagged union of 6 variants (minimal, project_roots, root, slash_tmp, tmpdir, unknown).
+// It is modelled as one flat struct with an explicit Kind discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type FileSystemSpecialPath struct {
+	Kind    string              `json:"kind"`
+	Subpath LegacyAppPathString `json:"subpath,omitempty"`
+	Path    string              `json:"path,omitempty"`
+}
+
+// FileSystemSpecialPath discriminator values, matching the upstream variant tags.
+const (
+	FileSystemSpecialPathKindRoot         = "root"
+	FileSystemSpecialPathKindMinimal      = "minimal"
+	FileSystemSpecialPathKindProjectRoots = "project_roots"
+	FileSystemSpecialPathKindTmpdir       = "tmpdir"
+	FileSystemSpecialPathKindSlashTmp     = "slash_tmp"
+	FileSystemSpecialPathKindUnknown      = "unknown"
+)
 
 // FileUpdateChange mirrors the upstream `FileUpdateChange` definition.
 type FileUpdateChange struct {
@@ -1080,8 +1145,9 @@ type FunctionCallOutputBody = json.RawMessage
 // FunctionCallOutputContentItem mirrors the upstream `FunctionCallOutputContentItem` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (encrypted_content, input_audio, input_image, input_text).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1236,8 +1302,9 @@ type GuardianApprovalReview struct {
 // GuardianApprovalReviewAction mirrors the upstream `GuardianApprovalReviewAction` definition.
 //
 // Upstream declares it as a `type`-tagged union of 7 variants (applyPatch, command, execve, mcpToolCall, networkAccess, requestPermissions, writeStdin).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1500,8 +1567,9 @@ const (
 // ImageGenerationFailure mirrors the upstream `ImageGenerationFailure` definition.
 //
 // Upstream declares it as a `type`-tagged union of 1 variants (usageLimitExceeded).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1521,8 +1589,14 @@ type InAppBrowserRequirements struct {
 	AllowExternalBrowserSettingsImport bool `json:"allowExternalBrowserSettingsImport,omitempty"`
 }
 
-// InputModality mirrors the upstream `InputModality` definition.
-type InputModality = json.RawMessage
+// InputModality mirrors the upstream `InputModality` enum.
+type InputModality string
+
+const (
+	InputModalityText  InputModality = "text"
+	InputModalityImage InputModality = "image"
+	InputModalityAudio InputModality = "audio"
+)
 
 // InternalChatMessageMetadataPassthrough mirrors the upstream `InternalChatMessageMetadataPassthrough` definition.
 type InternalChatMessageMetadataPassthrough struct {
@@ -1575,8 +1649,9 @@ type LegacyAppPathString = string
 // LocalShellAction mirrors the upstream `LocalShellAction` definition.
 //
 // Upstream declares it as a `type`-tagged union of 1 variants (exec).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1606,8 +1681,9 @@ const (
 // LoginAccountParams mirrors the upstream `LoginAccountParams` definition.
 //
 // Upstream declares it as a `type`-tagged union of 6 variants (amazonBedrock, amazonBedrockAccessKeys, apiKey, chatgpt, chatgptAuthTokens, chatgptDeviceCode).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1639,8 +1715,9 @@ const (
 // LoginAccountResponse mirrors the upstream `LoginAccountResponse` definition.
 //
 // Upstream declares it as a `type`-tagged union of 5 variants (amazonBedrock, apiKey, chatgpt, chatgptAuthTokens, chatgptDeviceCode).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -1694,8 +1771,14 @@ const (
 	MergeStrategyUpsert  MergeStrategy = "upsert"
 )
 
-// MessagePhase mirrors the upstream `MessagePhase` definition.
-type MessagePhase = json.RawMessage
+// MessagePhase mirrors the upstream `MessagePhase` enum.
+type MessagePhase string
+
+const (
+	MessagePhaseCommentary    MessagePhase = "commentary"
+	MessagePhasePartialAnswer MessagePhase = "partial_answer"
+	MessagePhaseFinalAnswer   MessagePhase = "final_answer"
+)
 
 // MigrationDetails mirrors the upstream `MigrationDetails` definition.
 type MigrationDetails struct {
@@ -1915,8 +1998,9 @@ const (
 // PatchChangeKind mirrors the upstream `PatchChangeKind` definition.
 //
 // Upstream declares it as a `type`-tagged union of 3 variants (add, delete, update).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2088,8 +2172,9 @@ type ReasoningEffortOption struct {
 // ReasoningItemContent mirrors the upstream `ReasoningItemContent` definition.
 //
 // Upstream declares it as a `type`-tagged union of 2 variants (reasoning_text, text).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2107,8 +2192,9 @@ const (
 // ReasoningItemReasoningSummary mirrors the upstream `ReasoningItemReasoningSummary` definition.
 //
 // Upstream declares it as a `type`-tagged union of 1 variants (summary_text).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2122,8 +2208,15 @@ const (
 	ReasoningItemReasoningSummaryTypeSummaryText = "summary_text"
 )
 
-// ReasoningSummary mirrors the upstream `ReasoningSummary` definition.
-type ReasoningSummary = json.RawMessage
+// ReasoningSummary mirrors the upstream `ReasoningSummary` enum.
+type ReasoningSummary string
+
+const (
+	ReasoningSummaryAuto     ReasoningSummary = "auto"
+	ReasoningSummaryConcise  ReasoningSummary = "concise"
+	ReasoningSummaryDetailed ReasoningSummary = "detailed"
+	ReasoningSummaryNone     ReasoningSummary = "none"
+)
 
 // ReasoningSummaryPartAddedNotification mirrors the upstream `ReasoningSummaryPartAddedNotification` definition.
 type ReasoningSummaryPartAddedNotification struct {
@@ -2194,8 +2287,9 @@ const (
 // ResponseItem mirrors the upstream `ResponseItem` definition.
 //
 // Upstream declares it as a `type`-tagged union of 18 variants (additional_tools, agent_message, compaction, compaction_trigger, configuration_update, context_compaction, custom_tool_call, custom_tool_call_output, function_call, function_call_output, image_generation_call, local_shell_call, message, other, reasoning, tool_search_call, tool_search_output, web_search_call).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2257,8 +2351,9 @@ type ResponseUsageMetadata struct {
 // ResponsesApiWebSearchAction mirrors the upstream `ResponsesApiWebSearchAction` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (find_in_page, open_page, other, search).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2295,8 +2390,9 @@ type ReviewStartResponse struct {
 // ReviewTarget mirrors the upstream `ReviewTarget` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (baseBranch, commit, custom, uncommittedChanges).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2328,8 +2424,9 @@ const (
 // SandboxPolicy mirrors the upstream `SandboxPolicy` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (dangerFullAccess, externalSandbox, readOnly, workspaceWrite).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -2779,8 +2876,9 @@ type ThreadItemEntry struct {
 // ThreadItemsListAnchor mirrors the upstream `ThreadItemsListAnchor` definition.
 //
 // Upstream declares it as a `type`-tagged union of 1 variants (item).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -3241,8 +3339,9 @@ type TurnToolOutput struct {
 // UserInput mirrors the upstream `UserInput` definition.
 //
 // Upstream declares it as a `type`-tagged union of 7 variants (audio, image, localAudio, localImage, mention, skill, text).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
@@ -3286,8 +3385,9 @@ type WarningNotification struct {
 // WebSearchAction mirrors the upstream `WebSearchAction` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (findInPage, openPage, other, search).
-// It is modelled as one flat struct with an explicit Type discriminator plus the union
-// of every variant's fields, so no field is dropped and no variant is rejected.
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
 //
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.

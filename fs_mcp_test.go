@@ -74,14 +74,14 @@ func TestFsRPCsUseUpstreamWireMethods(t *testing.T) {
 			return err
 		}},
 		{"watch", "fs/watch", func(ctx context.Context, c *codexgo.Client) error {
-			resp, err := c.FSWatch(ctx, codexgo.FsWatchParams{Path: "/tmp", WatchId: "w1"})
+			resp, err := c.FSWatch(ctx, codexgo.FsWatchParams{Path: "/tmp", WatchID: "w1"})
 			if err == nil && resp.Path != "/tmp" {
 				t.Errorf("watch: unexpected path %q", resp.Path)
 			}
 			return err
 		}},
 		{"unwatch", "fs/unwatch", func(ctx context.Context, c *codexgo.Client) error {
-			_, err := c.FSUnwatch(ctx, codexgo.FsUnwatchParams{WatchId: "w1"})
+			_, err := c.FSUnwatch(ctx, codexgo.FsUnwatchParams{WatchID: "w1"})
 			return err
 		}},
 	}
@@ -186,7 +186,7 @@ func TestMcpRPCsUseUpstreamWireMethods(t *testing.T) {
 	mock.Handle("mcpServer/resource/read", func(params json.RawMessage) (any, error) {
 		var req codexgo.McpResourceReadParams
 		testutil.MustReadParams(params, &req)
-		if req.Server != "github" || req.Uri != "repo://x" {
+		if req.Server != "github" || req.URI != "repo://x" {
 			t.Errorf("resource/read params = %+v", req)
 		}
 		return map[string]any{"contents": []any{map[string]any{"uri": "repo://x"}}}, nil
@@ -194,7 +194,7 @@ func TestMcpRPCsUseUpstreamWireMethods(t *testing.T) {
 	mock.Handle("mcpServer/tool/call", func(params json.RawMessage) (any, error) {
 		var req codexgo.McpServerToolCallParams
 		testutil.MustReadParams(params, &req)
-		if req.Server != "github" || req.Tool != "search" || req.ThreadId != "thr_1" {
+		if req.Server != "github" || req.Tool != "search" || req.ThreadID != "thr_1" {
 			t.Errorf("tool/call params = %+v", req)
 		}
 		// An MCP tool failure is a successful RPC with isError set.
@@ -210,7 +210,7 @@ func TestMcpRPCsUseUpstreamWireMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MCPServerOauthLogin: %v", err)
 	}
-	if login.AuthorizationUrl != "https://example.test/auth" || login.LoginId != "l1" {
+	if login.AuthorizationURL != "https://example.test/auth" || login.LoginID != "l1" {
 		t.Errorf("oauth login response = %+v", login)
 	}
 
@@ -225,12 +225,12 @@ func TestMcpRPCsUseUpstreamWireMethods(t *testing.T) {
 		t.Errorf("authStatus = %q, want oAuth", status.Data[0].AuthStatus)
 	}
 
-	if _, err := client.MCPServerResourceRead(ctx, codexgo.McpResourceReadParams{Server: "github", Uri: "repo://x"}); err != nil {
+	if _, err := client.MCPServerResourceRead(ctx, codexgo.McpResourceReadParams{Server: "github", URI: "repo://x"}); err != nil {
 		t.Fatalf("MCPServerResourceRead: %v", err)
 	}
 
 	call, err := client.MCPServerToolCall(ctx, codexgo.McpServerToolCallParams{
-		Server: "github", Tool: "search", ThreadId: "thr_1",
+		Server: "github", Tool: "search", ThreadID: "thr_1",
 	})
 	if err != nil {
 		t.Fatalf("MCPServerToolCall: %v", err)

@@ -39,7 +39,10 @@ generate-types:
 	python3 $(SDK_DIR)/scripts/gen_go_types.py \
 		--match '^(Fs|Mcp|ListMcp|ConfigMcpServerReload)' \
 		--out internal/protocol/schema/generated_fs_mcp.go
-	gofmt -w $(SDK_DIR)/internal/protocol/schema/generated_fs_mcp.go
+	python3 $(SDK_DIR)/scripts/gen_go_types.py \
+		--match '^(App|Plugin|Marketplace)' \
+		--out internal/protocol/schema/generated_plugins.go
+	gofmt -w $(SDK_DIR)/internal/protocol/schema/generated_*.go
 
 # Mid-implementation: reconciliation must pass; coverage gaps are reported but not fatal.
 conformance: verify

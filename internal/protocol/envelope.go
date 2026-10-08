@@ -186,6 +186,34 @@ const (
 	MethodMcpServerToolCall           = "mcpServer/tool/call"
 	MethodConfigMcpServerReload       = "config/mcpServer/reload"
 	MethodMcpServerElicitationRequest = "mcpServer/elicitation/request"
+
+	// Plugin / marketplace RPCs (client -> server).
+	//
+	// Several of these are declared upstream with `serialization: global("config")`
+	// (plugin/install, plugin/uninstall, marketplace/*, plugin/share/*), meaning the server
+	// serializes them against the whole config. Concurrent calls therefore queue rather
+	// than interleave. (`plugin/search` is experimental and deliberately not implemented.)
+	MethodMarketplaceAdd     = "marketplace/add"
+	MethodMarketplaceRemove  = "marketplace/remove"
+	MethodMarketplaceUpgrade = "marketplace/upgrade"
+
+	MethodPluginList               = "plugin/list"
+	MethodPluginInstalled          = "plugin/installed"
+	MethodPluginReconcile          = "plugin/reconcile"
+	MethodPluginRead               = "plugin/read"
+	MethodPluginSkillRead          = "plugin/skill/read"
+	MethodPluginShareSave          = "plugin/share/save"
+	MethodPluginShareUpdateTargets = "plugin/share/updateTargets"
+	MethodPluginShareList          = "plugin/share/list"
+	MethodPluginShareCheckout      = "plugin/share/checkout"
+	MethodPluginShareDelete        = "plugin/share/delete"
+	MethodPluginInstall            = "plugin/install"
+	MethodPluginUninstall          = "plugin/uninstall"
+
+	// App registry RPCs (client -> server). (`MethodAppListUpdated` already exists above.)
+	MethodAppsList      = "app/list"
+	MethodAppsInstalled = "app/installed"
+	MethodAppsRead      = "app/read"
 )
 
 // NOTE: there are deliberately no JSON-RPC envelope types or aliases here.

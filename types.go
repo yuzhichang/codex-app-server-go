@@ -87,6 +87,50 @@ type (
 	McpToolCallResult                = schematypes.McpToolCallResult
 	// NOTE: McpServerOauthLoginCompletedEvent and McpServerStatusUpdatedEvent already
 	// exist in events_extra.go. Do not re-alias them here.
+
+	// Plugin / marketplace RPC types.
+	MarketplaceAddParams             = schematypes.MarketplaceAddParams
+	MarketplaceAddResponse           = schematypes.MarketplaceAddResponse
+	MarketplaceRemoveParams          = schematypes.MarketplaceRemoveParams
+	MarketplaceRemoveResponse        = schematypes.MarketplaceRemoveResponse
+	MarketplaceUpgradeParams         = schematypes.MarketplaceUpgradeParams
+	MarketplaceUpgradeResponse       = schematypes.MarketplaceUpgradeResponse
+	PluginListParams                 = schematypes.PluginListParams
+	PluginListResponse               = schematypes.PluginListResponse
+	PluginInstalledParams            = schematypes.PluginInstalledParams
+	PluginInstalledResponse          = schematypes.PluginInstalledResponse
+	PluginReconcileParams            = schematypes.PluginReconcileParams
+	PluginReconcileResponse          = schematypes.PluginReconcileResponse
+	PluginReadParams                 = schematypes.PluginReadParams
+	PluginReadResponse               = schematypes.PluginReadResponse
+	PluginSkillReadParams            = schematypes.PluginSkillReadParams
+	PluginSkillReadResponse          = schematypes.PluginSkillReadResponse
+	PluginShareUpdateDiscoverability = schematypes.PluginShareUpdateDiscoverability
+	PluginSummary                    = schematypes.PluginSummary
+	PluginDetail                     = schematypes.PluginDetail
+	PluginShareSaveParams            = schematypes.PluginShareSaveParams
+	PluginShareSaveResponse          = schematypes.PluginShareSaveResponse
+	PluginShareUpdateTargetsParams   = schematypes.PluginShareUpdateTargetsParams
+	PluginShareUpdateTargetsResponse = schematypes.PluginShareUpdateTargetsResponse
+	PluginShareListParams            = schematypes.PluginShareListParams
+	PluginShareListResponse          = schematypes.PluginShareListResponse
+	PluginShareCheckoutParams        = schematypes.PluginShareCheckoutParams
+	PluginShareCheckoutResponse      = schematypes.PluginShareCheckoutResponse
+	PluginShareDeleteParams          = schematypes.PluginShareDeleteParams
+	PluginShareDeleteResponse        = schematypes.PluginShareDeleteResponse
+	PluginShareTarget                = schematypes.PluginShareTarget
+	PluginInstallParams              = schematypes.PluginInstallParams
+	PluginInstallResponse            = schematypes.PluginInstallResponse
+	PluginUninstallParams            = schematypes.PluginUninstallParams
+	PluginUninstallResponse          = schematypes.PluginUninstallResponse
+
+	// App registry RPC types. Upstream prefixes these with "Apps", not "App".
+	AppsListParams        = schematypes.AppsListParams
+	AppsListResponse      = schematypes.AppsListResponse
+	AppsInstalledParams   = schematypes.AppsInstalledParams
+	AppsInstalledResponse = schematypes.AppsInstalledResponse
+	AppsReadParams        = schematypes.AppsReadParams
+	AppsReadResponse      = schematypes.AppsReadResponse
 )
 
 const (
@@ -125,6 +169,12 @@ const (
 	McpServerConnectionStatusFailed                 = schematypes.McpServerConnectionStatusFailed
 	McpServerConnectionStatusCancelled              = schematypes.McpServerConnectionStatusCancelled
 	McpServerConnectionStatusDisabled               = schematypes.McpServerConnectionStatusDisabled
+
+	// Plugin sharing enum values. Note the wire values are SCREAMING_CASE upstream, so the
+	// constants keep that shape rather than being re-cased locally.
+	PluginShareUpdateDiscoverabilityUNLISTED = schematypes.PluginShareUpdateDiscoverabilityUNLISTED
+	PluginShareUpdateDiscoverabilityPRIVATE  = schematypes.PluginShareUpdateDiscoverabilityPRIVATE
+	PluginShareUpdateDiscoverabilityLISTED   = schematypes.PluginShareUpdateDiscoverabilityLISTED
 )
 
 const (

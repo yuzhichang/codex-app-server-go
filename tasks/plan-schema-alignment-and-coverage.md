@@ -284,6 +284,16 @@
 - ⏳ **MCP elicitation 待办**：`mcpServer/elicitation/request` 的方法本身是 **stable**，但其**载荷类型完全不在 vendor 的 schema 里** —— 因为 `McpServerElicitationRequestParams.request` 带 `#[experimental(nested)]`，导出一并省略。因此这几个类型必须**照 Rust 源码手写**（属"真正需要才自造"的正当情形，需在 `gen/type-allowlist.json` 登记理由），并同时完成 `item/mcp/requestApproval` → `mcpServer/elicitation/request` 的 dispatcher 替换（R3/D3）。
 - ⚠️ **门禁自身修了一个会漏报的 bug**：`coverage_gate.py` 原来用**硬编码文件清单**判断 client_method 的接线证据，导致实现于新文件（`fs.go`/`mcp.go`）的方法**完全不可见**（80 项被漏报）。已改为**按角色定位**：client_method = 除解码层/处理层与生成物之外的任意调用点；notification_decoder / server_request_handler 仍限定在各自层次内。修复后 implemented **60 → 74**。
 
+### M4 实施状态（2026-10-08）
+
+- ✅ **§5.5 完成（15 项）**：`plugin.go` 提供 `MarketplaceAdd`/`MarketplaceRemove`/`MarketplaceUpgrade` + `PluginList`/`PluginInstalled`/`PluginReconcile`/`PluginRead`/`PluginSkillRead`/`PluginShareSave`/`PluginShareUpdateTargets`/`PluginShareList`/`PluginShareCheckout`/`PluginShareDelete`/`PluginInstall`/`PluginUninstall`。`plugin/search` 为 experimental，按 R2 不实现。已在代码注释中登记上游的 `serialization: global("config")` 语义（服务端串行化，不要依赖两个 config 变更的发出顺序）。
+- ✅ **§5.6 的 app 组完成（3 项 + 1 通知）**：`app.go` 提供 `AppsList`/`AppsInstalled`/`AppsRead`；`app/list/updated` 通知**此前已实现**。
+- ⚠️ **codegen 又修了 3 个映射缺陷**（均由测试暴露，且都会影响 M5 的产出质量）：
+  1. **可空引用**（`anyOf: [$ref, null]`）原先退化成 `json.RawMessage` —— 而该模式在 schema 中**大量存在**（如 `pluginInstallParams.marketplacePath`）。现映射为 `*T`。
+  2. **camelCase 未分词的初值缩写**：`remotePluginId` 作为单个 token，任何初值表都匹配不上，导致生成 `RemotePluginId`，与既有手写类型 `RemotePluginID` 对同一概念给出两种拼写。已改为先按 camelCase 分词。
+  3. **传递依赖绕过去重**：`existing` 跳过逻辑没有应用到传递引用遍历，导致重复声明（编译器报 `AbsolutePathBuf`/`SkillSummary` redeclared）。
+- ✅ **`generate-types` 幂等**（重跑 `git diff` 为空）。
+
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：

@@ -25,11 +25,46 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SDK_ROOT = SCRIPT_DIR.parent
 DEFAULT_SCHEMA = SDK_ROOT / "internal" / "protocol" / "schema" / "codex_app_server_protocol.v2.schemas.json"
 
+_STRUCT = re.compile(r"^type (\w+)\b", re.M)
+
+
+# Go types that already represent "absent" without an extra pointer.
+_NILABLE = {"json.RawMessage", "map[string]any", "any", "struct{}"}
+
+
+# Go initialisms, so generated field names match the rest of the package. Without this the
+# generator emits `RemotePluginId` next to the hand-written `RemotePluginID` for the very
+# same concept. JSON tags keep the exact upstream wire spelling either way.
+_INITIALISMS = {
+    "id": "ID",
+    "ids": "IDs",
+    "url": "URL",
+    "urls": "URLs",
+    "uri": "URI",
+    "uris": "URIs",
+    "api": "API",
+    "http": "HTTP",
+    "json": "JSON",
+    "uuid": "UUID",
+    "cwd": "CWD",
+    "ui": "UI",
+    "ip": "IP",
+    "ttl": "TTL",
+}
+
+
+def _split_words(raw: str) -> list[str]:
+    """Split `remotePluginId` into words. CamelCase must be split, or no initialism ever
+    matches (`remotePluginId` is a single token to a naive split)."""
+    spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", raw)
+    spaced = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", spaced)
+    return [p for p in re.split(r"[^0-9A-Za-z]+", spaced) if p]
+
 
 def go_name(raw: str) -> str:
-    """`_meta` -> `Meta`, `dataBase64` -> `DataBase64`, `fs/readFile` -> `FsReadFile`."""
-    parts = [p for p in re.split(r"[^0-9A-Za-z]+", raw) if p]
-    name = "".join(p[:1].upper() + p[1:] for p in parts) or "Field"
+    """`_meta` -> `Meta`, `dataBase64` -> `DataBase64`, `remotePluginId` -> `RemotePluginID`."""
+    parts = _split_words(raw)
+    name = "".join(_INITIALISMS.get(p.lower(), p[:1].upper() + p[1:]) for p in parts) or "Field"
     if name[0].isdigit():
         name = "N" + name
     if keyword.iskeyword(name.lower()):
@@ -50,14 +85,28 @@ def go_type(spec: dict, defs: dict, optional: bool) -> str:
         return base
 
     if "oneOf" in spec or "anyOf" in spec or "allOf" in spec:
-        # A single-element allOf/anyOf/oneOf is just a wrapper around the real schema --
-        # schemars emits `{"allOf": [{"$ref": "..."}]}` for every $ref that also carries a
-        # description. Unwrap those, otherwise every documented path field would degrade
-        # to json.RawMessage.
+        # schemars wraps $refs in allOf/anyOf/oneOf in two shapes that both need unwrapping:
+        #
+        #   {"allOf": [{"$ref": X}]}                  -- a $ref that also carries a description
+        #   {"anyOf": [{"$ref": X}, {"type":"null"}]} -- a *nullable* $ref
+        #
+        # Without this, every documented path field and every nullable reference degrades to
+        # json.RawMessage, which is both unergonomic and loses the type.
         for key in ("allOf", "anyOf", "oneOf"):
             variants = spec.get(key)
-            if isinstance(variants, list) and len(variants) == 1 and isinstance(variants[0], dict):
-                return go_type(variants[0], defs, optional)
+            if not isinstance(variants, list):
+                continue
+            non_null = [
+                v for v in variants
+                if not (isinstance(v, dict) and v.get("type") == "null")
+            ]
+            nullable = len(non_null) != len(variants)
+            if len(non_null) == 1 and isinstance(non_null[0], dict):
+                inner = go_type(non_null[0], defs, optional)
+                # Types that are already nil-able do not need a pointer to express null.
+                if nullable and not inner.startswith("*") and inner not in _NILABLE:
+                    inner = "*" + inner
+                return inner
         # A genuine union has no single Go representation; RawMessage keeps the bytes
         # intact and lets callers decode explicitly.
         return "json.RawMessage"
@@ -146,14 +195,33 @@ def main() -> int:
     schema = json.loads(Path(args.schema).read_text())
     defs = schema.get("definitions") or {}
     rx = re.compile(args.match)
+
+    dest = Path(args.out)
+    if not dest.is_absolute():
+        dest = SDK_ROOT / dest
+
+    # Never emit a type the package already declares. `client_types_gen.go` still holds the
+    # hand-written subset, and a handful of those (e.g. PluginSkillReadParams) already match
+    # upstream -- re-emitting them would not compile. Skipped names are still traversed, so
+    # references from generated types resolve to the existing declaration.
+    existing: set[str] = set()
+    if dest.parent.is_dir():
+        for path in dest.parent.glob("*.go"):
+            if path.resolve() == dest.resolve() or path.name.endswith("_test.go"):
+                continue
+            existing.update(_STRUCT.findall(path.read_text(errors="replace")))
+
     # Generate the matched definitions plus anything they transitively reference, so the
     # output compiles on its own.
-    wanted: set[str] = {n for n in defs if rx.search(n)}
+    wanted: set[str] = {n for n in defs if rx.search(n) and n not in existing}
     pending = list(wanted)
     while pending:
         n = pending.pop()
         for ref in re.findall(r'"#/definitions/([^"]+)"', json.dumps(defs.get(n, {}))):
-            if ref in defs and ref not in wanted:
+            # Respect `existing` here too: a type that was skipped because the package
+            # already declares it must not be dragged back in as a transitive dependency
+            # (that produced duplicate AbsolutePathBuf / SkillSummary declarations).
+            if ref in defs and ref not in wanted and ref not in existing:
                 wanted.add(ref)
                 pending.append(ref)
 
@@ -174,9 +242,6 @@ def main() -> int:
     for name in sorted(wanted):
         body.extend(emit_definition(name, defs[name], defs))
 
-    dest = Path(args.out)
-    if not dest.is_absolute():
-        dest = SDK_ROOT / dest
     dest.write_text("\n".join(header + body))
     print(f"wrote {dest.relative_to(SDK_ROOT)}: {len(wanted)} definitions")
     return 0

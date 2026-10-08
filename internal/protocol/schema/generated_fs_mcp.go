@@ -15,7 +15,7 @@ type AbsolutePathBuf = string
 // FsChangedNotification mirrors the upstream `FsChangedNotification` definition.
 type FsChangedNotification struct {
 	ChangedPaths []AbsolutePathBuf `json:"changedPaths"`
-	WatchId      string            `json:"watchId"`
+	WatchID      string            `json:"watchId"`
 }
 
 // FsCopyParams mirrors the upstream `FsCopyParams` definition.
@@ -90,7 +90,7 @@ type FsRemoveResponse = struct{}
 
 // FsUnwatchParams mirrors the upstream `FsUnwatchParams` definition.
 type FsUnwatchParams struct {
-	WatchId string `json:"watchId"`
+	WatchID string `json:"watchId"`
 }
 
 // FsUnwatchResponse mirrors the upstream `FsUnwatchResponse` definition.
@@ -99,7 +99,7 @@ type FsUnwatchResponse = struct{}
 // FsWatchParams mirrors the upstream `FsWatchParams` definition.
 type FsWatchParams struct {
 	Path    AbsolutePathBuf `json:"path"`
-	WatchId string          `json:"watchId"`
+	WatchID string          `json:"watchId"`
 }
 
 // FsWatchResponse mirrors the upstream `FsWatchResponse` definition.
@@ -118,11 +118,11 @@ type FsWriteFileResponse = struct{}
 
 // ListMcpServerStatusParams mirrors the upstream `ListMcpServerStatusParams` definition.
 type ListMcpServerStatusParams struct {
-	Cursor     string          `json:"cursor,omitempty"`
-	Detail     json.RawMessage `json:"detail,omitempty"`
-	Limit      int64           `json:"limit,omitempty"`
-	ServerName string          `json:"serverName,omitempty"`
-	ThreadId   string          `json:"threadId,omitempty"`
+	Cursor     string                 `json:"cursor,omitempty"`
+	Detail     *McpServerStatusDetail `json:"detail,omitempty"`
+	Limit      int64                  `json:"limit,omitempty"`
+	ServerName string                 `json:"serverName,omitempty"`
+	ThreadID   string                 `json:"threadId,omitempty"`
 }
 
 // ListMcpServerStatusResponse mirrors the upstream `ListMcpServerStatusResponse` definition.
@@ -142,7 +142,7 @@ const (
 // McpAppUi mirrors the upstream `McpAppUi` definition.
 type McpAppUi struct {
 	PreferredModelDisplayMode McpAppDisplayMode `json:"preferredModelDisplayMode"`
-	ResourceUri               string            `json:"resourceUri"`
+	ResourceURI               string            `json:"resourceUri"`
 }
 
 // McpAuthStatus mirrors the upstream `McpAuthStatus` enum.
@@ -158,24 +158,24 @@ const (
 
 // McpResourceReadParams mirrors the upstream `McpResourceReadParams` definition.
 type McpResourceReadParams struct {
-	ConnectorId  string          `json:"connectorId,omitempty"`
-	OriginCallId string          `json:"originCallId,omitempty"`
-	Server       string          `json:"server"`
-	Target       json.RawMessage `json:"target,omitempty"`
-	ThreadId     string          `json:"threadId,omitempty"`
-	Uri          string          `json:"uri"`
+	ConnectorID  string                 `json:"connectorId,omitempty"`
+	OriginCallID string                 `json:"originCallId,omitempty"`
+	Server       string                 `json:"server"`
+	Target       *McpResourceReadTarget `json:"target,omitempty"`
+	ThreadID     string                 `json:"threadId,omitempty"`
+	URI          string                 `json:"uri"`
 }
 
 // McpResourceReadResponse mirrors the upstream `McpResourceReadResponse` definition.
 type McpResourceReadResponse struct {
 	Contents     []ResourceContent `json:"contents"`
-	OriginCallId string            `json:"originCallId,omitempty"`
+	OriginCallID string            `json:"originCallId,omitempty"`
 }
 
 // McpResourceReadTarget mirrors the upstream `McpResourceReadTarget` definition.
 type McpResourceReadTarget struct {
-	ConnectorId string `json:"connectorId"`
-	LinkId      string `json:"linkId"`
+	ConnectorID string `json:"connectorId"`
+	LinkID      string `json:"linkId"`
 }
 
 // McpServerConnectionStatus mirrors the upstream `McpServerConnectionStatus` enum.
@@ -200,7 +200,7 @@ type McpServerEventNotification struct {
 // McpServerEventStreamNotification mirrors the upstream `McpServerEventStreamNotification` definition.
 type McpServerEventStreamNotification struct {
 	Notification   McpServerEventNotification `json:"notification"`
-	SubscriptionId string                     `json:"subscriptionId"`
+	SubscriptionID string                     `json:"subscriptionId"`
 }
 
 // McpServerInfo mirrors the upstream `McpServerInfo` definition.
@@ -210,7 +210,7 @@ type McpServerInfo struct {
 	Name        string            `json:"name"`
 	Title       string            `json:"title,omitempty"`
 	Version     string            `json:"version"`
-	WebsiteUrl  string            `json:"websiteUrl,omitempty"`
+	WebsiteURL  string            `json:"websiteUrl,omitempty"`
 }
 
 // McpServerMigration mirrors the upstream `McpServerMigration` definition.
@@ -230,25 +230,25 @@ const (
 // McpServerOauthLoginCompletedNotification mirrors the upstream `McpServerOauthLoginCompletedNotification` definition.
 type McpServerOauthLoginCompletedNotification struct {
 	Error    string `json:"error,omitempty"`
-	LoginId  string `json:"loginId,omitempty"`
+	LoginID  string `json:"loginId,omitempty"`
 	Name     string `json:"name"`
 	Success  bool   `json:"success"`
-	ThreadId string `json:"threadId,omitempty"`
+	ThreadID string `json:"threadId,omitempty"`
 }
 
 // McpServerOauthLoginParams mirrors the upstream `McpServerOauthLoginParams` definition.
 type McpServerOauthLoginParams struct {
-	ClientRegistration json.RawMessage `json:"clientRegistration,omitempty"`
-	Name               string          `json:"name"`
-	Scopes             []string        `json:"scopes,omitempty"`
-	ThreadId           string          `json:"threadId,omitempty"`
-	TimeoutSecs        int64           `json:"timeoutSecs,omitempty"`
+	ClientRegistration *McpServerOauthClientRegistration `json:"clientRegistration,omitempty"`
+	Name               string                            `json:"name"`
+	Scopes             []string                          `json:"scopes,omitempty"`
+	ThreadID           string                            `json:"threadId,omitempty"`
+	TimeoutSecs        int64                             `json:"timeoutSecs,omitempty"`
 }
 
 // McpServerOauthLoginResponse mirrors the upstream `McpServerOauthLoginResponse` definition.
 type McpServerOauthLoginResponse struct {
-	AuthorizationUrl string `json:"authorizationUrl"`
-	LoginId          string `json:"loginId,omitempty"`
+	AuthorizationURL string `json:"authorizationUrl"`
+	LoginID          string `json:"loginId,omitempty"`
 }
 
 // McpServerRefreshResponse mirrors the upstream `McpServerRefreshResponse` definition.
@@ -273,17 +273,17 @@ const (
 
 // McpServerStatus mirrors the upstream `McpServerStatus` definition.
 type McpServerStatus struct {
-	AuthStatus         McpAuthStatus      `json:"authStatus"`
-	HttpOrigin         string             `json:"httpOrigin,omitempty"`
-	Name               string             `json:"name"`
-	PluginId           string             `json:"pluginId,omitempty"`
-	ResourceTemplates  []ResourceTemplate `json:"resourceTemplates"`
-	Resources          []Resource         `json:"resources"`
-	RuntimeStatus      json.RawMessage    `json:"runtimeStatus,omitempty"`
-	ServerCapabilities json.RawMessage    `json:"serverCapabilities,omitempty"`
-	ServerInfo         json.RawMessage    `json:"serverInfo,omitempty"`
-	Tools              map[string]any     `json:"tools"`
-	ToolsError         string             `json:"toolsError,omitempty"`
+	AuthStatus         McpAuthStatus              `json:"authStatus"`
+	HTTPOrigin         string                     `json:"httpOrigin,omitempty"`
+	Name               string                     `json:"name"`
+	PluginID           string                     `json:"pluginId,omitempty"`
+	ResourceTemplates  []ResourceTemplate         `json:"resourceTemplates"`
+	Resources          []Resource                 `json:"resources"`
+	RuntimeStatus      *McpServerConnectionStatus `json:"runtimeStatus,omitempty"`
+	ServerCapabilities json.RawMessage            `json:"serverCapabilities,omitempty"`
+	ServerInfo         *McpServerInfo             `json:"serverInfo,omitempty"`
+	Tools              map[string]any             `json:"tools"`
+	ToolsError         string                     `json:"toolsError,omitempty"`
 }
 
 // McpServerStatusDetail mirrors the upstream `McpServerStatusDetail` enum.
@@ -296,11 +296,11 @@ const (
 
 // McpServerStatusUpdatedNotification mirrors the upstream `McpServerStatusUpdatedNotification` definition.
 type McpServerStatusUpdatedNotification struct {
-	Error         string                `json:"error,omitempty"`
-	FailureReason json.RawMessage       `json:"failureReason,omitempty"`
-	Name          string                `json:"name"`
-	Status        McpServerStartupState `json:"status"`
-	ThreadId      string                `json:"threadId,omitempty"`
+	Error         string                         `json:"error,omitempty"`
+	FailureReason *McpServerStartupFailureReason `json:"failureReason,omitempty"`
+	Name          string                         `json:"name"`
+	Status        McpServerStartupState          `json:"status"`
+	ThreadID      string                         `json:"threadId,omitempty"`
 }
 
 // McpServerToolCallParams mirrors the upstream `McpServerToolCallParams` definition.
@@ -308,7 +308,7 @@ type McpServerToolCallParams struct {
 	Meta      json.RawMessage `json:"_meta,omitempty"`
 	Arguments json.RawMessage `json:"arguments,omitempty"`
 	Server    string          `json:"server"`
-	ThreadId  string          `json:"threadId"`
+	ThreadID  string          `json:"threadId"`
 	Tool      string          `json:"tool"`
 }
 
@@ -324,9 +324,9 @@ type McpServerToolCallResponse struct {
 type McpToolCallAppContext struct {
 	ActionName  string `json:"actionName,omitempty"`
 	AppName     string `json:"appName,omitempty"`
-	ConnectorId string `json:"connectorId"`
-	LinkId      string `json:"linkId,omitempty"`
-	ResourceUri string `json:"resourceUri,omitempty"`
+	ConnectorID string `json:"connectorId"`
+	LinkID      string `json:"linkId,omitempty"`
+	ResourceURI string `json:"resourceUri,omitempty"`
 }
 
 // McpToolCallError mirrors the upstream `McpToolCallError` definition.
@@ -336,10 +336,10 @@ type McpToolCallError struct {
 
 // McpToolCallProgressNotification mirrors the upstream `McpToolCallProgressNotification` definition.
 type McpToolCallProgressNotification struct {
-	ItemId   string `json:"itemId"`
+	ItemID   string `json:"itemId"`
 	Message  string `json:"message"`
-	ThreadId string `json:"threadId"`
-	TurnId   string `json:"turnId"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
 }
 
 // McpToolCallResult mirrors the upstream `McpToolCallResult` definition.
@@ -368,7 +368,7 @@ type Resource struct {
 	Name        string            `json:"name"`
 	Size        int64             `json:"size,omitempty"`
 	Title       string            `json:"title,omitempty"`
-	Uri         string            `json:"uri"`
+	URI         string            `json:"uri"`
 }
 
 // ResourceContent mirrors the upstream `ResourceContent` definition.
@@ -381,7 +381,7 @@ type ResourceTemplate struct {
 	MimeType    string          `json:"mimeType,omitempty"`
 	Name        string          `json:"name"`
 	Title       string          `json:"title,omitempty"`
-	UriTemplate string          `json:"uriTemplate"`
+	URITemplate string          `json:"uriTemplate"`
 }
 
 // Tool mirrors the upstream `Tool` definition.

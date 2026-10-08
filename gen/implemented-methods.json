@@ -36,6 +36,33 @@
     "test": "account_test.go"
   },
   {
+    "method": "app/installed",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "app.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "app/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "app.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "app/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "app.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
     "method": "config/mcpServer/reload",
     "face": "client_request",
     "kind": "client_method",
@@ -135,6 +162,33 @@
     "test": "account_test.go"
   },
   {
+    "method": "marketplace/add",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "marketplace/remove",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "marketplace/upgrade",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
     "method": "mcpServer/oauth/login",
     "face": "client_request",
     "kind": "client_method",
@@ -179,6 +233,114 @@
       "client_test_helpers.go"
     ],
     "test": "client_test.go"
+  },
+  {
+    "method": "plugin/install",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/installed",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/reconcile",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/share/checkout",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/share/delete",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/share/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/share/save",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/share/updateTargets",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/skill/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
+  },
+  {
+    "method": "plugin/uninstall",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "plugin.go"
+    ],
+    "test": "plugin_app_test.go"
   },
   {
     "method": "thread/archive",

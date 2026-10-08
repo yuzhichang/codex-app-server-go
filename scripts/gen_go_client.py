@@ -32,6 +32,33 @@ GEN_TESTS = SDK_ROOT / "generated_client_methods_test.go"
 
 _CONST_DECL = re.compile(r'^\s*(Method\w+)\s*=\s*"([^"]+)"', re.M)
 _TYPE_DECL = re.compile(r"^type (\w+)\b", re.M)
+# Aliases declared inside a grouped `type ( ... )` block, e.g. types.go. Without this the
+# root package looks like it has almost no types and nearly every method is skipped.
+_TYPE_ALIAS = re.compile(r"^\t(\w+)\s*=", re.M)
+
+
+def declared_types(text: str) -> set[str]:
+    return set(_TYPE_DECL.findall(text)) | set(_TYPE_ALIAS.findall(text))
+
+
+# A hand-written client method: name, parameter list and result list.
+_CLIENT_SIG = re.compile(r"func \(c \*Client\) (\w+)\(([^)]*)\)\s*([^{]*)\{", re.S)
+
+# Parameter types that can be produced with a literal, so a test can call the method.
+_LITERAL_ARGS = {"string": '""', "int": "0", "int64": "0", "bool": "false"}
+
+
+def _second_param_type(params: str) -> str | None:
+    """Return the type of the first non-context parameter, or None if there is none."""
+    parts = [p.strip() for p in params.split(",") if p.strip()]
+    for part in parts:
+        if part.startswith("ctx "):
+            continue
+        fields = part.split()
+        if len(fields) >= 2:
+            return fields[-1]
+        return part  # unnamed single type, e.g. `func (c *Client) X(ctx context.Context, string)`
+    return None
 # A client method, from its signature up to the next top-level declaration.
 _CLIENT_FUNC = re.compile(r"func \(c \*Client\) (\w+)\(.*?(?=\nfunc |\n// |\Z)", re.S)
 _ANY_CLIENT_FUNC = re.compile(r"func \(c \*Client\) (\w+)\(")
@@ -61,16 +88,33 @@ def main() -> int:
         root_text += text
         root_methods.update(_ANY_CLIENT_FUNC.findall(text))
 
-    # Constants already used by an existing client method => hand-written, leave alone.
-    bound: set[str] = set()
+    # Constant -> the hand-written Go method that binds it. Those methods are never
+    # regenerated, but they still need a test that exercises the wire string.
+    bound: dict[str, str] = {}
     for match in _CLIENT_FUNC.finditer(root_text):
-        bound.update(re.findall(r"protocol\.(Method\w+)", match.group(0)))
+        body = match.group(0)
+        for const in re.findall(r"protocol\.(Method\w+)", body):
+            bound.setdefault(const, match.group(1))
 
-    root_types = set(_TYPE_DECL.findall(root_text))
+    # Types already addressable as `codexgo.X` from *hand-written* sources.
+    #
+    # Deliberately excludes this generator's own output: reading it back made run two
+    # believe its aliases were pre-existing, so it rewrote the file without them and the
+    # referenced types vanished (the file erased its own declarations).
+    root_types = declared_types(root_text)
+
+    # Signature of each hand-written client method, so a bound method's test can pass the
+    # type that method actually takes -- which is not always the upstream params type.
+    # arg type + whether the method returns more than just an error.
+    signatures: dict[str, tuple[str | None, bool]] = {}
+    for match in _CLIENT_SIG.finditer(root_text):
+        results = match.group(3).strip()
+        signatures[match.group(1)] = (_second_param_type(match.group(2)), "," in results)
+
     schema_types = set()
     for path in (SDK_ROOT / "internal" / "protocol" / "schema").glob("*.go"):
         if not path.name.endswith("_test.go"):
-            schema_types.update(_TYPE_DECL.findall(path.read_text(errors="replace")))
+            schema_types.update(declared_types(path.read_text(errors="replace")))
 
     new_consts: list[tuple[str, str]] = []
     methods_src: list[str] = []
@@ -89,7 +133,23 @@ def main() -> int:
             const = "Method" + m["variant"]
             new_consts.append((const, m["method"]))
         if const in bound:
-            continue  # already bound by a hand-written method
+            # Already bound by a hand-written method: never regenerate the method, but do
+            # emit a test that exercises it. "Wired but untested" is not coverage, and the
+            # test is the only thing pinning the wire string.
+            gname = bound[const]
+            sig = signatures.get(gname)
+            if sig is None:
+                skipped.append(f"{m['method']}: bound as {gname} but its signature was not found")
+                continue
+            arg, multi = sig
+            if arg is not None and arg not in root_types and arg not in _LITERAL_ARGS and not arg.startswith("*"):
+                skipped.append(
+                    f"{m['method']}: bound as {gname} but its parameter type ({arg}) "
+                    f"cannot be constructed here"
+                )
+                continue
+            tests.append(_render_test_with_arg(gname, arg, multi, m["method"]))
+            continue
 
         name = m["variant"]
         if name in root_methods:
@@ -273,6 +333,27 @@ def _render_method(name: str, const: str, params: str | None, resp: str | None, 
             "}",
         ]
     return "\n".join(doc + body) + "\n"
+
+
+def _render_test_with_arg(name: str, arg_type: str | None, multi: bool, wire: str) -> str:
+    """A test case for a method whose signature was read from the real source."""
+    if arg_type is None:
+        arg = ""
+    elif arg_type in _LITERAL_ARGS:
+        arg = f", {_LITERAL_ARGS[arg_type]}"
+    elif arg_type.startswith("*"):
+        arg = ", nil"
+    else:
+        arg = f", *new(codexgo.{arg_type})"
+    call = f"c.{name}(ctx{arg})"
+    # A method may return just an error, or (value, error).
+    stmt = f"\t\t\t_, err := {call}" if multi else f"\t\t\terr := {call}"
+    return "\n".join([
+        f'\t\t{{"{name}", "{wire}", func(ctx context.Context, c *codexgo.Client) error {{',
+        stmt,
+        "\t\t\treturn err",
+        "\t\t}},",
+    ])
 
 
 def _render_case(name: str, const: str, params: str | None, wire: str) -> str:

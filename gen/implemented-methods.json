@@ -132,7 +132,7 @@
     "wiring": [
       "app.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "app/list",
@@ -141,7 +141,7 @@
     "wiring": [
       "app.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "app/read",
@@ -150,7 +150,52 @@
     "wiring": [
       "app.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "command/exec",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "commandexec.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "command/exec/resize",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "commandexec.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "command/exec/terminate",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "commandexec.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "command/exec/write",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "commandexec.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "config/batchWrite",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "config/mcpServer/reload",
@@ -162,12 +207,48 @@
     "test": "fs_mcp_test.go"
   },
   {
+    "method": "config/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "config/value/write",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "configRequirements/read",
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
       "generated_client_methods.go",
       "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "experimentalFeature/enablement/set",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "experimentalFeature/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
     ],
     "test": "generated_client_methods_test.go"
   },
@@ -303,6 +384,15 @@
     "test": "fs_mcp_test.go"
   },
   {
+    "method": "hooks/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "initialize",
     "face": "client_request",
     "kind": "client_method",
@@ -318,7 +408,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "marketplace/remove",
@@ -327,7 +417,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "marketplace/upgrade",
@@ -336,7 +426,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "mcpServer/oauth/login",
@@ -385,6 +475,15 @@
     "test": "client_test.go"
   },
   {
+    "method": "modelProvider/capabilities/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "permissionProfile/list",
     "face": "client_request",
     "kind": "client_method",
@@ -401,7 +500,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/installed",
@@ -410,7 +509,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/list",
@@ -419,7 +518,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/read",
@@ -428,7 +527,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/reconcile",
@@ -437,7 +536,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/share/checkout",
@@ -446,7 +545,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/share/delete",
@@ -455,7 +554,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/share/list",
@@ -464,7 +563,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/share/save",
@@ -473,7 +572,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/share/updateTargets",
@@ -482,7 +581,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/skill/read",
@@ -491,7 +590,7 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "plugin/uninstall",
@@ -500,7 +599,52 @@
     "wiring": [
       "plugin.go"
     ],
-    "test": "plugin_app_test.go"
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "review/start",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "skills/config/write",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "skills/extraRoots/set",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "skills/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "rpc_extras.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/approveGuardianDeniedAction",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/archive",
@@ -509,7 +653,7 @@
     "wiring": [
       "client.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/attachment/add",
@@ -563,13 +707,58 @@
     "test": "generated_client_methods_test.go"
   },
   {
+    "method": "thread/delete",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "thread/fork",
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
       "client.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/goal/clear",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/goal/get",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/goal/set",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/inject_items",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/items/list",
@@ -588,7 +777,34 @@
     "wiring": [
       "client.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/loaded/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/metadata/update",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/name/set",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/read",
@@ -617,7 +833,7 @@
     "wiring": [
       "client.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/section/move",
@@ -626,6 +842,15 @@
     "wiring": [
       "generated_client_methods.go",
       "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/shellCommand",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
     ],
     "test": "generated_client_methods_test.go"
   },
@@ -646,6 +871,24 @@
     "wiring": [
       "generated_client_methods.go",
       "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/unarchive",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/unsubscribe",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go"
     ],
     "test": "generated_client_methods_test.go"
   },
@@ -715,7 +958,7 @@
     "wiring": [
       "client.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "windowsSandbox/readiness",

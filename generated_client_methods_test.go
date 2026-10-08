@@ -20,6 +20,54 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 		wire   string
 		invoke func(context.Context, *codexgo.Client) error
 	}{
+		{"Initialize", "initialize", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.Initialize(ctx, *new(codexgo.InitializeParams))
+			return err
+		}},
+		{"ThreadStart", "thread/start", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadStart(ctx, *new(codexgo.ThreadStartParams))
+			return err
+		}},
+		{"ThreadResume", "thread/resume", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadResume(ctx, *new(codexgo.ThreadResumeParams))
+			return err
+		}},
+		{"ThreadFork", "thread/fork", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadFork(ctx, *new(codexgo.ThreadForkParams))
+			return err
+		}},
+		{"ThreadArchive", "thread/archive", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadArchive(ctx, *new(codexgo.ThreadArchiveParams))
+			return err
+		}},
+		{"ThreadDelete", "thread/delete", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadDelete(ctx, *new(codexgo.ThreadDeleteRequest))
+			return err
+		}},
+		{"ThreadUnsubscribe", "thread/unsubscribe", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadUnsubscribe(ctx, *new(codexgo.ThreadUnsubscribeRequest))
+			return err
+		}},
+		{"ThreadSetName", "thread/name/set", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadSetName(ctx, *new(codexgo.ThreadSetNameParams))
+			return err
+		}},
+		{"ThreadGoalSet", "thread/goal/set", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadGoalSet(ctx, *new(codexgo.ThreadGoalSetRequest))
+			return err
+		}},
+		{"ThreadGoalGet", "thread/goal/get", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadGoalGet(ctx, *new(codexgo.ThreadGoalGetRequest))
+			return err
+		}},
+		{"ThreadGoalClear", "thread/goal/clear", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadGoalClear(ctx, *new(codexgo.ThreadGoalClearRequest))
+			return err
+		}},
+		{"ThreadMetadataUpdate", "thread/metadata/update", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadMetadataUpdate(ctx, *new(codexgo.ThreadMetadataUpdateRequest))
+			return err
+		}},
 		{"ThreadAttachmentAdd", "thread/attachment/add", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.ThreadAttachmentAdd(ctx, *new(codexgo.ThreadAttachmentAddParams))
 			return err
@@ -40,8 +88,28 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.ThreadSectionMove(ctx, *new(codexgo.ThreadSectionMoveParams))
 			return err
 		}},
+		{"ThreadUnarchive", "thread/unarchive", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadUnarchive(ctx, *new(codexgo.ThreadUnarchiveParams))
+			return err
+		}},
 		{"ThreadCompactStart", "thread/compact/start", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.ThreadCompactStart(ctx, *new(codexgo.ThreadCompactStartParams))
+			return err
+		}},
+		{"ThreadShellCommand", "thread/shellCommand", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadShellCommand(ctx, *new(codexgo.ThreadShellCommandRequest))
+			return err
+		}},
+		{"ThreadApproveGuardianDeniedAction", "thread/approveGuardianDeniedAction", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadApproveGuardianDeniedAction(ctx, *new(codexgo.ThreadApproveGuardianDeniedActionRequest))
+			return err
+		}},
+		{"ThreadRevert", "thread/revert", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadRevert(ctx, *new(codexgo.ThreadRevertParams))
+			return err
+		}},
+		{"ThreadList", "thread/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadList(ctx, *new(codexgo.ThreadListParams))
 			return err
 		}},
 		{"ThreadSectionList", "threadSection/list", func(ctx context.Context, c *codexgo.Client) error {
@@ -60,12 +128,168 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.ThreadSectionDelete(ctx, *new(codexgo.ThreadSectionDeleteParams))
 			return err
 		}},
+		{"ThreadLoadedList", "thread/loaded/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadLoadedList(ctx)
+			return err
+		}},
+		{"ThreadRead", "thread/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ThreadRead(ctx, *new(codexgo.ThreadReadParams))
+			return err
+		}},
 		{"ThreadTurnsList", "thread/turns/list", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.ThreadTurnsList(ctx, *new(codexgo.ThreadTurnsListParams))
 			return err
 		}},
 		{"ThreadItemsList", "thread/items/list", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.ThreadItemsList(ctx, *new(codexgo.ThreadItemsListParams))
+			return err
+		}},
+		{"ThreadInjectItems", "thread/inject_items", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ThreadInjectItems(ctx, *new(codexgo.ThreadInjectItemsRequest))
+			return err
+		}},
+		{"SkillsList", "skills/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.SkillsList(ctx, *new(codexgo.SkillsListRequest))
+			return err
+		}},
+		{"SkillsExtraRootsSet", "skills/extraRoots/set", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.SkillsExtraRootsSet(ctx, *new(codexgo.SkillsExtraRootsSetRequest))
+			return err
+		}},
+		{"HooksList", "hooks/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.HooksList(ctx, *new(codexgo.HooksListRequest))
+			return err
+		}},
+		{"MarketplaceAdd", "marketplace/add", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MarketplaceAdd(ctx, *new(codexgo.MarketplaceAddParams))
+			return err
+		}},
+		{"MarketplaceRemove", "marketplace/remove", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MarketplaceRemove(ctx, *new(codexgo.MarketplaceRemoveParams))
+			return err
+		}},
+		{"MarketplaceUpgrade", "marketplace/upgrade", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MarketplaceUpgrade(ctx, *new(codexgo.MarketplaceUpgradeParams))
+			return err
+		}},
+		{"PluginList", "plugin/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginList(ctx, *new(codexgo.PluginListParams))
+			return err
+		}},
+		{"PluginInstalled", "plugin/installed", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginInstalled(ctx, *new(codexgo.PluginInstalledParams))
+			return err
+		}},
+		{"PluginReconcile", "plugin/reconcile", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginReconcile(ctx, *new(codexgo.PluginReconcileParams))
+			return err
+		}},
+		{"PluginRead", "plugin/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginRead(ctx, *new(codexgo.PluginReadParams))
+			return err
+		}},
+		{"PluginSkillRead", "plugin/skill/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginSkillRead(ctx, *new(codexgo.PluginSkillReadParams))
+			return err
+		}},
+		{"PluginShareSave", "plugin/share/save", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginShareSave(ctx, *new(codexgo.PluginShareSaveParams))
+			return err
+		}},
+		{"PluginShareUpdateTargets", "plugin/share/updateTargets", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginShareUpdateTargets(ctx, *new(codexgo.PluginShareUpdateTargetsParams))
+			return err
+		}},
+		{"PluginShareList", "plugin/share/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginShareList(ctx, *new(codexgo.PluginShareListParams))
+			return err
+		}},
+		{"PluginShareCheckout", "plugin/share/checkout", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginShareCheckout(ctx, *new(codexgo.PluginShareCheckoutParams))
+			return err
+		}},
+		{"PluginShareDelete", "plugin/share/delete", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginShareDelete(ctx, *new(codexgo.PluginShareDeleteParams))
+			return err
+		}},
+		{"AppsRead", "app/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.AppsRead(ctx, *new(codexgo.AppsReadParams))
+			return err
+		}},
+		{"AppsList", "app/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.AppsList(ctx, *new(codexgo.AppsListParams))
+			return err
+		}},
+		{"AppsInstalled", "app/installed", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.AppsInstalled(ctx, *new(codexgo.AppsInstalledParams))
+			return err
+		}},
+		{"FSReadFile", "fs/readFile", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSReadFile(ctx, *new(codexgo.FsReadFileParams))
+			return err
+		}},
+		{"FSWriteFile", "fs/writeFile", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSWriteFile(ctx, *new(codexgo.FsWriteFileParams))
+			return err
+		}},
+		{"FSCreateDirectory", "fs/createDirectory", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSCreateDirectory(ctx, *new(codexgo.FsCreateDirectoryParams))
+			return err
+		}},
+		{"FSGetMetadata", "fs/getMetadata", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSGetMetadata(ctx, *new(codexgo.FsGetMetadataParams))
+			return err
+		}},
+		{"FSReadDirectory", "fs/readDirectory", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSReadDirectory(ctx, *new(codexgo.FsReadDirectoryParams))
+			return err
+		}},
+		{"FSRemove", "fs/remove", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSRemove(ctx, *new(codexgo.FsRemoveParams))
+			return err
+		}},
+		{"FSCopy", "fs/copy", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSCopy(ctx, *new(codexgo.FsCopyParams))
+			return err
+		}},
+		{"FSWatch", "fs/watch", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSWatch(ctx, *new(codexgo.FsWatchParams))
+			return err
+		}},
+		{"FSUnwatch", "fs/unwatch", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FSUnwatch(ctx, *new(codexgo.FsUnwatchParams))
+			return err
+		}},
+		{"SkillsConfigWrite", "skills/config/write", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.SkillsConfigWrite(ctx, *new(codexgo.SkillsConfigWriteRequest))
+			return err
+		}},
+		{"PluginInstall", "plugin/install", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginInstall(ctx, *new(codexgo.PluginInstallParams))
+			return err
+		}},
+		{"PluginUninstall", "plugin/uninstall", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.PluginUninstall(ctx, *new(codexgo.PluginUninstallParams))
+			return err
+		}},
+		{"TurnStart", "turn/start", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.TurnStart(ctx, *new(codexgo.TurnStartParams))
+			return err
+		}},
+		{"TurnSteer", "turn/steer", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.TurnSteer(ctx, *new(codexgo.TurnSteerParams))
+			return err
+		}},
+		{"TurnInterrupt", "turn/interrupt", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.TurnInterrupt(ctx, *new(codexgo.TurnInterruptParams))
+			return err
+		}},
+		{"ReviewStart", "review/start", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ReviewStart(ctx, *new(codexgo.ReviewStartParams))
+			return err
+		}},
+		{"ModelList", "model/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ModelList(ctx, false)
 			return err
 		}},
 		{"GatewayOAuthRead", "account/gatewayOAuth/read", func(ctx context.Context, c *codexgo.Client) error {
@@ -80,8 +304,40 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.GatewayOAuthCancel(ctx)
 			return err
 		}},
+		{"ModelProviderCapabilitiesRead", "modelProvider/capabilities/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ModelProviderCapabilitiesRead(ctx)
+			return err
+		}},
+		{"ExperimentalFeatureList", "experimentalFeature/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ExperimentalFeatureList(ctx, *new(codexgo.ExperimentalFeatureListRequest))
+			return err
+		}},
 		{"PermissionProfileList", "permissionProfile/list", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.PermissionProfileList(ctx, *new(codexgo.PermissionProfileListParams))
+			return err
+		}},
+		{"ExperimentalFeatureEnablementSet", "experimentalFeature/enablement/set", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ExperimentalFeatureEnablementSet(ctx, *new(codexgo.ExperimentalFeatureEnablementSetRequest))
+			return err
+		}},
+		{"MCPServerOauthLogin", "mcpServer/oauth/login", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MCPServerOauthLogin(ctx, *new(codexgo.McpServerOauthLoginParams))
+			return err
+		}},
+		{"ConfigMCPServerReload", "config/mcpServer/reload", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ConfigMCPServerReload(ctx)
+			return err
+		}},
+		{"MCPServerStatusList", "mcpServerStatus/list", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MCPServerStatusList(ctx, *new(codexgo.ListMcpServerStatusParams))
+			return err
+		}},
+		{"MCPServerResourceRead", "mcpServer/resource/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MCPServerResourceRead(ctx, *new(codexgo.McpResourceReadParams))
+			return err
+		}},
+		{"MCPServerToolCall", "mcpServer/tool/call", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.MCPServerToolCall(ctx, *new(codexgo.McpServerToolCallParams))
 			return err
 		}},
 		{"WindowsSandboxSetupStart", "windowsSandbox/setupStart", func(ctx context.Context, c *codexgo.Client) error {
@@ -92,8 +348,16 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.WindowsSandboxReadiness(ctx)
 			return err
 		}},
+		{"LoginAPIKey", "account/login/start", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.LoginAPIKey(ctx, "")
+			return err
+		}},
 		{"CancelLoginAccount", "account/login/cancel", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.CancelLoginAccount(ctx, *new(codexgo.CancelLoginAccountParams))
+			return err
+		}},
+		{"Logout", "account/logout", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.Logout(ctx)
 			return err
 		}},
 		{"GetAccountRateLimits", "account/rateLimits/read", func(ctx context.Context, c *codexgo.Client) error {
@@ -120,6 +384,26 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.FeedbackUpload(ctx, *new(codexgo.FeedbackUploadParams))
 			return err
 		}},
+		{"CommandExec", "command/exec", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.CommandExec(ctx, *new(codexgo.CommandExecRequest))
+			return err
+		}},
+		{"CommandExecWrite", "command/exec/write", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.CommandExecWrite(ctx, *new(codexgo.CommandExecWriteRequest))
+			return err
+		}},
+		{"CommandExecTerminate", "command/exec/terminate", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.CommandExecTerminate(ctx, *new(codexgo.CommandExecTerminateRequest))
+			return err
+		}},
+		{"CommandExecResize", "command/exec/resize", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.CommandExecResize(ctx, *new(codexgo.CommandExecResizeRequest))
+			return err
+		}},
+		{"ConfigRead", "config/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.ConfigRead(ctx, *new(codexgo.ConfigReadRequest))
+			return err
+		}},
 		{"ExternalAgentConfigDetect", "externalAgentConfig/detect", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.ExternalAgentConfigDetect(ctx, *new(codexgo.ExternalAgentConfigDetectParams))
 			return err
@@ -136,8 +420,20 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.ExternalAgentConfigImportHistoriesRead(ctx)
 			return err
 		}},
+		{"ConfigValueWrite", "config/value/write", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ConfigValueWrite(ctx, *new(codexgo.ConfigValueWriteRequest))
+			return err
+		}},
+		{"ConfigBatchWrite", "config/batchWrite", func(ctx context.Context, c *codexgo.Client) error {
+			err := c.ConfigBatchWrite(ctx, *new(codexgo.ConfigBatchWriteRequest))
+			return err
+		}},
 		{"ConfigRequirementsRead", "configRequirements/read", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.ConfigRequirementsRead(ctx)
+			return err
+		}},
+		{"AccountRead", "account/read", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.AccountRead(ctx)
 			return err
 		}},
 	}

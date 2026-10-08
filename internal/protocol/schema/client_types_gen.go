@@ -1,4 +1,13 @@
-// Code generated from sdk/codex-go/internal/protocol/schema/v2.schema.json. DO NOT EDIT.
+// Code generated from the vendored codex app-server stable schema. DO NOT EDIT.
+//
+// Current source: internal/protocol/schema/codex_app_server_protocol.v2.schemas.json
+// (vendored by `make sync` from the pinned codex commit; see version.go).
+//
+// NOTE: the generated method constants below are NOT a coverage signal. A constant merely
+// means the protocol declares the method; it says nothing about whether the SDK actually
+// wires it up. Implementation coverage is tracked separately in
+// gen/implemented-methods.json and enforced by `make conformance`
+// (see tasks/plan-schema-alignment-and-coverage.md, T1.1).
 // Custom extensions (MarshalJSON, DecodeParams, etc.) live in separate *_ext.go files.
 package schema
 

@@ -1,0 +1,2725 @@
+{
+  "codex_commit": "14c8b7771ab2b617a131f5d8e55e98d18e56ed09",
+  "source": "codex-rs/app-server-protocol/src/protocol/common.rs",
+  "counts": {
+    "by_face": {
+      "client_request": 173,
+      "server_request": 11,
+      "server_notification": 86,
+      "client_notification": 1
+    },
+    "experimental": 89
+  },
+  "methods": [
+    {
+      "method": "initialize",
+      "face": "client_request",
+      "variant": "Initialize",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "server/diagnostics",
+      "face": "client_request",
+      "variant": "ServerDiagnostics",
+      "experimental": true,
+      "experimental_reason": "server/diagnostics",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "userVerification/status",
+      "face": "client_request",
+      "variant": "UserVerificationStatus",
+      "experimental": true,
+      "experimental_reason": "userVerification/status",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "userVerification/enroll",
+      "face": "client_request",
+      "variant": "UserVerificationEnroll",
+      "experimental": true,
+      "experimental_reason": "userVerification/enroll",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "userVerification/delete",
+      "face": "client_request",
+      "variant": "UserVerificationDelete",
+      "experimental": true,
+      "experimental_reason": "userVerification/delete",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "userVerification/verify",
+      "face": "client_request",
+      "variant": "UserVerificationVerify",
+      "experimental": true,
+      "experimental_reason": "userVerification/verify",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "userVerification/cancel",
+      "face": "client_request",
+      "variant": "UserVerificationCancel",
+      "experimental": true,
+      "experimental_reason": "userVerification/cancel",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/start",
+      "face": "client_request",
+      "variant": "ThreadStart",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/resume",
+      "face": "client_request",
+      "variant": "ThreadResume",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/fork",
+      "face": "client_request",
+      "variant": "ThreadFork",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/archive",
+      "face": "client_request",
+      "variant": "ThreadArchive",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/delete",
+      "face": "client_request",
+      "variant": "ThreadDelete",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/unsubscribe",
+      "face": "client_request",
+      "variant": "ThreadUnsubscribe",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/increment_elicitation",
+      "face": "client_request",
+      "variant": "ThreadIncrementElicitation",
+      "experimental": true,
+      "experimental_reason": "thread/increment_elicitation",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/decrement_elicitation",
+      "face": "client_request",
+      "variant": "ThreadDecrementElicitation",
+      "experimental": true,
+      "experimental_reason": "thread/decrement_elicitation",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/name/set",
+      "face": "client_request",
+      "variant": "ThreadSetName",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/prediction/request",
+      "face": "client_request",
+      "variant": "ThreadPredictionRequest",
+      "experimental": true,
+      "experimental_reason": "thread/prediction/request",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/goal/set",
+      "face": "client_request",
+      "variant": "ThreadGoalSet",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/goal/get",
+      "face": "client_request",
+      "variant": "ThreadGoalGet",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/goal/clear",
+      "face": "client_request",
+      "variant": "ThreadGoalClear",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/add",
+      "face": "client_request",
+      "variant": "ThreadQueueAdd",
+      "experimental": true,
+      "experimental_reason": "thread/queue/add",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/list",
+      "face": "client_request",
+      "variant": "ThreadQueueList",
+      "experimental": true,
+      "experimental_reason": "thread/queue/list",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/update",
+      "face": "client_request",
+      "variant": "ThreadQueueUpdate",
+      "experimental": true,
+      "experimental_reason": "thread/queue/update",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/delete",
+      "face": "client_request",
+      "variant": "ThreadQueueDelete",
+      "experimental": true,
+      "experimental_reason": "thread/queue/delete",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/reorder",
+      "face": "client_request",
+      "variant": "ThreadQueueReorder",
+      "experimental": true,
+      "experimental_reason": "thread/queue/reorder",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/start",
+      "face": "client_request",
+      "variant": "ThreadQueueStart",
+      "experimental": true,
+      "experimental_reason": "thread/queue/start",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/metadata/update",
+      "face": "client_request",
+      "variant": "ThreadMetadataUpdate",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/attachment/add",
+      "face": "client_request",
+      "variant": "ThreadAttachmentAdd",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/attachment/list",
+      "face": "client_request",
+      "variant": "ThreadAttachmentList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/attachmentOwner/list",
+      "face": "client_request",
+      "variant": "ThreadAttachmentOwnerList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/attachment/remove",
+      "face": "client_request",
+      "variant": "ThreadAttachmentRemove",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/section/move",
+      "face": "client_request",
+      "variant": "ThreadSectionMove",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/settings/update",
+      "face": "client_request",
+      "variant": "ThreadSettingsUpdate",
+      "experimental": true,
+      "experimental_reason": "thread/settings/update",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/memoryMode/set",
+      "face": "client_request",
+      "variant": "ThreadMemoryModeSet",
+      "experimental": true,
+      "experimental_reason": "thread/memoryMode/set",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "memory/status",
+      "face": "client_request",
+      "variant": "MemoryStatus",
+      "experimental": true,
+      "experimental_reason": "memory/status",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "memory/reset",
+      "face": "client_request",
+      "variant": "MemoryReset",
+      "experimental": true,
+      "experimental_reason": "memory/reset",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "rollout/compress",
+      "face": "client_request",
+      "variant": "RolloutCompress",
+      "experimental": true,
+      "experimental_reason": "rollout/compress",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/unarchive",
+      "face": "client_request",
+      "variant": "ThreadUnarchive",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/compact/start",
+      "face": "client_request",
+      "variant": "ThreadCompactStart",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/shellCommand",
+      "face": "client_request",
+      "variant": "ThreadShellCommand",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/approveGuardianDeniedAction",
+      "face": "client_request",
+      "variant": "ThreadApproveGuardianDeniedAction",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/backgroundTerminals/clean",
+      "face": "client_request",
+      "variant": "ThreadBackgroundTerminalsClean",
+      "experimental": true,
+      "experimental_reason": "thread/backgroundTerminals/clean",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/backgroundTerminals/list",
+      "face": "client_request",
+      "variant": "ThreadBackgroundTerminalsList",
+      "experimental": true,
+      "experimental_reason": "thread/backgroundTerminals/list",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/backgroundTerminals/terminate",
+      "face": "client_request",
+      "variant": "ThreadBackgroundTerminalsTerminate",
+      "experimental": true,
+      "experimental_reason": "thread/backgroundTerminals/terminate",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/revert",
+      "face": "client_request",
+      "variant": "ThreadRevert",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/list",
+      "face": "client_request",
+      "variant": "ThreadList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/list",
+      "face": "client_request",
+      "variant": "ProjectList",
+      "experimental": true,
+      "experimental_reason": "project/list",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/read",
+      "face": "client_request",
+      "variant": "ProjectRead",
+      "experimental": true,
+      "experimental_reason": "project/read",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/create",
+      "face": "client_request",
+      "variant": "ProjectCreate",
+      "experimental": true,
+      "experimental_reason": "project/create",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/import",
+      "face": "client_request",
+      "variant": "ProjectImport",
+      "experimental": true,
+      "experimental_reason": "project/import",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/update",
+      "face": "client_request",
+      "variant": "ProjectUpdate",
+      "experimental": true,
+      "experimental_reason": "project/update",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/move",
+      "face": "client_request",
+      "variant": "ProjectMove",
+      "experimental": true,
+      "experimental_reason": "project/move",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/delete",
+      "face": "client_request",
+      "variant": "ProjectDelete",
+      "experimental": true,
+      "experimental_reason": "project/delete",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "threadSection/list",
+      "face": "client_request",
+      "variant": "ThreadSectionList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "threadSection/create",
+      "face": "client_request",
+      "variant": "ThreadSectionCreate",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "threadSection/update",
+      "face": "client_request",
+      "variant": "ThreadSectionUpdate",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "threadSection/delete",
+      "face": "client_request",
+      "variant": "ThreadSectionDelete",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/search",
+      "face": "client_request",
+      "variant": "ThreadSearch",
+      "experimental": true,
+      "experimental_reason": "thread/search",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/searchOccurrences",
+      "face": "client_request",
+      "variant": "ThreadSearchOccurrences",
+      "experimental": true,
+      "experimental_reason": "thread/searchOccurrences",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/loaded/list",
+      "face": "client_request",
+      "variant": "ThreadLoadedList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/read",
+      "face": "client_request",
+      "variant": "ThreadRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/turns/list",
+      "face": "client_request",
+      "variant": "ThreadTurnsList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/items/list",
+      "face": "client_request",
+      "variant": "ThreadItemsList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/inject_items",
+      "face": "client_request",
+      "variant": "ThreadInjectItems",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "skills/list",
+      "face": "client_request",
+      "variant": "SkillsList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "skills/extraRoots/set",
+      "face": "client_request",
+      "variant": "SkillsExtraRootsSet",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "hooks/list",
+      "face": "client_request",
+      "variant": "HooksList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "marketplace/add",
+      "face": "client_request",
+      "variant": "MarketplaceAdd",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "marketplace/remove",
+      "face": "client_request",
+      "variant": "MarketplaceRemove",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "marketplace/upgrade",
+      "face": "client_request",
+      "variant": "MarketplaceUpgrade",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/list",
+      "face": "client_request",
+      "variant": "PluginList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/search",
+      "face": "client_request",
+      "variant": "PluginSearch",
+      "experimental": true,
+      "experimental_reason": "plugin/search",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/installed",
+      "face": "client_request",
+      "variant": "PluginInstalled",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/reconcile",
+      "face": "client_request",
+      "variant": "PluginReconcile",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/read",
+      "face": "client_request",
+      "variant": "PluginRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/skill/read",
+      "face": "client_request",
+      "variant": "PluginSkillRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/share/save",
+      "face": "client_request",
+      "variant": "PluginShareSave",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/share/updateTargets",
+      "face": "client_request",
+      "variant": "PluginShareUpdateTargets",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/share/list",
+      "face": "client_request",
+      "variant": "PluginShareList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/share/checkout",
+      "face": "client_request",
+      "variant": "PluginShareCheckout",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/share/delete",
+      "face": "client_request",
+      "variant": "PluginShareDelete",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "app/read",
+      "face": "client_request",
+      "variant": "AppsRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "app/list",
+      "face": "client_request",
+      "variant": "AppsList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "app/installed",
+      "face": "client_request",
+      "variant": "AppsInstalled",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/readFile",
+      "face": "client_request",
+      "variant": "FsReadFile",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/writeFile",
+      "face": "client_request",
+      "variant": "FsWriteFile",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/createDirectory",
+      "face": "client_request",
+      "variant": "FsCreateDirectory",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/getMetadata",
+      "face": "client_request",
+      "variant": "FsGetMetadata",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/readDirectory",
+      "face": "client_request",
+      "variant": "FsReadDirectory",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/remove",
+      "face": "client_request",
+      "variant": "FsRemove",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/copy",
+      "face": "client_request",
+      "variant": "FsCopy",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/watch",
+      "face": "client_request",
+      "variant": "FsWatch",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/unwatch",
+      "face": "client_request",
+      "variant": "FsUnwatch",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "skills/config/write",
+      "face": "client_request",
+      "variant": "SkillsConfigWrite",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/install",
+      "face": "client_request",
+      "variant": "PluginInstall",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "plugin/uninstall",
+      "face": "client_request",
+      "variant": "PluginUninstall",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/start",
+      "face": "client_request",
+      "variant": "TurnStart",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/settings/update",
+      "face": "client_request",
+      "variant": "TurnSettingsUpdate",
+      "experimental": true,
+      "experimental_reason": "turn/settings/update",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/steer",
+      "face": "client_request",
+      "variant": "TurnSteer",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/interrupt",
+      "face": "client_request",
+      "variant": "TurnInterrupt",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/start",
+      "face": "client_request",
+      "variant": "ThreadRealtimeStart",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/start",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/appendAudio",
+      "face": "client_request",
+      "variant": "ThreadRealtimeAppendAudio",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/appendAudio",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/appendText",
+      "face": "client_request",
+      "variant": "ThreadRealtimeAppendText",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/appendText",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/appendSpeech",
+      "face": "client_request",
+      "variant": "ThreadRealtimeAppendSpeech",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/appendSpeech",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/stop",
+      "face": "client_request",
+      "variant": "ThreadRealtimeStop",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/stop",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/timeline/list",
+      "face": "client_request",
+      "variant": "ThreadTimelineList",
+      "experimental": true,
+      "experimental_reason": "thread/timeline/list",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/listVoices",
+      "face": "client_request",
+      "variant": "ThreadRealtimeListVoices",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/listVoices",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "review/start",
+      "face": "client_request",
+      "variant": "ReviewStart",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "model/list",
+      "face": "client_request",
+      "variant": "ModelList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/gatewayOAuth/read",
+      "face": "client_request",
+      "variant": "GatewayOAuthRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/gatewayOAuth/login",
+      "face": "client_request",
+      "variant": "GatewayOAuthLogin",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/gatewayOAuth/cancel",
+      "face": "client_request",
+      "variant": "GatewayOAuthCancel",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "modelProvider/capabilities/read",
+      "face": "client_request",
+      "variant": "ModelProviderCapabilitiesRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "experimentalFeature/list",
+      "face": "client_request",
+      "variant": "ExperimentalFeatureList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "permissionProfile/list",
+      "face": "client_request",
+      "variant": "PermissionProfileList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "experimentalFeature/enablement/set",
+      "face": "client_request",
+      "variant": "ExperimentalFeatureEnablementSet",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/enable",
+      "face": "client_request",
+      "variant": "RemoteControlEnable",
+      "experimental": true,
+      "experimental_reason": "remoteControl/enable",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/disable",
+      "face": "client_request",
+      "variant": "RemoteControlDisable",
+      "experimental": true,
+      "experimental_reason": "remoteControl/disable",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/status/read",
+      "face": "client_request",
+      "variant": "RemoteControlStatusRead",
+      "experimental": true,
+      "experimental_reason": "remoteControl/status/read",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/pairing/start",
+      "face": "client_request",
+      "variant": "RemoteControlPairingStart",
+      "experimental": true,
+      "experimental_reason": "remoteControl/pairing/start",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/pairing/status",
+      "face": "client_request",
+      "variant": "RemoteControlPairingStatus",
+      "experimental": true,
+      "experimental_reason": "remoteControl/pairing/status",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/client/list",
+      "face": "client_request",
+      "variant": "RemoteControlClientsList",
+      "experimental": true,
+      "experimental_reason": "remoteControl/client/list",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/client/revoke",
+      "face": "client_request",
+      "variant": "RemoteControlClientsRevoke",
+      "experimental": true,
+      "experimental_reason": "remoteControl/client/revoke",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "collaborationMode/list",
+      "face": "client_request",
+      "variant": "CollaborationModeList",
+      "experimental": true,
+      "experimental_reason": "collaborationMode/list",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mock/experimentalMethod",
+      "face": "client_request",
+      "variant": "MockExperimentalMethod",
+      "experimental": true,
+      "experimental_reason": "mock/experimentalMethod",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "environment/add",
+      "face": "client_request",
+      "variant": "EnvironmentAdd",
+      "experimental": true,
+      "experimental_reason": "environment/add",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "environment/info",
+      "face": "client_request",
+      "variant": "EnvironmentInfo",
+      "experimental": true,
+      "experimental_reason": "environment/info",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "environment/status",
+      "face": "client_request",
+      "variant": "EnvironmentStatus",
+      "experimental": true,
+      "experimental_reason": "environment/status",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/oauth/login",
+      "face": "client_request",
+      "variant": "McpServerOauthLogin",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "config/mcpServer/reload",
+      "face": "client_request",
+      "variant": "McpServerRefresh",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServerStatus/list",
+      "face": "client_request",
+      "variant": "McpServerStatusList",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/resource/read",
+      "face": "client_request",
+      "variant": "McpResourceRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/event/stream/start",
+      "face": "client_request",
+      "variant": "McpServerEventStreamStart",
+      "experimental": true,
+      "experimental_reason": "mcpServer/event/stream/start",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/event/stream/stop",
+      "face": "client_request",
+      "variant": "McpServerEventStreamStop",
+      "experimental": true,
+      "experimental_reason": "mcpServer/event/stream/stop",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/tool/call",
+      "face": "client_request",
+      "variant": "McpServerToolCall",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "windowsSandbox/setupStart",
+      "face": "client_request",
+      "variant": "WindowsSandboxSetupStart",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "windowsSandbox/readiness",
+      "face": "client_request",
+      "variant": "WindowsSandboxReadiness",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/login/start",
+      "face": "client_request",
+      "variant": "LoginAccount",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/bedrock/discover",
+      "face": "client_request",
+      "variant": "BedrockDiscover",
+      "experimental": true,
+      "experimental_reason": "account/bedrock/discover",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/bedrock/setup",
+      "face": "client_request",
+      "variant": "BedrockSetup",
+      "experimental": true,
+      "experimental_reason": "account/bedrock/setup",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/bedrock/checkGovCloudRequirements",
+      "face": "client_request",
+      "variant": "BedrockCheckGovCloudRequirements",
+      "experimental": true,
+      "experimental_reason": "account/bedrock/checkGovCloudRequirements",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/login/cancel",
+      "face": "client_request",
+      "variant": "CancelLoginAccount",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/logout",
+      "face": "client_request",
+      "variant": "LogoutAccount",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/rateLimits/read",
+      "face": "client_request",
+      "variant": "GetAccountRateLimits",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/rateLimitResetCredit/consume",
+      "face": "client_request",
+      "variant": "ConsumeAccountRateLimitResetCredit",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/usage/read",
+      "face": "client_request",
+      "variant": "GetAccountTokenUsage",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/workspaceMessages/read",
+      "face": "client_request",
+      "variant": "GetWorkspaceMessages",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/sendAddCreditsNudgeEmail",
+      "face": "client_request",
+      "variant": "SendAddCreditsNudgeEmail",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "feedback/upload",
+      "face": "client_request",
+      "variant": "FeedbackUpload",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "command/exec",
+      "face": "client_request",
+      "variant": "OneOffCommandExec",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "command/exec/write",
+      "face": "client_request",
+      "variant": "CommandExecWrite",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "command/exec/terminate",
+      "face": "client_request",
+      "variant": "CommandExecTerminate",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "command/exec/resize",
+      "face": "client_request",
+      "variant": "CommandExecResize",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "process/spawn",
+      "face": "client_request",
+      "variant": "ProcessSpawn",
+      "experimental": true,
+      "experimental_reason": "process/spawn",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "process/writeStdin",
+      "face": "client_request",
+      "variant": "ProcessWriteStdin",
+      "experimental": true,
+      "experimental_reason": "process/writeStdin",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "process/kill",
+      "face": "client_request",
+      "variant": "ProcessKill",
+      "experimental": true,
+      "experimental_reason": "process/kill",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "process/resizePty",
+      "face": "client_request",
+      "variant": "ProcessResizePty",
+      "experimental": true,
+      "experimental_reason": "process/resizePty",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "config/read",
+      "face": "client_request",
+      "variant": "ConfigRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "externalAgentConfig/detect",
+      "face": "client_request",
+      "variant": "ExternalAgentConfigDetect",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "externalAgentConfig/import",
+      "face": "client_request",
+      "variant": "ExternalAgentConfigImport",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "externalAgentConfig/import/recordHistory",
+      "face": "client_request",
+      "variant": "ExternalAgentConfigImportHistoryRecord",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "externalAgentConfig/import/readHistories",
+      "face": "client_request",
+      "variant": "ExternalAgentConfigImportHistoriesRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "config/value/write",
+      "face": "client_request",
+      "variant": "ConfigValueWrite",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "config/batchWrite",
+      "face": "client_request",
+      "variant": "ConfigBatchWrite",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "configRequirements/read",
+      "face": "client_request",
+      "variant": "ConfigRequirementsRead",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/read",
+      "face": "client_request",
+      "variant": "GetAccount",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "getConversationSummary",
+      "face": "client_request",
+      "variant": "GetConversationSummary",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": false,
+      "in_export_experimental": false,
+      "export_excluded": true
+    },
+    {
+      "method": "gitDiffToRemote",
+      "face": "client_request",
+      "variant": "GitDiffToRemote",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": false,
+      "in_export_experimental": false,
+      "export_excluded": true
+    },
+    {
+      "method": "getAuthStatus",
+      "face": "client_request",
+      "variant": "GetAuthStatus",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": false,
+      "in_export_experimental": false,
+      "export_excluded": true
+    },
+    {
+      "method": "fuzzyFileSearch",
+      "face": "client_request",
+      "variant": "FuzzyFileSearch",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fuzzyFileSearch/sessionStart",
+      "face": "client_request",
+      "variant": "FuzzyFileSearchSessionStart",
+      "experimental": true,
+      "experimental_reason": "fuzzyFileSearch/sessionStart",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fuzzyFileSearch/sessionUpdate",
+      "face": "client_request",
+      "variant": "FuzzyFileSearchSessionUpdate",
+      "experimental": true,
+      "experimental_reason": "fuzzyFileSearch/sessionUpdate",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fuzzyFileSearch/sessionStop",
+      "face": "client_request",
+      "variant": "FuzzyFileSearchSessionStop",
+      "experimental": true,
+      "experimental_reason": "fuzzyFileSearch/sessionStop",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/commandExecution/requestApproval",
+      "face": "server_request",
+      "variant": "CommandExecutionRequestApproval",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/fileChange/requestApproval",
+      "face": "server_request",
+      "variant": "FileChangeRequestApproval",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/tool/requestUserInput",
+      "face": "server_request",
+      "variant": "ToolRequestUserInput",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/elicitation/request",
+      "face": "server_request",
+      "variant": "McpServerElicitationRequest",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/permissions/requestApproval",
+      "face": "server_request",
+      "variant": "PermissionsRequestApproval",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/tool/call",
+      "face": "server_request",
+      "variant": "DynamicToolCall",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/chatgptAuthTokens/refresh",
+      "face": "server_request",
+      "variant": "ChatgptAuthTokensRefresh",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "attestation/generate",
+      "face": "server_request",
+      "variant": "AttestationGenerate",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "currentTime/read",
+      "face": "server_request",
+      "variant": "CurrentTimeRead",
+      "experimental": true,
+      "experimental_reason": "currentTime/read",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "applyPatchApproval",
+      "face": "server_request",
+      "variant": "ApplyPatchApproval",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "execCommandApproval",
+      "face": "server_request",
+      "variant": "ExecCommandApproval",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "error",
+      "face": "server_notification",
+      "variant": "Error",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/started",
+      "face": "server_notification",
+      "variant": "ThreadStarted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/status/changed",
+      "face": "server_notification",
+      "variant": "ThreadStatusChanged",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/archived",
+      "face": "server_notification",
+      "variant": "ThreadArchived",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/deleted",
+      "face": "server_notification",
+      "variant": "ThreadDeleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/unarchived",
+      "face": "server_notification",
+      "variant": "ThreadUnarchived",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/closed",
+      "face": "server_notification",
+      "variant": "ThreadClosed",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/reverted",
+      "face": "server_notification",
+      "variant": "ThreadReverted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "skills/changed",
+      "face": "server_notification",
+      "variant": "SkillsChanged",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/name/updated",
+      "face": "server_notification",
+      "variant": "ThreadNameUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/attachment/updated",
+      "face": "server_notification",
+      "variant": "ThreadAttachmentUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/goal/updated",
+      "face": "server_notification",
+      "variant": "ThreadGoalUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/prediction/updated",
+      "face": "server_notification",
+      "variant": "ThreadPredictionUpdated",
+      "experimental": true,
+      "experimental_reason": "thread/prediction/updated",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/goal/cleared",
+      "face": "server_notification",
+      "variant": "ThreadGoalCleared",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/queue/changed",
+      "face": "server_notification",
+      "variant": "ThreadQueueChanged",
+      "experimental": true,
+      "experimental_reason": "thread/queue/changed",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "project/changed",
+      "face": "server_notification",
+      "variant": "ProjectChanged",
+      "experimental": true,
+      "experimental_reason": "project/changed",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/project/updated",
+      "face": "server_notification",
+      "variant": "ThreadProjectUpdated",
+      "experimental": true,
+      "experimental_reason": "thread/project/updated",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/environment/connected",
+      "face": "server_notification",
+      "variant": "EnvironmentConnected",
+      "experimental": true,
+      "experimental_reason": "thread/environment/connected",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/environment/disconnected",
+      "face": "server_notification",
+      "variant": "EnvironmentDisconnected",
+      "experimental": true,
+      "experimental_reason": "thread/environment/disconnected",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/settings/updated",
+      "face": "server_notification",
+      "variant": "ThreadSettingsUpdated",
+      "experimental": true,
+      "experimental_reason": "thread/settings/updated",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/tokenUsage/updated",
+      "face": "server_notification",
+      "variant": "ThreadTokenUsageUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/started",
+      "face": "server_notification",
+      "variant": "TurnStarted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "hook/started",
+      "face": "server_notification",
+      "variant": "HookStarted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/completed",
+      "face": "server_notification",
+      "variant": "TurnCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "hook/completed",
+      "face": "server_notification",
+      "variant": "HookCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/diff/updated",
+      "face": "server_notification",
+      "variant": "TurnDiffUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/plan/updated",
+      "face": "server_notification",
+      "variant": "TurnPlanUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/started",
+      "face": "server_notification",
+      "variant": "ItemStarted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/autoApprovalReview/started",
+      "face": "server_notification",
+      "variant": "ItemGuardianApprovalReviewStarted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/autoApprovalReview/completed",
+      "face": "server_notification",
+      "variant": "ItemGuardianApprovalReviewCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "autoApprovalReview/strictReviewRequired",
+      "face": "server_notification",
+      "variant": "StrictReviewRequired",
+      "experimental": true,
+      "experimental_reason": "autoApprovalReview/strictReviewRequired",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/completed",
+      "face": "server_notification",
+      "variant": "ItemCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "rawResponseItem/completed",
+      "face": "server_notification",
+      "variant": "RawResponseItemCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": false,
+      "in_export_experimental": false,
+      "export_excluded": true
+    },
+    {
+      "method": "rawResponse/completed",
+      "face": "server_notification",
+      "variant": "RawResponseCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": false,
+      "in_export_experimental": false,
+      "export_excluded": true
+    },
+    {
+      "method": "item/agentMessage/delta",
+      "face": "server_notification",
+      "variant": "AgentMessageDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/plan/delta",
+      "face": "server_notification",
+      "variant": "PlanDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "command/exec/outputDelta",
+      "face": "server_notification",
+      "variant": "CommandExecOutputDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "process/outputDelta",
+      "face": "server_notification",
+      "variant": "ProcessOutputDelta",
+      "experimental": true,
+      "experimental_reason": "process/outputDelta",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "process/exited",
+      "face": "server_notification",
+      "variant": "ProcessExited",
+      "experimental": true,
+      "experimental_reason": "process/exited",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/commandExecution/outputDelta",
+      "face": "server_notification",
+      "variant": "CommandExecutionOutputDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/commandExecution/terminalInteraction",
+      "face": "server_notification",
+      "variant": "TerminalInteraction",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/fileChange/outputDelta",
+      "face": "server_notification",
+      "variant": "FileChangeOutputDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/fileChange/patchUpdated",
+      "face": "server_notification",
+      "variant": "FileChangePatchUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "serverRequest/resolved",
+      "face": "server_notification",
+      "variant": "ServerRequestResolved",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/mcpToolCall/progress",
+      "face": "server_notification",
+      "variant": "McpToolCallProgress",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/oauthLogin/completed",
+      "face": "server_notification",
+      "variant": "McpServerOauthLoginCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/startupStatus/updated",
+      "face": "server_notification",
+      "variant": "McpServerStatusUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "mcpServer/event/stream/notification",
+      "face": "server_notification",
+      "variant": "McpServerEventStream",
+      "experimental": true,
+      "experimental_reason": "mcpServer/event/stream/notification",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/updated",
+      "face": "server_notification",
+      "variant": "AccountUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/gatewayOAuth/changed",
+      "face": "server_notification",
+      "variant": "GatewayOAuthChanged",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/rateLimits/updated",
+      "face": "server_notification",
+      "variant": "AccountRateLimitsUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "app/list/updated",
+      "face": "server_notification",
+      "variant": "AppListUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "remoteControl/status/changed",
+      "face": "server_notification",
+      "variant": "RemoteControlStatusChanged",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "externalAgentConfig/import/progress",
+      "face": "server_notification",
+      "variant": "ExternalAgentConfigImportProgress",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "externalAgentConfig/import/completed",
+      "face": "server_notification",
+      "variant": "ExternalAgentConfigImportCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fs/changed",
+      "face": "server_notification",
+      "variant": "FsChanged",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/reasoning/summaryTextDelta",
+      "face": "server_notification",
+      "variant": "ReasoningSummaryTextDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/reasoning/summaryPartAdded",
+      "face": "server_notification",
+      "variant": "ReasoningSummaryPartAdded",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "item/reasoning/textDelta",
+      "face": "server_notification",
+      "variant": "ReasoningTextDelta",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/compacted",
+      "face": "server_notification",
+      "variant": "ContextCompacted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "model/rerouted",
+      "face": "server_notification",
+      "variant": "ModelRerouted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "model/verification",
+      "face": "server_notification",
+      "variant": "ModelVerification",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "modelProvider/authRecoveryStarted",
+      "face": "server_notification",
+      "variant": "AuthRecoveryStarted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "modelProvider/authRecoveryCompleted",
+      "face": "server_notification",
+      "variant": "AuthRecoveryCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "turn/moderationMetadata",
+      "face": "server_notification",
+      "variant": "TurnModerationMetadata",
+      "experimental": true,
+      "experimental_reason": "turn/moderationMetadata",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "model/safetyBuffering/updated",
+      "face": "server_notification",
+      "variant": "ModelSafetyBufferingUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "warning",
+      "face": "server_notification",
+      "variant": "Warning",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "guardianWarning",
+      "face": "server_notification",
+      "variant": "GuardianWarning",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "deprecationNotice",
+      "face": "server_notification",
+      "variant": "DeprecationNotice",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "configWarning",
+      "face": "server_notification",
+      "variant": "ConfigWarning",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fuzzyFileSearch/sessionUpdated",
+      "face": "server_notification",
+      "variant": "FuzzyFileSearchSessionUpdated",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "fuzzyFileSearch/sessionCompleted",
+      "face": "server_notification",
+      "variant": "FuzzyFileSearchSessionCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/started",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeStarted",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/started",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/itemAdded",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeItemAdded",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/itemAdded",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/item/started",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeItemStarted",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/item/started",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/item/transcript/delta",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeItemTranscriptDelta",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/item/transcript/delta",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/item/completed",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeItemCompleted",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/item/completed",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/transcript/delta",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeTranscriptDelta",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/transcript/delta",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/transcript/done",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeTranscriptDone",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/transcript/done",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/outputAudio/delta",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeOutputAudioDelta",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/outputAudio/delta",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/sdp",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeSdp",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/sdp",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/error",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeError",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/error",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/realtime/closed",
+      "face": "server_notification",
+      "variant": "ThreadRealtimeClosed",
+      "experimental": true,
+      "experimental_reason": "thread/realtime/closed",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "windows/worldWritableWarning",
+      "face": "server_notification",
+      "variant": "WindowsWorldWritableWarning",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "windowsSandbox/setupCompleted",
+      "face": "server_notification",
+      "variant": "WindowsSandboxSetupCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "account/login/completed",
+      "face": "server_notification",
+      "variant": "AccountLoginCompleted",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "initialized",
+      "face": "client_notification",
+      "variant": "Initialized",
+      "experimental": false,
+      "experimental_reason": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    }
+  ]
+}

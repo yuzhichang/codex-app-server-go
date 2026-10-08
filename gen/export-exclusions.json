@@ -1,0 +1,27 @@
+[
+  {
+    "method": "getAuthStatus",
+    "face": "client_request",
+    "reason": "v1 deprecated top-level method; not emitted by the export"
+  },
+  {
+    "method": "getConversationSummary",
+    "face": "client_request",
+    "reason": "v1 deprecated top-level method; not emitted by the export"
+  },
+  {
+    "method": "gitDiffToRemote",
+    "face": "client_request",
+    "reason": "v1 deprecated top-level method; not emitted by the export"
+  },
+  {
+    "method": "rawResponse/completed",
+    "face": "server_notification",
+    "reason": "internal-only (common.rs:1979 'This event is internal-only')"
+  },
+  {
+    "method": "rawResponseItem/completed",
+    "face": "server_notification",
+    "reason": "internal-only (common.rs:1977 'This event is internal-only')"
+  }
+]

@@ -416,6 +416,35 @@
 
 **能力缺口（GAP）仍未分诊**：共 73 个缺失字段，最多为 `ThreadForkParams`(14)、`ThreadListParams`(11)、`ThreadForkResponse`(10)、`ThreadStartParams`(9)、`Thread`(8)、`TurnStartParams`(7)。性质是"**用户无法表达**"而非"发错值"。
 
+### T1.6 生成器支持判别联合体（**可行性已验证：可做，且是 T1.2 迁移的前置条件**）
+
+**为什么要做**：生成器把所有联合体退化为 `= json.RawMessage`，这使 T1.2 的迁移变成**回退**（见下节）。补上这个能力后，① 迁移才安全；② 目前已退化的类型获得类型化访问；③ 我**已手写这个模式 4 次**（`UserInput`/`ReviewTarget`/`SandboxPolicy`/elicitation）的手写副本可删除。
+
+**度量（vendor 聚合 schema）**：
+
+| 联合体类别 | 数 | 可自动化？ |
+|---|---|---|
+| **tagged-object**（每个分支都是带 `type` 枚举判别字段的对象） | **36** | ✅ 可 → 扁平判别结构体 |
+| **string-arm**（含裸字符串分支，如 `AskForApproval`） | **17** | ⚠️ 需**自定义 `MarshalJSON`**（结构体恒编码为对象，表达不了裸字符串分支） |
+| 其它 | 12 | 需逐个判断 |
+
+其中 **28 个今天是 `= json.RawMessage`**（13 个 tagged-object + 10 个 string-arm）—— 即退化是**普遍现象**，不是个案。
+
+**36 个 tagged-object 的细分**：
+- **27 个分支间无字段名冲突** ⇒ 扁平结构体可直接安全产出。
+- **9 个有冲突**（同名不同型，例：`CommandAction.path`: `LegacyAppPathString` vs `null|string`；`ResponseItem.content`: `array` vs `array|null`）。
+- **34 处嵌套联合体字段**（分支字段本身是联合体）。
+
+**可实施规则（已验证足以覆盖全部 36 个）**：
+1. 分支字段按名合并，`Type string` 判别字段 + 各分支字段并集；
+2. **嵌套联合体字段 → `json.RawMessage` 回退**（这正是我手写 `SandboxPolicy.networkAccess` 的做法）；
+3. **冲突字段 → `json.RawMessage` 回退**，而非发明合并语义（保留形状、不猜）；
+4. 生成 `Type` 常量块 + 各分支构造器；字段按生成器的字母序约定排列。
+
+> 规则 1–4 对 `SandboxPolicy` 产出的形状应与我的手写版本**等价**（它的 `networkAccess` 恰好走规则 2）。`UserInput`/`ReviewTarget` 无冲突，走规则 1。
+
+**尚未实施**：这是一次生成器能力扩展，需重新生成全部产物并逐项比对，属独立工作；**在它落地前，T1.2 的迁移仍是回退，不可做**。
+
 ### T1.2 剩余部分（清理，非修 bug）—— 已度量，**不建议直接开工**
 
 **度量方法**：把生成器输出到**空目录**（`existing={}` 被清空）得到"整个 surface 能生成什么"，再与手写子集比对。

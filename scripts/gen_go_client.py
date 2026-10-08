@@ -122,6 +122,16 @@ def main() -> int:
     tests: list[str] = []
     skipped: list[str] = []
 
+    # Ensure a constant exists for every in-scope method, not only client requests:
+    # notification decoder cases need one to switch on.
+    for m in methods:
+        if m.get("experimental") or (m["method"], m["face"]) in whitelist:
+            continue
+        if m["method"] not in consts:
+            generated_name = "Method" + m["variant"]
+            consts[m["method"]] = generated_name
+            new_consts.append((generated_name, m["method"]))
+
     for m in methods:
         if m["face"] != "client_request" or m.get("experimental"):
             continue
@@ -409,9 +419,32 @@ def notification_decoders() -> dict[str, str]:
     return out
 
 
+_ALIAS = re.compile(r"^\t(\w+)\s*=\s*(?:schematypes|protocol)\.(\w+)", re.M)
+
+
+def alias_targets() -> dict[str, str]:
+    """codexgo name -> the name it aliases, so expectations name the reflected type."""
+    out: dict[str, str] = {}
+    for path in SDK_ROOT.glob("*.go"):
+        if path.name.endswith("_test.go"):
+            continue
+        out.update(dict(_ALIAS.findall(path.read_text(errors="replace"))))
+    return out
+
+
+def resolve(name: str, aliases: dict[str, str]) -> str:
+    """Follow an alias chain to the name reflect will print."""
+    seen = set()
+    while name in aliases and name not in seen:
+        seen.add(name)
+        name = aliases[name]
+    return name
+
+
 def render_notification_tests(methods: list[dict], whitelist: set, consts: dict[str, str]) -> list[tuple[str, str]]:
-    """(wire, event type) for every declared-stable notification that has a decoder case."""
+    """(wire, reflected event type) for every declared-stable notification with a decoder."""
     decoders = notification_decoders()
+    aliases = alias_targets()
     cases: list[tuple[str, str]] = []
     for m in methods:
         if m["face"] != "server_notification" or m.get("experimental"):
@@ -421,7 +454,9 @@ def render_notification_tests(methods: list[dict], whitelist: set, consts: dict[
         const = consts.get(m["method"])
         t = decoders.get(const) if const else None
         if t:
-            cases.append((m["method"], t))
+            # The decoder case names a codexgo type, which may itself be an alias; reflect
+            # reports the *underlying* type, so resolve before comparing.
+            cases.append((m["method"], resolve(t, aliases)))
     return cases
 
 

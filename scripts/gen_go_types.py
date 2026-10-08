@@ -32,6 +32,17 @@ _STRUCT = re.compile(r"^type (\w+)\b", re.M)
 # Go types that already represent "absent" without an extra pointer.
 _NILABLE = {"json.RawMessage", "map[string]any", "any", "struct{}"}
 
+# Notifications whose schema type does not follow `<Variant>Notification`.
+#
+# `modelProvider/authRecoveryStarted` and `/authRecoveryCompleted` share ONE payload type,
+# AuthRecoveryNotification{message, provider, threadId, turnId}. The payload carries no
+# started/completed discriminator, so a client must switch on the method name -- decoding
+# the body alone cannot tell the two events apart.
+NOTIFICATION_TYPE_OVERRIDES = {
+    "AuthRecoveryStarted": "AuthRecoveryNotification",
+    "AuthRecoveryCompleted": "AuthRecoveryNotification",
+}
+
 
 # Go initialisms, so generated field names match the rest of the package. Without this the
 # generator emits `RemotePluginId` next to the hand-written `RemotePluginID` for the very
@@ -229,6 +240,13 @@ def main() -> int:
                 name = m.get(key)
                 if name and name in defs:
                     wanted_names.add(name)
+            # Notification payloads too, so decoder cases have a type to decode into.
+            if m.get("face") == "server_notification":
+                guessed = m["variant"] + "Notification"
+                if guessed in defs:
+                    wanted_names.add(guessed)
+                elif m["variant"] in NOTIFICATION_TYPE_OVERRIDES:
+                    wanted_names.add(NOTIFICATION_TYPE_OVERRIDES[m["variant"]])
         wanted: set[str] = {n for n in wanted_names if n not in existing}
     else:
         wanted = {n for n in defs if rx.search(n) and n not in existing}

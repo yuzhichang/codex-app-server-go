@@ -981,6 +981,15 @@
     "test": "generated_client_methods_test.go"
   },
   {
+    "method": "account/gatewayOAuth/changed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "account/login/completed",
     "face": "server_notification",
     "kind": "notification_decoder",
@@ -1078,6 +1087,24 @@
       "events_extra.go"
     ],
     "test": "events_extra_test.go"
+  },
+  {
+    "method": "fuzzyFileSearch/sessionCompleted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "fuzzyFileSearch/sessionUpdated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "guardianWarning",
@@ -1260,6 +1287,15 @@
     "test": "events_extra_test.go"
   },
   {
+    "method": "model/safetyBuffering/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "model/verification",
     "face": "server_notification",
     "kind": "notification_decoder",
@@ -1267,6 +1303,24 @@
       "events_extra.go"
     ],
     "test": "events_extra_test.go"
+  },
+  {
+    "method": "modelProvider/authRecoveryCompleted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "modelProvider/authRecoveryStarted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "rawResponseItem/completed",
@@ -1310,6 +1364,15 @@
     "kind": "notification_decoder",
     "wiring": [
       "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/attachment/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
     ],
     "test": "generated_client_methods_test.go"
   },
@@ -1366,6 +1429,15 @@
       "events_extra.go"
     ],
     "test": "events_extra_test.go"
+  },
+  {
+    "method": "thread/reverted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/started",

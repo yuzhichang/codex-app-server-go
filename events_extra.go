@@ -2,6 +2,7 @@ package codexgo
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/zealbase/codex-app-server-go/internal/protocol"
 )
@@ -327,91 +328,40 @@ func extraEventTarget(method string) any {
 		return &ThreadRealtimeTranscriptDeltaEvent{}
 	case protocol.MethodThreadRealtimeTranscriptDone:
 		return &ThreadRealtimeTranscriptDoneEvent{}
+	// NP6 — formerly unimplemented stable notifications.
+	case protocol.MethodThreadReverted:
+		return &ThreadRevertedEvent{}
+	case protocol.MethodThreadAttachmentUpdated:
+		return &ThreadAttachmentUpdatedEvent{}
+	case protocol.MethodGatewayOAuthChanged:
+		return &AccountGatewayOAuthChangedEvent{}
+	case protocol.MethodFuzzyFileSearchSessionUpdated:
+		return &FuzzyFileSearchSessionUpdatedEvent{}
+	case protocol.MethodFuzzyFileSearchSessionCompleted:
+		return &FuzzyFileSearchSessionCompletedEvent{}
+	case protocol.MethodModelSafetyBufferingUpdated:
+		return &ModelSafetyBufferingUpdatedEvent{}
+	// These two share one payload type: AuthRecoveryNotification carries no
+	// started/completed discriminator, so the method name is the only signal.
+	case protocol.MethodAuthRecoveryStarted:
+		return &ModelProviderAuthRecoveryStartedEvent{}
+	case protocol.MethodAuthRecoveryCompleted:
+		return &ModelProviderAuthRecoveryCompletedEvent{}
 	default:
 		return nil
 	}
 }
 
 // derefExtraEvent returns the dereferenced value for an extra event pointer.
+//
+// This is deliberately generic. It used to be a hand-maintained type switch listing every
+// event type, which meant each new event needed a second edit here; forgetting it made the
+// event's Value nil and panicked the consumer. `extraEventTarget` only ever produces
+// pointers to event structs, so dereferencing any non-nil pointer is correct.
 func derefExtraEvent(v any) (any, bool) {
-	switch x := v.(type) {
-	case *ThreadDeletedEvent:
-		return *x, true
-	case *ThreadNameUpdatedEvent:
-		return *x, true
-	case *ThreadCompactedEvent:
-		return *x, true
-	case *ThreadSettingsUpdatedEvent:
-		return *x, true
-	case *AccountUpdatedEvent:
-		return *x, true
-	case *AccountRateLimitsUpdatedEvent:
-		return *x, true
-	case *WarningEvent:
-		return *x, true
-	case *ConfigWarningEvent:
-		return *x, true
-	case *DeprecationNoticeEvent:
-		return *x, true
-	case *GuardianWarningEvent:
-		return *x, true
-	case *WindowsWorldWritableWarningEvent:
-		return *x, true
-	case *WindowsSandboxSetupCompletedEvent:
-		return *x, true
-	case *ModelReroutedEvent:
-		return *x, true
-	case *ModelVerificationEvent:
-		return *x, true
-	case *TurnModerationMetadataEvent:
-		return *x, true
-	case *ProcessExitedEvent:
-		return *x, true
-	case *ProcessOutputDeltaEvent:
-		return *x, true
-	case *TerminalInteractionEvent:
-		return *x, true
-	case *McpToolCallProgressEvent:
-		return *x, true
-	case *HookStartedEvent:
-		return *x, true
-	case *HookCompletedEvent:
-		return *x, true
-	case *RawResponseItemCompletedEvent:
-		return *x, true
-	case *McpServerStatusUpdatedEvent:
-		return *x, true
-	case *McpServerOauthLoginCompletedEvent:
-		return *x, true
-	case *SkillsChangedEvent:
-		return *x, true
-	case *FsChangedEvent:
-		return *x, true
-	case *AppListUpdatedEvent:
-		return *x, true
-	case *RemoteControlStatusChangedEvent:
-		return *x, true
-	case *ExternalAgentConfigImportCompletedEvent:
-		return *x, true
-	case *ExternalAgentConfigImportProgressEvent:
-		return *x, true
-	case *ThreadRealtimeStartedEvent:
-		return *x, true
-	case *ThreadRealtimeClosedEvent:
-		return *x, true
-	case *ThreadRealtimeErrorEvent:
-		return *x, true
-	case *ThreadRealtimeItemAddedEvent:
-		return *x, true
-	case *ThreadRealtimeSdpEvent:
-		return *x, true
-	case *ThreadRealtimeOutputAudioDeltaEvent:
-		return *x, true
-	case *ThreadRealtimeTranscriptDeltaEvent:
-		return *x, true
-	case *ThreadRealtimeTranscriptDoneEvent:
-		return *x, true
-	default:
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return nil, false
 	}
+	return rv.Elem().Interface(), true
 }

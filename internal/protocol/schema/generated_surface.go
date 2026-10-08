@@ -12,6 +12,19 @@ import "encoding/json"
 // Account mirrors the upstream `Account` definition.
 type Account = json.RawMessage
 
+// AccountLoginCompletedNotification mirrors the upstream `AccountLoginCompletedNotification` definition.
+type AccountLoginCompletedNotification struct {
+	Error                string                       `json:"error,omitempty"`
+	LoginID              string                       `json:"loginId,omitempty"`
+	OnboardingEntrypoint *DesktopOnboardingEntrypoint `json:"onboardingEntrypoint,omitempty"`
+	Success              bool                         `json:"success"`
+}
+
+// AccountRateLimitsUpdatedNotification mirrors the upstream `AccountRateLimitsUpdatedNotification` definition.
+type AccountRateLimitsUpdatedNotification struct {
+	RateLimits RateLimitSnapshot `json:"rateLimits"`
+}
+
 // AccountTokenUsageDailyBucket mirrors the upstream `AccountTokenUsageDailyBucket` definition.
 type AccountTokenUsageDailyBucket struct {
 	StartDate string `json:"startDate"`
@@ -25,6 +38,12 @@ type AccountTokenUsageSummary struct {
 	LongestRunningTurnSec int64 `json:"longestRunningTurnSec,omitempty"`
 	LongestStreakDays     int64 `json:"longestStreakDays,omitempty"`
 	PeakDailyTokens       int64 `json:"peakDailyTokens,omitempty"`
+}
+
+// AccountUpdatedNotification mirrors the upstream `AccountUpdatedNotification` definition.
+type AccountUpdatedNotification struct {
+	AuthMode *AuthMode `json:"authMode,omitempty"`
+	PlanType *PlanType `json:"planType,omitempty"`
 }
 
 // AddCreditsNudgeCreditType mirrors the upstream `AddCreditsNudgeCreditType` enum.
@@ -43,6 +62,30 @@ const (
 	AddCreditsNudgeEmailStatusCooldownActive AddCreditsNudgeEmailStatus = "cooldown_active"
 )
 
+// AdditionalFileSystemPermissions mirrors the upstream `AdditionalFileSystemPermissions` definition.
+type AdditionalFileSystemPermissions struct {
+	Entries          []FileSystemSandboxEntry `json:"entries,omitempty"`
+	GlobScanMaxDepth int64                    `json:"globScanMaxDepth,omitempty"`
+	Read             []LegacyAppPathString    `json:"read,omitempty"`
+	Write            []LegacyAppPathString    `json:"write,omitempty"`
+}
+
+// AdditionalNetworkPermissions mirrors the upstream `AdditionalNetworkPermissions` definition.
+type AdditionalNetworkPermissions struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// AgentMessageDeltaNotification mirrors the upstream `AgentMessageDeltaNotification` definition.
+type AgentMessageDeltaNotification struct {
+	Delta    string `json:"delta"`
+	ItemID   string `json:"itemId"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+}
+
+// AgentMessageInputContent mirrors the upstream `AgentMessageInputContent` definition.
+type AgentMessageInputContent = json.RawMessage
+
 // AllowDenyRequirement mirrors the upstream `AllowDenyRequirement` enum.
 type AllowDenyRequirement string
 
@@ -59,8 +102,26 @@ type AnalyticsConfig struct {
 // AskForApproval mirrors the upstream `AskForApproval` definition.
 type AskForApproval = json.RawMessage
 
+// AuthMode mirrors the upstream `AuthMode` definition.
+type AuthMode = json.RawMessage
+
+// AuthRecoveryNotification mirrors the upstream `AuthRecoveryNotification` definition.
+type AuthRecoveryNotification struct {
+	Message  string `json:"message"`
+	Provider string `json:"provider"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+}
+
 // AutoCompactTokenLimitScope mirrors the upstream `AutoCompactTokenLimitScope` definition.
 type AutoCompactTokenLimitScope = json.RawMessage
+
+// AutoReviewDecisionSource mirrors the upstream `AutoReviewDecisionSource` enum.
+type AutoReviewDecisionSource string
+
+const (
+	AutoReviewDecisionSourceAgent AutoReviewDecisionSource = "agent"
+)
 
 // AutoReviewRequirements mirrors the upstream `AutoReviewRequirements` definition.
 type AutoReviewRequirements struct {
@@ -152,6 +213,17 @@ type CollaborationMode struct {
 	Settings Settings `json:"settings"`
 }
 
+// CommandExecOutputDeltaNotification mirrors the upstream `CommandExecOutputDeltaNotification` definition.
+type CommandExecOutputDeltaNotification struct {
+	CapReached  bool                    `json:"capReached"`
+	DeltaBase64 string                  `json:"deltaBase64"`
+	ProcessID   string                  `json:"processId"`
+	Stream      CommandExecOutputStream `json:"stream"`
+}
+
+// CommandExecOutputStream mirrors the upstream `CommandExecOutputStream` definition.
+type CommandExecOutputStream = json.RawMessage
+
 // CommandExecParams mirrors the upstream `CommandExecParams` definition.
 type CommandExecParams struct {
 	Command            []string                 `json:"command"`
@@ -208,6 +280,14 @@ type CommandExecWriteParams struct {
 
 // CommandExecWriteResponse mirrors the upstream `CommandExecWriteResponse` definition.
 type CommandExecWriteResponse = struct{}
+
+// CommandExecutionOutputDeltaNotification mirrors the upstream `CommandExecutionOutputDeltaNotification` definition.
+type CommandExecutionOutputDeltaNotification struct {
+	Delta    string `json:"delta"`
+	ItemID   string `json:"itemId"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+}
 
 // CommandMigration mirrors the upstream `CommandMigration` definition.
 type CommandMigration struct {
@@ -390,12 +470,25 @@ type ConfigValueWriteParams struct {
 	Value           json.RawMessage `json:"value"`
 }
 
+// ConfigWarningNotification mirrors the upstream `ConfigWarningNotification` definition.
+type ConfigWarningNotification struct {
+	Details string     `json:"details,omitempty"`
+	Path    string     `json:"path,omitempty"`
+	Range   *TextRange `json:"range,omitempty"`
+	Summary string     `json:"summary"`
+}
+
 // ConfigWriteResponse mirrors the upstream `ConfigWriteResponse` definition.
 type ConfigWriteResponse struct {
 	FilePath           AbsolutePathBuf     `json:"filePath"`
 	OverriddenMetadata *OverriddenMetadata `json:"overriddenMetadata,omitempty"`
 	Status             WriteStatus         `json:"status"`
 	Version            string              `json:"version"`
+}
+
+// ConfigurationReasoning mirrors the upstream `ConfigurationReasoning` definition.
+type ConfigurationReasoning struct {
+	Effort ReasoningEffort `json:"effort"`
 }
 
 // ConsumeAccountRateLimitResetCreditOutcome mirrors the upstream `ConsumeAccountRateLimitResetCreditOutcome` definition.
@@ -410,6 +503,15 @@ type ConsumeAccountRateLimitResetCreditParams struct {
 // ConsumeAccountRateLimitResetCreditResponse mirrors the upstream `ConsumeAccountRateLimitResetCreditResponse` definition.
 type ConsumeAccountRateLimitResetCreditResponse struct {
 	Outcome ConsumeAccountRateLimitResetCreditOutcome `json:"outcome"`
+}
+
+// ContentItem mirrors the upstream `ContentItem` definition.
+type ContentItem = json.RawMessage
+
+// ContextCompactedNotification mirrors the upstream `ContextCompactedNotification` definition.
+type ContextCompactedNotification struct {
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
 }
 
 // CreditsSnapshot mirrors the upstream `CreditsSnapshot` definition.
@@ -427,6 +529,27 @@ const (
 	CyberAccessProgramDaybreakBlue CyberAccessProgram = "daybreakBlue"
 	CyberAccessProgramDaybreakRed  CyberAccessProgram = "daybreakRed"
 )
+
+// DeprecationNoticeNotification mirrors the upstream `DeprecationNoticeNotification` definition.
+type DeprecationNoticeNotification struct {
+	Details string `json:"details,omitempty"`
+	Summary string `json:"summary"`
+}
+
+// DesktopOnboardingEntrypoint mirrors the upstream `DesktopOnboardingEntrypoint` enum.
+type DesktopOnboardingEntrypoint string
+
+const (
+	DesktopOnboardingEntrypointLifeSciences DesktopOnboardingEntrypoint = "life_sciences"
+)
+
+// ErrorNotification mirrors the upstream `ErrorNotification` definition.
+type ErrorNotification struct {
+	Error     TurnError `json:"error"`
+	ThreadID  string    `json:"threadId"`
+	TurnID    string    `json:"turnId"`
+	WillRetry bool      `json:"willRetry"`
+}
 
 // ExperimentalFeature mirrors the upstream `ExperimentalFeature` definition.
 type ExperimentalFeature struct {
@@ -479,6 +602,12 @@ type ExternalAgentConfigDetectParams struct {
 type ExternalAgentConfigDetectResponse struct {
 	Connectors []ExternalAgentDetectedConnectorCandidate `json:"connectors,omitempty"`
 	Items      []ExternalAgentConfigMigrationItem        `json:"items"`
+}
+
+// ExternalAgentConfigImportCompletedNotification mirrors the upstream `ExternalAgentConfigImportCompletedNotification` definition.
+type ExternalAgentConfigImportCompletedNotification struct {
+	ImportID        string                                `json:"importId"`
+	ItemTypeResults []ExternalAgentConfigImportTypeResult `json:"itemTypeResults"`
 }
 
 // ExternalAgentConfigImportHistoriesReadResponse mirrors the upstream `ExternalAgentConfigImportHistoriesReadResponse` definition.
@@ -551,9 +680,22 @@ type ExternalAgentConfigImportParams struct {
 	Source          string                             `json:"source,omitempty"`
 }
 
+// ExternalAgentConfigImportProgressNotification mirrors the upstream `ExternalAgentConfigImportProgressNotification` definition.
+type ExternalAgentConfigImportProgressNotification struct {
+	ImportID        string                                `json:"importId"`
+	ItemTypeResults []ExternalAgentConfigImportTypeResult `json:"itemTypeResults"`
+}
+
 // ExternalAgentConfigImportResponse mirrors the upstream `ExternalAgentConfigImportResponse` definition.
 type ExternalAgentConfigImportResponse struct {
 	ImportID string `json:"importId"`
+}
+
+// ExternalAgentConfigImportTypeResult mirrors the upstream `ExternalAgentConfigImportTypeResult` definition.
+type ExternalAgentConfigImportTypeResult struct {
+	Failures  []ExternalAgentConfigImportItemTypeFailure `json:"failures"`
+	ItemType  ExternalAgentConfigMigrationItemType       `json:"itemType"`
+	Successes []ExternalAgentConfigImportItemTypeSuccess `json:"successes"`
 }
 
 // ExternalAgentConfigMigrationItem mirrors the upstream `ExternalAgentConfigMigrationItem` definition.
@@ -630,6 +772,50 @@ type FeedbackUploadResponse struct {
 	ThreadID   string `json:"threadId"`
 }
 
+// FileChangeOutputDeltaNotification mirrors the upstream `FileChangeOutputDeltaNotification` definition.
+type FileChangeOutputDeltaNotification struct {
+	Delta    string `json:"delta"`
+	ItemID   string `json:"itemId"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+}
+
+// FileChangePatchUpdatedNotification mirrors the upstream `FileChangePatchUpdatedNotification` definition.
+type FileChangePatchUpdatedNotification struct {
+	Changes  []FileUpdateChange `json:"changes"`
+	ItemID   string             `json:"itemId"`
+	ThreadID string             `json:"threadId"`
+	TurnID   string             `json:"turnId"`
+}
+
+// FileSystemAccessMode mirrors the upstream `FileSystemAccessMode` enum.
+type FileSystemAccessMode string
+
+const (
+	FileSystemAccessModeRead  FileSystemAccessMode = "read"
+	FileSystemAccessModeWrite FileSystemAccessMode = "write"
+	FileSystemAccessModeDeny  FileSystemAccessMode = "deny"
+)
+
+// FileSystemPath mirrors the upstream `FileSystemPath` definition.
+type FileSystemPath = json.RawMessage
+
+// FileSystemSandboxEntry mirrors the upstream `FileSystemSandboxEntry` definition.
+type FileSystemSandboxEntry struct {
+	Access FileSystemAccessMode `json:"access"`
+	Path   FileSystemPath       `json:"path"`
+}
+
+// FileSystemSpecialPath mirrors the upstream `FileSystemSpecialPath` definition.
+type FileSystemSpecialPath = json.RawMessage
+
+// FileUpdateChange mirrors the upstream `FileUpdateChange` definition.
+type FileUpdateChange struct {
+	Diff string          `json:"diff"`
+	Kind PatchChangeKind `json:"kind"`
+	Path string          `json:"path"`
+}
+
 // ForcedChatgptWorkspaceIds mirrors the upstream `ForcedChatgptWorkspaceIds` definition.
 type ForcedChatgptWorkspaceIds = json.RawMessage
 
@@ -641,6 +827,20 @@ const (
 	ForcedLoginMethodAPI     ForcedLoginMethod = "api"
 )
 
+// FunctionCallOutputBody mirrors the upstream `FunctionCallOutputBody` definition.
+type FunctionCallOutputBody = json.RawMessage
+
+// FunctionCallOutputContentItem mirrors the upstream `FunctionCallOutputContentItem` definition.
+type FunctionCallOutputContentItem = json.RawMessage
+
+// FuzzyFileSearchMatchType mirrors the upstream `FuzzyFileSearchMatchType` enum.
+type FuzzyFileSearchMatchType string
+
+const (
+	FuzzyFileSearchMatchTypeFile      FuzzyFileSearchMatchType = "file"
+	FuzzyFileSearchMatchTypeDirectory FuzzyFileSearchMatchType = "directory"
+)
+
 // FuzzyFileSearchParams mirrors the upstream `FuzzyFileSearchParams` definition.
 type FuzzyFileSearchParams struct {
 	CancellationToken string   `json:"cancellationToken,omitempty"`
@@ -648,8 +848,38 @@ type FuzzyFileSearchParams struct {
 	Roots             []string `json:"roots"`
 }
 
+// FuzzyFileSearchResult mirrors the upstream `FuzzyFileSearchResult` definition.
+type FuzzyFileSearchResult struct {
+	FileName  string                   `json:"file_name"`
+	Indices   []int64                  `json:"indices,omitempty"`
+	MatchType FuzzyFileSearchMatchType `json:"match_type"`
+	Path      string                   `json:"path"`
+	Root      string                   `json:"root"`
+	Score     int64                    `json:"score"`
+}
+
+// FuzzyFileSearchSessionCompletedNotification mirrors the upstream `FuzzyFileSearchSessionCompletedNotification` definition.
+type FuzzyFileSearchSessionCompletedNotification struct {
+	SessionID string `json:"sessionId"`
+}
+
+// FuzzyFileSearchSessionUpdatedNotification mirrors the upstream `FuzzyFileSearchSessionUpdatedNotification` definition.
+type FuzzyFileSearchSessionUpdatedNotification struct {
+	Files     []FuzzyFileSearchResult `json:"files"`
+	Query     string                  `json:"query"`
+	SessionID string                  `json:"sessionId"`
+}
+
 // GatewayOAuthCancelResponse mirrors the upstream `GatewayOAuthCancelResponse` definition.
 type GatewayOAuthCancelResponse = struct{}
+
+// GatewayOAuthChangedNotification mirrors the upstream `GatewayOAuthChangedNotification` definition.
+type GatewayOAuthChangedNotification struct {
+	AuthURL    string             `json:"authUrl,omitempty"`
+	Error      string             `json:"error,omitempty"`
+	ProviderID string             `json:"providerId"`
+	Status     GatewayOAuthStatus `json:"status"`
+}
 
 // GatewayOAuthLoginResponse mirrors the upstream `GatewayOAuthLoginResponse` definition.
 type GatewayOAuthLoginResponse = struct{}
@@ -718,11 +948,92 @@ type GetWorkspaceMessagesResponse struct {
 	Messages       []WorkspaceMessage `json:"messages"`
 }
 
+// GuardianApprovalReview mirrors the upstream `GuardianApprovalReview` definition.
+type GuardianApprovalReview struct {
+	Rationale         string                       `json:"rationale,omitempty"`
+	RiskLevel         *GuardianRiskLevel           `json:"riskLevel,omitempty"`
+	Status            GuardianApprovalReviewStatus `json:"status"`
+	UserAuthorization *GuardianUserAuthorization   `json:"userAuthorization,omitempty"`
+}
+
+// GuardianApprovalReviewAction mirrors the upstream `GuardianApprovalReviewAction` definition.
+type GuardianApprovalReviewAction = json.RawMessage
+
+// GuardianApprovalReviewStatus mirrors the upstream `GuardianApprovalReviewStatus` enum.
+type GuardianApprovalReviewStatus string
+
+const (
+	GuardianApprovalReviewStatusInProgress GuardianApprovalReviewStatus = "inProgress"
+	GuardianApprovalReviewStatusApproved   GuardianApprovalReviewStatus = "approved"
+	GuardianApprovalReviewStatusDenied     GuardianApprovalReviewStatus = "denied"
+	GuardianApprovalReviewStatusTimedOut   GuardianApprovalReviewStatus = "timedOut"
+	GuardianApprovalReviewStatusAborted    GuardianApprovalReviewStatus = "aborted"
+)
+
+// GuardianCommandSource mirrors the upstream `GuardianCommandSource` enum.
+type GuardianCommandSource string
+
+const (
+	GuardianCommandSourceShell       GuardianCommandSource = "shell"
+	GuardianCommandSourceUnifiedExec GuardianCommandSource = "unifiedExec"
+)
+
+// GuardianRiskLevel mirrors the upstream `GuardianRiskLevel` enum.
+type GuardianRiskLevel string
+
+const (
+	GuardianRiskLevelLow      GuardianRiskLevel = "low"
+	GuardianRiskLevelMedium   GuardianRiskLevel = "medium"
+	GuardianRiskLevelHigh     GuardianRiskLevel = "high"
+	GuardianRiskLevelCritical GuardianRiskLevel = "critical"
+)
+
+// GuardianUserAuthorization mirrors the upstream `GuardianUserAuthorization` enum.
+type GuardianUserAuthorization string
+
+const (
+	GuardianUserAuthorizationUnknown GuardianUserAuthorization = "unknown"
+	GuardianUserAuthorizationLow     GuardianUserAuthorization = "low"
+	GuardianUserAuthorizationMedium  GuardianUserAuthorization = "medium"
+	GuardianUserAuthorizationHigh    GuardianUserAuthorization = "high"
+)
+
+// GuardianWarningNotification mirrors the upstream `GuardianWarningNotification` definition.
+type GuardianWarningNotification struct {
+	Message  string `json:"message"`
+	ThreadID string `json:"threadId"`
+}
+
+// HookCompletedNotification mirrors the upstream `HookCompletedNotification` definition.
+type HookCompletedNotification struct {
+	Run      HookRunSummary `json:"run"`
+	ThreadID string         `json:"threadId"`
+	TurnID   string         `json:"turnId,omitempty"`
+}
+
 // HookErrorInfo mirrors the upstream `HookErrorInfo` definition.
 type HookErrorInfo struct {
 	Message string `json:"message"`
 	Path    string `json:"path"`
 }
+
+// HookExecutionMode mirrors the upstream `HookExecutionMode` enum.
+type HookExecutionMode string
+
+const (
+	HookExecutionModeSync   HookExecutionMode = "sync"
+	HookExecutionModeAsync_ HookExecutionMode = "async"
+)
+
+// HookHandlerType mirrors the upstream `HookHandlerType` enum.
+type HookHandlerType string
+
+const (
+	HookHandlerTypeCommand HookHandlerType = "command"
+	HookHandlerTypeMcpTool HookHandlerType = "mcpTool"
+	HookHandlerTypePrompt  HookHandlerType = "prompt"
+	HookHandlerTypeAgent   HookHandlerType = "agent"
+)
 
 // HookMetadata mirrors the upstream `HookMetadata` definition.
 type HookMetadata struct {
@@ -747,6 +1058,60 @@ type HookMigration struct {
 	Name string `json:"name"`
 }
 
+// HookOutputEntry mirrors the upstream `HookOutputEntry` definition.
+type HookOutputEntry struct {
+	Kind HookOutputEntryKind `json:"kind"`
+	Text string              `json:"text"`
+}
+
+// HookOutputEntryKind mirrors the upstream `HookOutputEntryKind` enum.
+type HookOutputEntryKind string
+
+const (
+	HookOutputEntryKindWarning  HookOutputEntryKind = "warning"
+	HookOutputEntryKindStop     HookOutputEntryKind = "stop"
+	HookOutputEntryKindFeedback HookOutputEntryKind = "feedback"
+	HookOutputEntryKindContext  HookOutputEntryKind = "context"
+	HookOutputEntryKindError    HookOutputEntryKind = "error"
+)
+
+// HookRunStatus mirrors the upstream `HookRunStatus` enum.
+type HookRunStatus string
+
+const (
+	HookRunStatusRunning   HookRunStatus = "running"
+	HookRunStatusCompleted HookRunStatus = "completed"
+	HookRunStatusFailed    HookRunStatus = "failed"
+	HookRunStatusBlocked   HookRunStatus = "blocked"
+	HookRunStatusStopped   HookRunStatus = "stopped"
+)
+
+// HookRunSummary mirrors the upstream `HookRunSummary` definition.
+type HookRunSummary struct {
+	CompletedAt   int64             `json:"completedAt,omitempty"`
+	DisplayOrder  int64             `json:"displayOrder"`
+	DurationMs    int64             `json:"durationMs,omitempty"`
+	Entries       []HookOutputEntry `json:"entries"`
+	EventName     HookEventName     `json:"eventName"`
+	ExecutionMode HookExecutionMode `json:"executionMode"`
+	HandlerType   HookHandlerType   `json:"handlerType"`
+	ID            string            `json:"id"`
+	Scope         HookScope         `json:"scope"`
+	Source        HookSource        `json:"source,omitempty"`
+	SourcePath    AbsolutePathBuf   `json:"sourcePath"`
+	StartedAt     int64             `json:"startedAt"`
+	Status        HookRunStatus     `json:"status"`
+	StatusMessage string            `json:"statusMessage,omitempty"`
+}
+
+// HookScope mirrors the upstream `HookScope` enum.
+type HookScope string
+
+const (
+	HookScopeThread HookScope = "thread"
+	HookScopeTurn   HookScope = "turn"
+)
+
 // HookSource mirrors the upstream `HookSource` enum.
 type HookSource string
 
@@ -763,6 +1128,13 @@ const (
 	HookSourceLegacyManagedConfigMdm  HookSource = "legacyManagedConfigMdm"
 	HookSourceUnknown                 HookSource = "unknown"
 )
+
+// HookStartedNotification mirrors the upstream `HookStartedNotification` definition.
+type HookStartedNotification struct {
+	Run      HookRunSummary `json:"run"`
+	ThreadID string         `json:"threadId"`
+	TurnID   string         `json:"turnId,omitempty"`
+}
 
 // HookTrustStatus mirrors the upstream `HookTrustStatus` enum.
 type HookTrustStatus string
@@ -792,6 +1164,16 @@ type HooksListResponse struct {
 	Data []HooksListEntry `json:"data"`
 }
 
+// ImageDetail mirrors the upstream `ImageDetail` enum.
+type ImageDetail string
+
+const (
+	ImageDetailAuto     ImageDetail = "auto"
+	ImageDetailLow      ImageDetail = "low"
+	ImageDetailHigh     ImageDetail = "high"
+	ImageDetailOriginal ImageDetail = "original"
+)
+
 // InAppBrowserRequirements mirrors the upstream `InAppBrowserRequirements` definition.
 type InAppBrowserRequirements struct {
 	AllowExternalBrowserSettingsImport bool `json:"allowExternalBrowserSettingsImport,omitempty"`
@@ -800,8 +1182,65 @@ type InAppBrowserRequirements struct {
 // InputModality mirrors the upstream `InputModality` definition.
 type InputModality = json.RawMessage
 
+// InternalChatMessageMetadataPassthrough mirrors the upstream `InternalChatMessageMetadataPassthrough` definition.
+type InternalChatMessageMetadataPassthrough struct {
+	TurnID string `json:"turn_id,omitempty"`
+}
+
+// ItemCompletedNotification mirrors the upstream `ItemCompletedNotification` definition.
+type ItemCompletedNotification struct {
+	CompletedAtMs int64      `json:"completedAtMs"`
+	Item          ThreadItem `json:"item"`
+	ThreadID      string     `json:"threadId"`
+	TurnID        string     `json:"turnId"`
+}
+
+// ItemGuardianApprovalReviewCompletedNotification mirrors the upstream `ItemGuardianApprovalReviewCompletedNotification` definition.
+type ItemGuardianApprovalReviewCompletedNotification struct {
+	Action         GuardianApprovalReviewAction `json:"action"`
+	CompletedAtMs  int64                        `json:"completedAtMs"`
+	DecisionSource AutoReviewDecisionSource     `json:"decisionSource"`
+	Review         GuardianApprovalReview       `json:"review"`
+	ReviewID       string                       `json:"reviewId"`
+	StartedAtMs    int64                        `json:"startedAtMs"`
+	TargetItemID   string                       `json:"targetItemId,omitempty"`
+	ThreadID       string                       `json:"threadId"`
+	TurnID         string                       `json:"turnId"`
+}
+
+// ItemGuardianApprovalReviewStartedNotification mirrors the upstream `ItemGuardianApprovalReviewStartedNotification` definition.
+type ItemGuardianApprovalReviewStartedNotification struct {
+	Action       GuardianApprovalReviewAction `json:"action"`
+	Review       GuardianApprovalReview       `json:"review"`
+	ReviewID     string                       `json:"reviewId"`
+	StartedAtMs  int64                        `json:"startedAtMs"`
+	TargetItemID string                       `json:"targetItemId,omitempty"`
+	ThreadID     string                       `json:"threadId"`
+	TurnID       string                       `json:"turnId"`
+}
+
+// ItemStartedNotification mirrors the upstream `ItemStartedNotification` definition.
+type ItemStartedNotification struct {
+	Item        ThreadItem `json:"item"`
+	StartedAtMs int64      `json:"startedAtMs"`
+	ThreadID    string     `json:"threadId"`
+	TurnID      string     `json:"turnId"`
+}
+
 // LegacyAppPathString mirrors the upstream `LegacyAppPathString` definition.
 type LegacyAppPathString = string
+
+// LocalShellAction mirrors the upstream `LocalShellAction` definition.
+type LocalShellAction = map[string]any
+
+// LocalShellStatus mirrors the upstream `LocalShellStatus` enum.
+type LocalShellStatus string
+
+const (
+	LocalShellStatusCompleted  LocalShellStatus = "completed"
+	LocalShellStatusInProgress LocalShellStatus = "in_progress"
+	LocalShellStatusIncomplete LocalShellStatus = "incomplete"
+)
 
 // LoginAccountParams mirrors the upstream `LoginAccountParams` definition.
 type LoginAccountParams = json.RawMessage
@@ -827,6 +1266,9 @@ const (
 	MergeStrategyReplace MergeStrategy = "replace"
 	MergeStrategyUpsert  MergeStrategy = "upsert"
 )
+
+// MessagePhase mirrors the upstream `MessagePhase` definition.
+type MessagePhase = json.RawMessage
 
 // MigrationDetails mirrors the upstream `MigrationDetails` definition.
 type MigrationDetails struct {
@@ -903,6 +1345,33 @@ type ModelProviderCapabilitiesReadResponse struct {
 	WebSearch       bool `json:"webSearch"`
 }
 
+// ModelRerouteReason mirrors the upstream `ModelRerouteReason` enum.
+type ModelRerouteReason string
+
+const (
+	ModelRerouteReasonHighRiskCyberActivity ModelRerouteReason = "highRiskCyberActivity"
+)
+
+// ModelReroutedNotification mirrors the upstream `ModelReroutedNotification` definition.
+type ModelReroutedNotification struct {
+	FromModel string             `json:"fromModel"`
+	Reason    ModelRerouteReason `json:"reason"`
+	ThreadID  string             `json:"threadId"`
+	ToModel   string             `json:"toModel"`
+	TurnID    string             `json:"turnId"`
+}
+
+// ModelSafetyBufferingUpdatedNotification mirrors the upstream `ModelSafetyBufferingUpdatedNotification` definition.
+type ModelSafetyBufferingUpdatedNotification struct {
+	FasterModel     string   `json:"fasterModel,omitempty"`
+	Model           string   `json:"model"`
+	Reasons         []string `json:"reasons"`
+	ShowBufferingUI bool     `json:"showBufferingUi"`
+	ThreadID        string   `json:"threadId"`
+	TurnID          string   `json:"turnId"`
+	UseCases        []string `json:"useCases"`
+}
+
 // ModelServiceTier mirrors the upstream `ModelServiceTier` definition.
 type ModelServiceTier struct {
 	Description string `json:"description"`
@@ -917,6 +1386,20 @@ type ModelUpgradeInfo struct {
 	ModelLink         string `json:"modelLink,omitempty"`
 	RetirementAt      int64  `json:"retirementAt,omitempty"`
 	UpgradeCopy       string `json:"upgradeCopy,omitempty"`
+}
+
+// ModelVerification mirrors the upstream `ModelVerification` enum.
+type ModelVerification string
+
+const (
+	ModelVerificationTrustedAccessForCyber ModelVerification = "trustedAccessForCyber"
+)
+
+// ModelVerificationNotification mirrors the upstream `ModelVerificationNotification` definition.
+type ModelVerificationNotification struct {
+	ThreadID      string              `json:"threadId"`
+	TurnID        string              `json:"turnId"`
+	Verifications []ModelVerification `json:"verifications"`
 }
 
 // ModelsRequirements mirrors the upstream `ModelsRequirements` definition.
@@ -941,6 +1424,16 @@ const (
 	NetworkAccessEnabled    NetworkAccess = "enabled"
 )
 
+// NetworkApprovalProtocol mirrors the upstream `NetworkApprovalProtocol` enum.
+type NetworkApprovalProtocol string
+
+const (
+	NetworkApprovalProtocolHTTP      NetworkApprovalProtocol = "http"
+	NetworkApprovalProtocolHttps     NetworkApprovalProtocol = "https"
+	NetworkApprovalProtocolSocks5Tcp NetworkApprovalProtocol = "socks5Tcp"
+	NetworkApprovalProtocolSocks5Udp NetworkApprovalProtocol = "socks5Udp"
+)
+
 // NewThreadModelDefaults mirrors the upstream `NewThreadModelDefaults` definition.
 type NewThreadModelDefaults struct {
 	Model                string           `json:"model,omitempty"`
@@ -961,6 +1454,9 @@ type OverriddenMetadata struct {
 	OverridingLayer ConfigLayerMetadata `json:"overridingLayer"`
 }
 
+// PatchChangeKind mirrors the upstream `PatchChangeKind` definition.
+type PatchChangeKind = json.RawMessage
+
 // PermissionProfileListParams mirrors the upstream `PermissionProfileListParams` definition.
 type PermissionProfileListParams struct {
 	Cursor string `json:"cursor,omitempty"`
@@ -979,6 +1475,14 @@ type PermissionProfileSummary struct {
 	Allowed     bool   `json:"allowed"`
 	Description string `json:"description,omitempty"`
 	ID          string `json:"id"`
+}
+
+// PlanDeltaNotification mirrors the upstream `PlanDeltaNotification` definition.
+type PlanDeltaNotification struct {
+	Delta    string `json:"delta"`
+	ItemID   string `json:"itemId"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
 }
 
 // PlanType mirrors the upstream `PlanType` enum.
@@ -1072,6 +1576,22 @@ type RateLimitWindow struct {
 	WindowDurationMins int64 `json:"windowDurationMins,omitempty"`
 }
 
+// RawResponseCompletedNotification mirrors the upstream `RawResponseCompletedNotification` definition.
+type RawResponseCompletedNotification struct {
+	ResponseID    string                 `json:"responseId"`
+	ThreadID      string                 `json:"threadId"`
+	TurnID        string                 `json:"turnId"`
+	Usage         *TokenUsageBreakdown   `json:"usage,omitempty"`
+	UsageMetadata *ResponseUsageMetadata `json:"usageMetadata,omitempty"`
+}
+
+// RawResponseItemCompletedNotification mirrors the upstream `RawResponseItemCompletedNotification` definition.
+type RawResponseItemCompletedNotification struct {
+	Item     ResponseItem `json:"item"`
+	ThreadID string       `json:"threadId"`
+	TurnID   string       `json:"turnId"`
+}
+
 // ReasoningEffort mirrors the upstream `ReasoningEffort` definition.
 type ReasoningEffort = string
 
@@ -1081,13 +1601,72 @@ type ReasoningEffortOption struct {
 	ReasoningEffort ReasoningEffort `json:"reasoningEffort"`
 }
 
+// ReasoningItemContent mirrors the upstream `ReasoningItemContent` definition.
+type ReasoningItemContent = json.RawMessage
+
+// ReasoningItemReasoningSummary mirrors the upstream `ReasoningItemReasoningSummary` definition.
+type ReasoningItemReasoningSummary = map[string]any
+
 // ReasoningSummary mirrors the upstream `ReasoningSummary` definition.
 type ReasoningSummary = json.RawMessage
+
+// ReasoningSummaryPartAddedNotification mirrors the upstream `ReasoningSummaryPartAddedNotification` definition.
+type ReasoningSummaryPartAddedNotification struct {
+	ItemID       string `json:"itemId"`
+	SummaryIndex int64  `json:"summaryIndex"`
+	ThreadID     string `json:"threadId"`
+	TurnID       string `json:"turnId"`
+}
+
+// ReasoningSummaryTextDeltaNotification mirrors the upstream `ReasoningSummaryTextDeltaNotification` definition.
+type ReasoningSummaryTextDeltaNotification struct {
+	Delta        string `json:"delta"`
+	ItemID       string `json:"itemId"`
+	SummaryIndex int64  `json:"summaryIndex"`
+	ThreadID     string `json:"threadId"`
+	TurnID       string `json:"turnId"`
+}
+
+// ReasoningTextDeltaNotification mirrors the upstream `ReasoningTextDeltaNotification` definition.
+type ReasoningTextDeltaNotification struct {
+	ContentIndex int64  `json:"contentIndex"`
+	Delta        string `json:"delta"`
+	ItemID       string `json:"itemId"`
+	ThreadID     string `json:"threadId"`
+	TurnID       string `json:"turnId"`
+}
+
+// RemoteControlConnectionStatus mirrors the upstream `RemoteControlConnectionStatus` enum.
+type RemoteControlConnectionStatus string
+
+const (
+	RemoteControlConnectionStatusDisabled   RemoteControlConnectionStatus = "disabled"
+	RemoteControlConnectionStatusConnecting RemoteControlConnectionStatus = "connecting"
+	RemoteControlConnectionStatusConnected  RemoteControlConnectionStatus = "connected"
+	RemoteControlConnectionStatusErrored    RemoteControlConnectionStatus = "errored"
+)
+
+// RemoteControlStatusChangedNotification mirrors the upstream `RemoteControlStatusChangedNotification` definition.
+type RemoteControlStatusChangedNotification struct {
+	EnvironmentID  string                        `json:"environmentId,omitempty"`
+	InstallationID string                        `json:"installationId"`
+	ServerName     string                        `json:"serverName"`
+	Status         RemoteControlConnectionStatus `json:"status"`
+}
 
 // RequestHeader mirrors the upstream `RequestHeader` definition.
 type RequestHeader struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+// RequestId mirrors the upstream `RequestId` definition.
+type RequestId = json.RawMessage
+
+// RequestPermissionProfile mirrors the upstream `RequestPermissionProfile` definition.
+type RequestPermissionProfile struct {
+	FileSystem *AdditionalFileSystemPermissions `json:"fileSystem,omitempty"`
+	Network    *AdditionalNetworkPermissions    `json:"network,omitempty"`
 }
 
 // ResidencyRequirement mirrors the upstream `ResidencyRequirement` enum.
@@ -1096,6 +1675,18 @@ type ResidencyRequirement string
 const (
 	ResidencyRequirementUs ResidencyRequirement = "us"
 )
+
+// ResponseItem mirrors the upstream `ResponseItem` definition.
+type ResponseItem = json.RawMessage
+
+// ResponseUsageMetadata mirrors the upstream `ResponseUsageMetadata` definition.
+type ResponseUsageMetadata struct {
+	Amount   string          `json:"amount,omitempty"`
+	Metadata json.RawMessage `json:"metadata,omitempty"`
+}
+
+// ResponsesApiWebSearchAction mirrors the upstream `ResponsesApiWebSearchAction` definition.
+type ResponsesApiWebSearchAction = json.RawMessage
 
 // ReviewStartResponse mirrors the upstream `ReviewStartResponse` definition.
 type ReviewStartResponse struct {
@@ -1131,6 +1722,12 @@ type SendAddCreditsNudgeEmailParams struct {
 // SendAddCreditsNudgeEmailResponse mirrors the upstream `SendAddCreditsNudgeEmailResponse` definition.
 type SendAddCreditsNudgeEmailResponse struct {
 	Status AddCreditsNudgeEmailStatus `json:"status"`
+}
+
+// ServerRequestResolvedNotification mirrors the upstream `ServerRequestResolvedNotification` definition.
+type ServerRequestResolvedNotification struct {
+	RequestID RequestId `json:"requestId"`
+	ThreadID  string    `json:"threadId"`
 }
 
 // SessionMigration mirrors the upstream `SessionMigration` definition.
@@ -1173,6 +1770,27 @@ type SubagentMigration struct {
 	Name string `json:"name"`
 }
 
+// TerminalInteractionNotification mirrors the upstream `TerminalInteractionNotification` definition.
+type TerminalInteractionNotification struct {
+	ItemID    string `json:"itemId"`
+	ProcessID string `json:"processId"`
+	Stdin     string `json:"stdin"`
+	ThreadID  string `json:"threadId"`
+	TurnID    string `json:"turnId"`
+}
+
+// TextPosition mirrors the upstream `TextPosition` definition.
+type TextPosition struct {
+	Column int64 `json:"column"`
+	Line   int64 `json:"line"`
+}
+
+// TextRange mirrors the upstream `TextRange` definition.
+type TextRange struct {
+	End   TextPosition `json:"end"`
+	Start TextPosition `json:"start"`
+}
+
 // ThreadApproveGuardianDeniedActionParams mirrors the upstream `ThreadApproveGuardianDeniedActionParams` definition.
 type ThreadApproveGuardianDeniedActionParams struct {
 	Event    json.RawMessage `json:"event"`
@@ -1184,6 +1802,11 @@ type ThreadApproveGuardianDeniedActionResponse = struct{}
 
 // ThreadArchiveResponse mirrors the upstream `ThreadArchiveResponse` definition.
 type ThreadArchiveResponse = struct{}
+
+// ThreadArchivedNotification mirrors the upstream `ThreadArchivedNotification` definition.
+type ThreadArchivedNotification struct {
+	ThreadID string `json:"threadId"`
+}
 
 // ThreadAttachment mirrors the upstream `ThreadAttachment` definition.
 type ThreadAttachment struct {
@@ -1229,6 +1852,14 @@ type ThreadAttachmentListResponse struct {
 	NextCursor string             `json:"nextCursor,omitempty"`
 }
 
+// ThreadAttachmentOperation mirrors the upstream `ThreadAttachmentOperation` enum.
+type ThreadAttachmentOperation string
+
+const (
+	ThreadAttachmentOperationCreated ThreadAttachmentOperation = "created"
+	ThreadAttachmentOperationDeleted ThreadAttachmentOperation = "deleted"
+)
+
 // ThreadAttachmentOwner mirrors the upstream `ThreadAttachmentOwner` definition.
 type ThreadAttachmentOwner struct {
 	Archived bool   `json:"archived"`
@@ -1260,6 +1891,20 @@ type ThreadAttachmentRemoveParams struct {
 // ThreadAttachmentRemoveResponse mirrors the upstream `ThreadAttachmentRemoveResponse` definition.
 type ThreadAttachmentRemoveResponse = struct{}
 
+// ThreadAttachmentUpdatedNotification mirrors the upstream `ThreadAttachmentUpdatedNotification` definition.
+type ThreadAttachmentUpdatedNotification struct {
+	AttachmentID   string                    `json:"attachmentId"`
+	AttachmentType string                    `json:"attachmentType"`
+	IdentityKey    string                    `json:"identityKey"`
+	Operation      ThreadAttachmentOperation `json:"operation"`
+	ThreadID       string                    `json:"threadId"`
+}
+
+// ThreadClosedNotification mirrors the upstream `ThreadClosedNotification` definition.
+type ThreadClosedNotification struct {
+	ThreadID string `json:"threadId"`
+}
+
 // ThreadCompactStartParams mirrors the upstream `ThreadCompactStartParams` definition.
 type ThreadCompactStartParams struct {
 	ThreadID string `json:"threadId"`
@@ -1275,6 +1920,11 @@ type ThreadDeleteParams struct {
 
 // ThreadDeleteResponse mirrors the upstream `ThreadDeleteResponse` definition.
 type ThreadDeleteResponse = struct{}
+
+// ThreadDeletedNotification mirrors the upstream `ThreadDeletedNotification` definition.
+type ThreadDeletedNotification struct {
+	ThreadID string `json:"threadId"`
+}
 
 // ThreadInjectItemsParams mirrors the upstream `ThreadInjectItemsParams` definition.
 type ThreadInjectItemsParams struct {
@@ -1345,6 +1995,12 @@ type ThreadMetadataUpdateResponse struct {
 	Thread Thread `json:"thread"`
 }
 
+// ThreadNameUpdatedNotification mirrors the upstream `ThreadNameUpdatedNotification` definition.
+type ThreadNameUpdatedNotification struct {
+	ThreadID   string `json:"threadId"`
+	ThreadName string `json:"threadName,omitempty"`
+}
+
 // ThreadReadResponse mirrors the upstream `ThreadReadResponse` definition.
 type ThreadReadResponse struct {
 	Thread Thread `json:"thread"`
@@ -1366,6 +2022,11 @@ type ThreadResumeResponse struct {
 	ServiceTier          string                `json:"serviceTier,omitempty"`
 	Thread               Thread                `json:"thread"`
 	TurnsBackwardsCursor string                `json:"turnsBackwardsCursor,omitempty"`
+}
+
+// ThreadRevertedNotification mirrors the upstream `ThreadRevertedNotification` definition.
+type ThreadRevertedNotification struct {
+	ThreadID string `json:"threadId"`
 }
 
 // ThreadSection mirrors the upstream `ThreadSection` definition.
@@ -1462,6 +2123,31 @@ type ThreadStartResponse struct {
 	Thread             Thread                `json:"thread"`
 }
 
+// ThreadStartedNotification mirrors the upstream `ThreadStartedNotification` definition.
+type ThreadStartedNotification struct {
+	Thread Thread `json:"thread"`
+}
+
+// ThreadStatusChangedNotification mirrors the upstream `ThreadStatusChangedNotification` definition.
+type ThreadStatusChangedNotification struct {
+	Status   ThreadStatus `json:"status"`
+	ThreadID string       `json:"threadId"`
+}
+
+// ThreadTokenUsage mirrors the upstream `ThreadTokenUsage` definition.
+type ThreadTokenUsage struct {
+	Last               TokenUsageBreakdown `json:"last"`
+	ModelContextWindow int64               `json:"modelContextWindow,omitempty"`
+	Total              TokenUsageBreakdown `json:"total"`
+}
+
+// ThreadTokenUsageUpdatedNotification mirrors the upstream `ThreadTokenUsageUpdatedNotification` definition.
+type ThreadTokenUsageUpdatedNotification struct {
+	ThreadID   string           `json:"threadId"`
+	TokenUsage ThreadTokenUsage `json:"tokenUsage"`
+	TurnID     string           `json:"turnId"`
+}
+
 // ThreadTurnsListParams mirrors the upstream `ThreadTurnsListParams` definition.
 type ThreadTurnsListParams struct {
 	Cursor        string         `json:"cursor,omitempty"`
@@ -1481,6 +2167,11 @@ type ThreadTurnsListResponse struct {
 // ThreadUnarchiveResponse mirrors the upstream `ThreadUnarchiveResponse` definition.
 type ThreadUnarchiveResponse struct {
 	Thread Thread `json:"thread"`
+}
+
+// ThreadUnarchivedNotification mirrors the upstream `ThreadUnarchivedNotification` definition.
+type ThreadUnarchivedNotification struct {
+	ThreadID string `json:"threadId"`
 }
 
 // ThreadUnsubscribeParams mirrors the upstream `ThreadUnsubscribeParams` definition.
@@ -1523,17 +2214,69 @@ type ThreadUsageBreakdownGroup struct {
 	TotalTokens                 int64  `json:"totalTokens,omitempty"`
 }
 
+// TokenUsageBreakdown mirrors the upstream `TokenUsageBreakdown` definition.
+type TokenUsageBreakdown struct {
+	CacheWriteInputTokens int64 `json:"cacheWriteInputTokens,omitempty"`
+	CachedInputTokens     int64 `json:"cachedInputTokens"`
+	InputTokens           int64 `json:"inputTokens"`
+	OutputTokens          int64 `json:"outputTokens"`
+	ReasoningOutputTokens int64 `json:"reasoningOutputTokens"`
+	TotalTokens           int64 `json:"totalTokens"`
+}
+
 // ToolsV2 mirrors the upstream `ToolsV2` definition.
 type ToolsV2 struct {
 	WebSearch *WebSearchToolConfig `json:"web_search,omitempty"`
 }
 
+// TurnCompletedNotification mirrors the upstream `TurnCompletedNotification` definition.
+type TurnCompletedNotification struct {
+	ThreadID string `json:"threadId"`
+	Turn     Turn   `json:"turn"`
+}
+
+// TurnDiffUpdatedNotification mirrors the upstream `TurnDiffUpdatedNotification` definition.
+type TurnDiffUpdatedNotification struct {
+	Diff     string `json:"diff"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+}
+
 // TurnInterruptResponse mirrors the upstream `TurnInterruptResponse` definition.
 type TurnInterruptResponse = struct{}
+
+// TurnPlanStep mirrors the upstream `TurnPlanStep` definition.
+type TurnPlanStep struct {
+	Status TurnPlanStepStatus `json:"status"`
+	Step   string             `json:"step"`
+}
+
+// TurnPlanStepStatus mirrors the upstream `TurnPlanStepStatus` enum.
+type TurnPlanStepStatus string
+
+const (
+	TurnPlanStepStatusPending    TurnPlanStepStatus = "pending"
+	TurnPlanStepStatusInProgress TurnPlanStepStatus = "inProgress"
+	TurnPlanStepStatusCompleted  TurnPlanStepStatus = "completed"
+)
+
+// TurnPlanUpdatedNotification mirrors the upstream `TurnPlanUpdatedNotification` definition.
+type TurnPlanUpdatedNotification struct {
+	Explanation string         `json:"explanation,omitempty"`
+	Plan        []TurnPlanStep `json:"plan"`
+	ThreadID    string         `json:"threadId"`
+	TurnID      string         `json:"turnId"`
+}
 
 // TurnStartResponse mirrors the upstream `TurnStartResponse` definition.
 type TurnStartResponse struct {
 	Turn Turn `json:"turn"`
+}
+
+// TurnStartedNotification mirrors the upstream `TurnStartedNotification` definition.
+type TurnStartedNotification struct {
+	ThreadID string `json:"threadId"`
+	Turn     Turn   `json:"turn"`
 }
 
 // TurnSteerResponse mirrors the upstream `TurnSteerResponse` definition.
@@ -1549,6 +2292,12 @@ const (
 	VerbosityMedium Verbosity = "medium"
 	VerbosityHigh   Verbosity = "high"
 )
+
+// WarningNotification mirrors the upstream `WarningNotification` definition.
+type WarningNotification struct {
+	Message  string `json:"message"`
+	ThreadID string `json:"threadId,omitempty"`
+}
 
 // WebSearchContextSize mirrors the upstream `WebSearchContextSize` enum.
 type WebSearchContextSize string
@@ -1607,6 +2356,13 @@ type WindowsSandboxReadinessResponse struct {
 	Status WindowsSandboxReadiness `json:"status"`
 }
 
+// WindowsSandboxSetupCompletedNotification mirrors the upstream `WindowsSandboxSetupCompletedNotification` definition.
+type WindowsSandboxSetupCompletedNotification struct {
+	Error   string                  `json:"error,omitempty"`
+	Mode    WindowsSandboxSetupMode `json:"mode"`
+	Success bool                    `json:"success"`
+}
+
 // WindowsSandboxSetupMode mirrors the upstream `WindowsSandboxSetupMode` enum.
 type WindowsSandboxSetupMode string
 
@@ -1624,6 +2380,13 @@ type WindowsSandboxSetupStartParams struct {
 // WindowsSandboxSetupStartResponse mirrors the upstream `WindowsSandboxSetupStartResponse` definition.
 type WindowsSandboxSetupStartResponse struct {
 	Started bool `json:"started"`
+}
+
+// WindowsWorldWritableWarningNotification mirrors the upstream `WindowsWorldWritableWarningNotification` definition.
+type WindowsWorldWritableWarningNotification struct {
+	ExtraCount  int64    `json:"extraCount"`
+	FailedScan  bool     `json:"failedScan"`
+	SamplePaths []string `json:"samplePaths"`
 }
 
 // WorkspaceMessage mirrors the upstream `WorkspaceMessage` definition.

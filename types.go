@@ -85,6 +85,21 @@ type (
 	McpServerConnectionStatus        = schematypes.McpServerConnectionStatus
 	McpServerOauthClientRegistration = schematypes.McpServerOauthClientRegistration
 	McpToolCallResult                = schematypes.McpToolCallResult
+
+	// Notification payload types (decoder targets).
+	ThreadRevertedEvent                  = schematypes.ThreadRevertedNotification
+	ThreadAttachmentUpdatedEvent         = schematypes.ThreadAttachmentUpdatedNotification
+	AccountGatewayOAuthChangedEvent      = schematypes.GatewayOAuthChangedNotification
+	FuzzyFileSearchSessionUpdatedEvent   = schematypes.FuzzyFileSearchSessionUpdatedNotification
+	FuzzyFileSearchSessionCompletedEvent = schematypes.FuzzyFileSearchSessionCompletedNotification
+	ModelSafetyBufferingUpdatedEvent     = schematypes.ModelSafetyBufferingUpdatedNotification
+
+	// Both auth-recovery notifications share ONE payload type, which carries no
+	// started/completed discriminator (message/provider/threadId/turnId only). The wire
+	// method name is the only way to tell the two events apart, which is why both aliases
+	// below point at the same Go type.
+	ModelProviderAuthRecoveryStartedEvent   = schematypes.AuthRecoveryNotification
+	ModelProviderAuthRecoveryCompletedEvent = schematypes.AuthRecoveryNotification
 	// NOTE: McpServerOauthLoginCompletedEvent and McpServerStatusUpdatedEvent already
 	// exist in events_extra.go. Do not re-alias them here.
 

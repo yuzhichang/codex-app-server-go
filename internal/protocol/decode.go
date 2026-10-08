@@ -31,6 +31,12 @@ func DecodeServerRequest(method string, params json.RawMessage) (any, error) {
 			return nil, err
 		}
 		return req, nil
+	case MethodChatgptAuthTokensRefresh:
+		var req ChatgptAuthTokensRefreshParams
+		if err := json.Unmarshal(params, &req); err != nil {
+			return nil, err
+		}
+		return req, nil
 	case MethodMcpServerElicitationRequest:
 		var req McpServerElicitationRequestParams
 		if err := json.Unmarshal(params, &req); err != nil {

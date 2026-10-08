@@ -31,6 +31,9 @@ type (
 	McpServerElicitationRequestResponse = protocol.McpServerElicitationRequestResponse
 	McpServerElicitationAction          = protocol.McpServerElicitationAction
 	McpServerElicitationMode            = protocol.McpServerElicitationMode
+	ChatgptAuthTokensRefreshParams      = protocol.ChatgptAuthTokensRefreshParams
+	ChatgptAuthTokensRefreshResponse    = protocol.ChatgptAuthTokensRefreshResponse
+	ChatgptAuthTokensRefreshReason      = protocol.ChatgptAuthTokensRefreshReason
 )
 
 const (
@@ -121,6 +124,15 @@ type ElicitationHandler interface {
 	HandleElicitation(ctx context.Context, req McpServerElicitationRequestParams) (McpServerElicitationRequestResponse, error)
 }
 
+// AuthTokensHandler mints a fresh ChatGPT access token when the server asks for one via
+// `account/chatgptAuthTokens/refresh`.
+//
+// This is only reached by clients that own the ChatGPT token lifecycle; the SDK's default
+// handshake does not claim to. Install a handler with Dispatcher.AuthTokens.
+type AuthTokensHandler interface {
+	HandleAuthTokensRefresh(ctx context.Context, req ChatgptAuthTokensRefreshParams) (ChatgptAuthTokensRefreshResponse, error)
+}
+
 // ExecApprovalHandler handles command-execution approval requests.
 type ExecApprovalHandler interface {
 	HandleCommandExecutionApproval(context.Context, CommandExecutionApprovalRequest) (CommandExecutionApprovalResult, error)
@@ -170,6 +182,15 @@ type Dispatcher struct {
 	// Elicitation handles "mcpServer/elicitation/request" requests.
 	// If nil, such requests are declined (the session continues; decision R9).
 	Elicitation ElicitationHandler
+
+	// AuthTokens handles "account/chatgptAuthTokens/refresh" requests.
+	//
+	// If nil, the request is answered with an error. This is the one deliberate exception
+	// to decision R9 ("never terminate the session for an unhandled request"): unlike an
+	// approval or an elicitation, this request has no decline shape. The only alternative
+	// would be to answer with an empty access token, which the server would then send as a
+	// credential -- worse than a clear failure.
+	AuthTokens AuthTokensHandler
 
 	// Fallback is consulted for any request method not matched by the above.
 	// If nil, unmatched requests return ErrUnsupportedServerRequest.
@@ -232,6 +253,21 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 			return ServerResponse{}, err
 		}
 		result, err := d.Elicitation.HandleElicitation(ctx, r)
+		if err != nil {
+			return ServerResponse{}, err
+		}
+		return serverResponseFrom(result)
+
+	case protocol.MethodChatgptAuthTokensRefresh:
+		if d.AuthTokens == nil {
+			// No decline shape exists for a token request; see the field comment above.
+			return ServerResponse{}, protocol.ErrUnsupportedServerRequest
+		}
+		var r ChatgptAuthTokensRefreshParams
+		if err := json.Unmarshal(req.Params, &r); err != nil {
+			return ServerResponse{}, err
+		}
+		result, err := d.AuthTokens.HandleAuthTokensRefresh(ctx, r)
 		if err != nil {
 			return ServerResponse{}, err
 		}

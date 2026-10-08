@@ -439,6 +439,10 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.AccountRead(ctx)
 			return err
 		}},
+		{"FuzzyFileSearch", "fuzzyFileSearch", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FuzzyFileSearch(ctx, *new(codexgo.FuzzyFileSearchParams))
+			return err
+		}},
 	}
 
 	for _, tc := range cases {

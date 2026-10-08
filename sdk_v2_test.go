@@ -15,6 +15,7 @@ import (
 	"io"
 	"net"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -2357,6 +2358,86 @@ func TestElicitationDispatcherRoutesToHandler(t *testing.T) {
 	}
 	if string(resp.Content) != `{"branch":"main"}` {
 		t.Fatalf("content = %s", resp.Content)
+	}
+}
+
+// ---- ChatGPT auth token refresh ----
+
+type stubAuthTokensHandler struct {
+	got chan codexgo.ChatgptAuthTokensRefreshParams
+}
+
+func (h *stubAuthTokensHandler) HandleAuthTokensRefresh(_ context.Context, req codexgo.ChatgptAuthTokensRefreshParams) (codexgo.ChatgptAuthTokensRefreshResponse, error) {
+	h.got <- req
+	return codexgo.ChatgptAuthTokensRefreshResponse{
+		AccessToken:      "fresh-token",
+		ChatgptAccountID: "acct-9",
+	}, nil
+}
+
+func TestAuthTokensRefreshRoutesToHandler(t *testing.T) {
+	handler := &stubAuthTokensHandler{got: make(chan codexgo.ChatgptAuthTokensRefreshParams, 1)}
+	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(&codexgo.Dispatcher{AuthTokens: handler}))
+
+	time.Sleep(20 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := mock.RequestAndWait(ctx, 401, "account/chatgptAuthTokens/refresh", map[string]any{
+		"reason":            "unauthorized",
+		"previousAccountId": "org-123",
+	})
+	if err != nil {
+		t.Fatalf("RequestAndWait: %v", err)
+	}
+
+	select {
+	case req := <-handler.got:
+		if req.Reason != codexgo.ChatgptAuthTokensRefreshReasonUnauthorized {
+			t.Errorf("reason = %q, want unauthorized", req.Reason)
+		}
+		// The account hint is what lets a multi-account client refresh the right workspace.
+		if req.PreviousAccountID != "org-123" {
+			t.Errorf("previousAccountId = %q, want org-123", req.PreviousAccountID)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("handler was never invoked")
+	}
+
+	var resp codexgo.ChatgptAuthTokensRefreshResponse
+	if err := json.Unmarshal(result, &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.AccessToken != "fresh-token" || resp.ChatgptAccountID != "acct-9" {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+// Unlike an approval or an elicitation, a token request has no decline shape. With no
+// handler installed the SDK must fail loudly rather than answer with an empty access
+// token, which the server would go on to send as a credential.
+func TestAuthTokensRefreshWithoutHandlerDoesNotFabricateToken(t *testing.T) {
+	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(&codexgo.Dispatcher{}))
+
+	time.Sleep(20 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := mock.RequestAndWait(ctx, 402, "account/chatgptAuthTokens/refresh", map[string]any{
+		"reason": "unauthorized",
+	})
+	// The refusal may surface as an RPC error or as an error payload depending on the
+	// transport; either is acceptable. What must never happen is a token being invented.
+	if err != nil {
+		return
+	}
+	if strings.Contains(string(result), "accessToken") {
+		t.Fatalf("no handler is installed, yet the SDK fabricated a token: %s", result)
+	}
+	if len(result) != 0 && string(result) != "null" && !strings.Contains(string(result), "error") {
+		t.Fatalf("expected a refusal, got: %s", result)
 	}
 }
 

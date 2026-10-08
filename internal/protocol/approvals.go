@@ -184,6 +184,43 @@ func DeclineElicitation() McpServerElicitationRequestResponse {
 	return McpServerElicitationRequestResponse{Action: McpServerElicitationActionDecline}
 }
 
+// --- ChatGPT auth token refresh (upstream method `account/chatgptAuthTokens/refresh`) ---
+//
+// Hand-written for the same reason as the elicitation types: the definitions exist in
+// codex-rs/app-server-protocol/src/protocol/v2/account.rs:271-299, but the stable aggregate
+// does not carry them.
+//
+// This is a server -> client request: when Codex gets a 401 it asks the client to mint a
+// fresh access token. It only arrives for clients that own the ChatGPT token lifecycle;
+// the SDK's default handshake does not claim to.
+
+// ChatgptAuthTokensRefreshReason explains why a refresh was requested.
+type ChatgptAuthTokensRefreshReason string
+
+const (
+	// ChatgptAuthTokensRefreshReasonUnauthorized means the backend rejected the token (401).
+	ChatgptAuthTokensRefreshReasonUnauthorized ChatgptAuthTokensRefreshReason = "unauthorized"
+)
+
+// ChatgptAuthTokensRefreshParams asks the client for a fresh access token.
+type ChatgptAuthTokensRefreshParams struct {
+	Reason ChatgptAuthTokensRefreshReason `json:"reason"`
+	// PreviousAccountID is the workspace/account Codex was using, so a client managing
+	// several accounts can refresh the right one. Empty when prior auth carried no account
+	// id (upstream: null).
+	PreviousAccountID string `json:"previousAccountId,omitempty"`
+}
+
+// ChatgptAuthTokensRefreshResponse carries the minted token back.
+//
+// AccessToken is a live credential. Upstream implements Debug by hand specifically to
+// redact it (account.rs:301-309) -- do not log this struct verbatim.
+type ChatgptAuthTokensRefreshResponse struct {
+	AccessToken      string `json:"accessToken"`
+	ChatgptAccountID string `json:"chatgptAccountId"`
+	ChatgptPlanType  string `json:"chatgptPlanType,omitempty"`
+}
+
 type AttestationGenerateResponse struct {
 	Token string `json:"token"`
 }

@@ -2,5 +2,9 @@
   {
     "name": "InitializeResponse",
     "reason": "Name matches upstream (protocol/v1.rs InitializeResponse); the v2 aggregate simply does not carry it, although it does carry InitializeParams. Not a naming divergence."
+  },
+  {
+    "name": "FuzzyFileSearchResponse",
+    "reason": "Declared upstream in protocol/common.rs:1882 rather than under protocol/v2/, so the v2 aggregate omits it while still carrying FuzzyFileSearchParams/Result/MatchType. Hand-written in internal/protocol/schema/handwritten.go from the source shape."
   }
 ]

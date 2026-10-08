@@ -30,6 +30,7 @@ type (
 	FeedbackUploadParams                           = schematypes.FeedbackUploadParams
 	FeedbackUploadResponse                         = schematypes.FeedbackUploadResponse
 	FuzzyFileSearchParams                          = schematypes.FuzzyFileSearchParams
+	FuzzyFileSearchResponse                        = schematypes.FuzzyFileSearchResponse
 	GatewayOAuthCancelResponse                     = schematypes.GatewayOAuthCancelResponse
 	GatewayOAuthLoginResponse                      = schematypes.GatewayOAuthLoginResponse
 	GatewayOAuthReadResponse                       = schematypes.GatewayOAuthReadResponse
@@ -397,6 +398,17 @@ func (c *Client) ConfigRequirementsRead(ctx context.Context) (ConfigRequirements
 	var resp ConfigRequirementsReadResponse
 	if err := c.transport.Call(ctx, protocol.MethodConfigRequirementsRead, nil, &resp); err != nil {
 		return ConfigRequirementsReadResponse{}, err
+	}
+	return resp, nil
+}
+
+// FuzzyFileSearch calls `fuzzyFileSearch`.
+//
+// Generated binding. See gen/method-surface.json for the authoritative surface.
+func (c *Client) FuzzyFileSearch(ctx context.Context, req FuzzyFileSearchParams) (FuzzyFileSearchResponse, error) {
+	var resp FuzzyFileSearchResponse
+	if err := c.transport.Call(ctx, protocol.MethodFuzzyFileSearch, req, &resp); err != nil {
+		return FuzzyFileSearchResponse{}, err
 	}
 	return resp, nil
 }

@@ -384,6 +384,16 @@
     "test": "fs_mcp_test.go"
   },
   {
+    "method": "fuzzyFileSearch",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "hooks/list",
     "face": "client_request",
     "kind": "client_method",
@@ -1537,6 +1547,16 @@
       "events_extra.go"
     ],
     "test": "events_extra_test.go"
+  },
+  {
+    "method": "account/chatgptAuthTokens/refresh",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go",
+      "internal/protocol/decode.go"
+    ],
+    "test": "sdk_v2_test.go"
   },
   {
     "method": "item/commandExecution/requestApproval",

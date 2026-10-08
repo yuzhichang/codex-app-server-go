@@ -214,6 +214,9 @@ const (
 	McpServerElicitationModeOpenAIForm       = protocol.McpServerElicitationModeOpenAIForm
 	McpServerElicitationModeUserVerification = protocol.McpServerElicitationModeUserVerification
 
+	// ChatGPT auth token refresh reasons (server -> client request).
+	ChatgptAuthTokensRefreshReasonUnauthorized = protocol.ChatgptAuthTokensRefreshReasonUnauthorized
+
 	PluginShareUpdateDiscoverabilityPRIVATE = schematypes.PluginShareUpdateDiscoverabilityPRIVATE
 	PluginShareUpdateDiscoverabilityLISTED  = schematypes.PluginShareUpdateDiscoverabilityLISTED
 )

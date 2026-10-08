@@ -60,11 +60,14 @@ func TestRetryTransport_RetriesOnRateLimit(t *testing.T) {
 	}
 }
 
+// A dropped connection must not replay a mutation: the method here is deliberately a real
+// request rather than a placeholder, so the test pins the actual policy (see
+// retry_readonly_test.go for the read-only half).
 func TestRetryTransport_NoRetryOnClosed(t *testing.T) {
 	inner := &mockInner{errs: []error{ErrClosed}}
 	rt := NewRetryTransport(inner, fastConfig())
 
-	err := rt.Call(context.Background(), "m", nil, nil)
+	err := rt.Call(context.Background(), "turn/start", nil, nil)
 	if !errors.Is(err, ErrClosed) {
 		t.Fatalf("expected ErrClosed, got %v", err)
 	}

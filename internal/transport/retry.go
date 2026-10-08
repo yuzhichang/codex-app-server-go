@@ -72,7 +72,7 @@ func (r *RetryTransport) Call(ctx context.Context, method string, params any, re
 	var err error
 	for attempt := 0; attempt < r.config.MaxAttempts; attempt++ {
 		err = r.inner.Call(ctx, method, params, result)
-		if err == nil || !isRetryable(err) {
+		if err == nil || !isRetryable(method, err) {
 			return err
 		}
 		if attempt == r.config.MaxAttempts-1 {
@@ -117,16 +117,85 @@ func (r *RetryTransport) Done() <-chan struct{} { return r.inner.Done() }
 // Close delegates to the inner transport.
 func (r *RetryTransport) Close() error { return r.inner.Close() }
 
-// isRetryable reports whether a Call error is worth retrying.
-func isRetryable(err error) bool {
+// readOnlyMethods are the stable client requests that are safe to re-issue after the
+// connection drops.
+//
+// The distinction matters only for ErrClosed. Errors the *server* reports (429,
+// HttpConnectionFailed, internal -32603) are responses -- the request was answered, so
+// re-issuing cannot double-apply and every method may be retried. ErrClosed is the local
+// transport saying the connection went away, and the request may already have been applied
+// server-side; replaying it is only safe when it has no side effect.
+//
+// Deliberately an explicit list rather than a name heuristic: wrongly retrying a mutation
+// (a plugin install, a config write, a turn start) is much worse than missing a retry.
+// Derived from gen/method-surface.json by name and reviewed by hand.
+var readOnlyMethods = map[string]struct{}{
+	"account/gatewayOAuth/read":       {},
+	"account/rateLimits/read":         {},
+	"account/read":                    {},
+	"account/usage/read":              {},
+	"account/workspaceMessages/read":  {},
+	"app/installed":                   {},
+	"app/list":                        {},
+	"app/read":                        {},
+	"config/read":                     {},
+	"configRequirements/read":         {},
+	"experimentalFeature/list":        {},
+	"externalAgentConfig/detect":      {},
+	"fs/getMetadata":                  {},
+	"fs/readDirectory":                {},
+	"fs/readFile":                     {},
+	"fuzzyFileSearch":                 {},
+	"hooks/list":                      {},
+	"mcpServer/resource/read":         {},
+	"mcpServerStatus/list":            {},
+	"model/list":                      {},
+	"modelProvider/capabilities/read": {},
+	"permissionProfile/list":          {},
+	"plugin/installed":                {},
+	"plugin/list":                     {},
+	"plugin/read":                     {},
+	"plugin/share/list":               {},
+	"plugin/skill/read":               {},
+	"skills/list":                     {},
+	"thread/attachment/list":          {},
+	"thread/attachmentOwner/list":     {},
+	"thread/items/list":               {},
+	"thread/list":                     {},
+	"thread/loaded/list":              {},
+	"thread/read":                     {},
+	"thread/turns/list":               {},
+	"threadSection/list":              {},
+	"windowsSandbox/readiness":        {},
+}
+
+// IsReadOnlyMethod reports whether re-issuing method after an ambiguous connection failure
+// is safe. Exported for callers that need the same judgement (e.g. a session supervisor
+// deciding what to replay after a reconnect).
+func IsReadOnlyMethod(method string) bool {
+	_, ok := readOnlyMethods[method]
+	return ok
+}
+
+// isRetryable reports whether a Call error is worth retrying, given the method being called.
+//
+// method is part of the decision because retrying is only unconditionally safe when the
+// request was definitely answered, or when re-issuing cannot have a side effect. See
+// readOnlyMethods.
+func isRetryable(method string, err error) bool {
 	if err == nil {
 		return false
 	}
-	if errors.Is(err, ErrClosed) {
-		return false
-	}
+	// Server-reported outcomes: the RPC completed with an error, so retrying is safe for
+	// any method. These are not "the connection died mid-flight".
 	if isRateLimited(err) || isHTTPConnectionFailed(err) {
 		return true
+	}
+	if errors.Is(err, ErrClosed) {
+		// The connection went away and we do not know whether the call was applied.
+		// Previously this returned false outright (retry.go), which turned every in-flight
+		// call into a hard failure the moment a connection dropped.
+		return IsReadOnlyMethod(method)
 	}
 	var rpcErr *RPCError
 	if errors.As(err, &rpcErr) && rpcErr.Code == -32603 {

@@ -128,6 +128,26 @@ A few properties worth relying on:
 - A thread that could not be *resumed* is not backfilled — `sdk/sessionRecovered` lists those
   separately as `ThreadsFailed`.
 
+### A handler that never answers does not hang the turn forever
+
+Approvals, permission requests and elicitations are answered by handlers you supply. If one
+never returns, the turn waits forever -- and a hang is worse than a refusal the server can act on.
+
+Set `Dispatcher.ApprovalTimeout` to bound that. On expiry the SDK replies with **the same
+refusal it would give with no handler configured**, and reports it as `timedOut`:
+
+```go
+dispatcher := &codexgo.Dispatcher{
+    Exec:            myApprovalHandler,
+    ApprovalTimeout: 2 * time.Minute,
+}
+```
+
+The zero value waits indefinitely, which is what you want when approvals come from a human.
+Set a timeout when they come from an automated reviewer.
+
+**A timeout can never grant anything** -- that is the invariant, and a test pins it.
+
 ### Event delivery never blocks the publisher — and it can refuse you
 
 `publish` never waits for a subscriber, because waiting on the shared publish path would stall

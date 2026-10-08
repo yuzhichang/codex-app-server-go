@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/zealbase/codex-app-server-go/internal/protocol"
 )
@@ -220,6 +222,19 @@ type Dispatcher struct {
 	// If nil, unmatched requests are answered with JSON-RPC -32601 (method not found).
 	Fallback RequestHandler
 
+	// ApprovalTimeout bounds how long a configured handler may take to answer a
+	// server-initiated request before the SDK answers on its behalf.
+	//
+	// Zero (the default) waits indefinitely, which is the right default for an application
+	// whose approvals come from a human. It is worth setting when approvals come from an
+	// automated reviewer: a handler that never returns otherwise hangs the turn forever, and
+	// a hang is worse than a refusal the server can act on.
+	//
+	// On timeout the SDK replies with the SAME answer it would have given with no handler
+	// configured -- always a refusal -- and reports it as `timedOut`. A timeout can therefore
+	// never grant anything.
+	ApprovalTimeout time.Duration
+
 	// OnUnhandled is called whenever a request reaches no configured handler, so the
 	// application can learn that the server asked it something and what was replied instead.
 	//
@@ -260,7 +275,14 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		result, err := d.Permissions.HandlePermissionsApproval(ctx, r)
+		hctx, cancel := d.boundHandlerContext(ctx)
+		defer cancel()
+		result, err := d.Permissions.HandlePermissionsApproval(hctx, r)
+		if errors.Is(err, context.DeadlineExceeded) {
+			// Same answer as no handler configured: a timeout can never grant anything.
+			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
+			return serverResponseFrom(protocol.DenyPermissions())
+		}
 		if err != nil {
 			return ServerResponse{}, err
 		}
@@ -277,7 +299,14 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		result, err := d.UserInput.HandleUserInput(ctx, r)
+		hctx, cancel := d.boundHandlerContext(ctx)
+		defer cancel()
+		result, err := d.UserInput.HandleUserInput(hctx, r)
+		if errors.Is(err, context.DeadlineExceeded) {
+			// Same answer as no handler configured: a timeout can never grant anything.
+			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
+			return serverResponseFrom(protocol.DeclineUserInput())
+		}
 		if err != nil {
 			return ServerResponse{}, err
 		}
@@ -292,7 +321,14 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		result, err := d.Exec.HandleCommandExecutionApproval(ctx, r)
+		hctx, cancel := d.boundHandlerContext(ctx)
+		defer cancel()
+		result, err := d.Exec.HandleCommandExecutionApproval(hctx, r)
+		if errors.Is(err, context.DeadlineExceeded) {
+			// Same answer as no handler configured: a timeout can never grant anything.
+			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
+			return serverResponseFrom(CommandExecutionApprovalResult{Decision: CommandExecutionApprovalDecisionDecline})
+		}
 		if err != nil {
 			return ServerResponse{}, err
 		}
@@ -307,7 +343,14 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		result, err := d.File.HandleFileChangeApproval(ctx, r)
+		hctx, cancel := d.boundHandlerContext(ctx)
+		defer cancel()
+		result, err := d.File.HandleFileChangeApproval(hctx, r)
+		if errors.Is(err, context.DeadlineExceeded) {
+			// Same answer as no handler configured: a timeout can never grant anything.
+			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
+			return serverResponseFrom(FileChangeApprovalResult{Decision: FileChangeApprovalDecisionDecline})
+		}
 		if err != nil {
 			return ServerResponse{}, err
 		}
@@ -339,7 +382,14 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		result, err := d.Elicitation.HandleElicitation(ctx, r)
+		hctx, cancel := d.boundHandlerContext(ctx)
+		defer cancel()
+		result, err := d.Elicitation.HandleElicitation(hctx, r)
+		if errors.Is(err, context.DeadlineExceeded) {
+			// Same answer as no handler configured: a timeout can never grant anything.
+			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
+			return serverResponseFrom(protocol.DeclineElicitation())
+		}
 		if err != nil {
 			return ServerResponse{}, err
 		}
@@ -380,6 +430,14 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 //
 // The dispatcher is constructed by the caller and has no back-reference to the client, so it
 // reports through a callback the client installs on it.
+// boundHandlerContext applies ApprovalTimeout to a handler call, if one is configured.
+func (d *Dispatcher) boundHandlerContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if d == nil || d.ApprovalTimeout <= 0 {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, d.ApprovalTimeout)
+}
+
 func (d *Dispatcher) notifyUnhandled(req ServerRequest, action, reason string) {
 	if d == nil || d.OnUnhandled == nil {
 		return

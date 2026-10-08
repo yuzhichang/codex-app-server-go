@@ -444,7 +444,7 @@
 - ✅ **D5 已修**：`InitializeCapabilities` 补 `ExplicitGatewayOauth`/`RequestAttestation`/`Extensions`；`ClientInfo` 补 `Title`；新增 `WithClientInfo(name, title, version)`；新增 `options.go` 的 `Version` 变量（可由 `-ldflags -X` 注入，取代硬编码 `0.1.0`）。
 - ✅ **D5b 已修**：默认不宣告任何 capabilities —— `InitializeParams.InitializeCapabilities` 改为**指针**（`nil` → 字段整体从线上省略，对齐上游 `Option`）；`New()` 不再硬编码 `ExperimentalAPI: true`；新增 `WithInitializeCapabilities` 供显式覆盖。
 - ✅ **D1 配套**：`RPCRequest`/`RPCResponse`/`RPCNotification` 移除 `Version`（实测聚合 schema 中根本不存在 JSONRPC 信封类型，故这三个 `Version` 字段本就是 SDK 自造）。
-- ⏳ **D4 待办（本轮未做，发现需改设计）**：`ServerNotificationEnvelope.emittedAtMs` **不是 `params` 的成员** —— 上游 `#[serde(flatten)] notification` + `emitted_at_ms`（`common.rs:2067-2080`）意味着线上形状是 `{"method":…,"params":{…},"emittedAtMs":123}`，`emittedAtMs` 与 `method`/`params` **同级**。而现有 transport 只把 `raw["params"]` 取出（`websocket.go` / `transport.go` 的 readLoop），**同级字段在这一步就被丢弃**。因此 D4 必须在 **transport 层**（`Notification` 增加 `EmittedAtMs`）而不是解码器里实现 —— 原任务描述有误，已修正。
+- ✅ **D4 已实施（`c9d4db3`），原设计判断正确**：`ServerNotificationEnvelope.emittedAtMs` **不是 `params` 的成员** —— 上游 `#[serde(flatten)] notification` + `emitted_at_ms`（`common.rs:2067-2080`）意味着线上形状是 `{"method":…,"params":{…},"emittedAtMs":123}`，`emittedAtMs` 与 `method`/`params` **同级**。而现有 transport 只把 `raw["params"]` 取出（`websocket.go` / `transport.go` 的 readLoop），**同级字段在这一步就被丢弃**。因此 D4 必须在 **transport 层**（`Notification` 增加 `EmittedAtMs`）而不是解码器里实现 —— 原任务描述有误，已修正。 现已实现：`Notification.EmittedAtMs` + `Event.EmittedAtMs` + `ThreadEvent.EmittedAtMs`，三个读取循环共用 `envelopeEmittedAtMs` 以免漂移。**已知限制**：stdio 底层是 jrpc2，它自行解析信封、只暴露 method/params，故同级字段到不了 SDK（`EmittedAtMs` 恒为 0）；WS/HTTP 已覆盖。
 
 ### T1.4 线格式严格对齐（D1 + trace）✅ 已完成
 
@@ -473,7 +473,7 @@
 - **T2.3 在途操作**：修正 `retry.go:125-127`（`ErrClosed` 不可重试导致掉线瞬间全硬失败）；区分只读可重试 / 写不重试；`Notify` 与 server-request 回包不重试。
 - ✅ **T2.4 审批跨重连（已实施）**：`requestLoop` 原先用 `_ = req.Reply(...)` **丢弃所有回包错误** —— 这是**处理器自身无法察觉**的失效：它可能已经做出决定（甚至批准了命令），而该决定被丢弃。现检查回包错误并发出 `sdk/pendingApprovalLost`（含 method 与尽力提取的 thread/turn id）；同一请求的**二次回包被过滤**（那是编程错误，不是"落空"）。
   - ⚠️ **覆盖范围caveat（已写在调用点注释）**：stdio 传输底层是 jrpc2，它把回包交给自己的 channel，因此那里丢失的回包可能表现为**正常返回**。故 WebSocket/HTTP 上检测可靠，stdio 上为**尽力而为**。
-  - ⏳ 未做：approval 可配置超时。
+  - ✅ **approval 可配置超时已实施**：`Dispatcher.ApprovalTimeout`（默认 0 = 无限等待，适合"批准来自人类"的场景）。超时后 SDK **代答**，且答案与"未配置 handler"**完全相同**（一律拒绝）并上报 `timedOut` ⇒ **超时永不授予任何权限**（不变量，有测试钉住）。应用于全部 5 个 server-request handler（permissions / user input / exec / file change / elicitation）。
 - ✅ **T2.5 可观测性事件（已完成）**：`ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）/ `UnhandledServerRequestEvent` / `PendingApprovalLostEvent`。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
   - ✅ `EventsLostError`/`EventsLostEvent` 新增 **`GapFrom`/`GapTo`**：界定被丢弃事件的时间窗口。**刻意用时间戳而非序号** —— 上游通知**不带序号**，"按位置命名缺口"根本无法导出；时间是**可导出**的，且足以把丢失与同期发生的事关联起来。窗口只覆盖**终止时仍在排队**的事件（已交给消费者的事件不算丢失 —— 测试显式钉住了这点，我第一版断言就把一个**已经投递**的事件算了进去）。
   - ✅ **跨重连的缺口已由回填覆盖**（见上）；上游无重放，故回填是唯一手段。

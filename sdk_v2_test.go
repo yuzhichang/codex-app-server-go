@@ -2146,9 +2146,12 @@ func TestThreadStatusChangedEvent(t *testing.T) {
 	}
 }
 
-// ---- Integration: item/updated notification ----
+// ---- Integration: a notification upstream has removed ----
 
-func TestItemUpdatedEvent(t *testing.T) {
+// `item/updated` no longer exists upstream (see gen/unknown-methods.txt and plan T1.5).
+// The SDK must not pretend to model it: unknown notifications fall back to
+// RawNotificationEvent, so callers can still observe them without a stale typed struct.
+func TestRemovedNotificationFallsBackToRaw(t *testing.T) {
 	client, mock := newClientFromMock(t)
 
 	sub := client.Events()
@@ -2156,7 +2159,8 @@ func TestItemUpdatedEvent(t *testing.T) {
 
 	time.Sleep(20 * time.Millisecond)
 
-	if err := mock.Notify("item/updated", map[string]any{
+	const removed = "item/updated"
+	if err := mock.Notify(removed, map[string]any{
 		"threadId": "thread-iu-1",
 		"turnId":   "turn-iu-1",
 		"item":     map[string]any{"id": "item-iu-1", "type": "agentMessage"},
@@ -2166,21 +2170,18 @@ func TestItemUpdatedEvent(t *testing.T) {
 
 	select {
 	case event := <-sub.C():
-		if event.Method != "item/updated" {
+		if event.Method != removed {
 			t.Fatalf("unexpected event method: %q", event.Method)
 		}
-		typed, ok := event.Value.(codexgo.ItemUpdatedEvent)
+		raw, ok := event.Value.(codexgo.RawNotificationEvent)
 		if !ok {
-			t.Fatalf("event.Value type = %T, want ItemUpdatedEvent", event.Value)
+			t.Fatalf("event.Value type = %T, want RawNotificationEvent", event.Value)
 		}
-		if typed.ThreadID != "thread-iu-1" || typed.TurnID != "turn-iu-1" {
-			t.Fatalf("unexpected thread/turn IDs: %q / %q", typed.ThreadID, typed.TurnID)
-		}
-		if typed.Item == nil {
-			t.Fatal("expected Item to be non-nil")
+		if raw.ThreadID != "thread-iu-1" || raw.TurnID != "turn-iu-1" {
+			t.Fatalf("unexpected thread/turn IDs: %q / %q", raw.ThreadID, raw.TurnID)
 		}
 	case <-time.After(3 * time.Second):
-		t.Fatal("timeout waiting for item/updated notification")
+		t.Fatalf("timeout waiting for %s notification", removed)
 	}
 }
 

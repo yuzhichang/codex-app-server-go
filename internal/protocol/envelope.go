@@ -165,7 +165,6 @@ const (
 	MethodThreadStatusChanged   = "thread/status/changed"
 	MethodThreadGoalUpdated     = "thread/goal/updated"
 	MethodThreadGoalCleared     = "thread/goal/cleared"
-	MethodItemUpdated           = "item/updated"
 	MethodServerRequestResolved = "serverRequest/resolved"
 )
 

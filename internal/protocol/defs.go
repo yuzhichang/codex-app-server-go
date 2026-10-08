@@ -148,12 +148,6 @@ type ThreadGoalClearedEvent struct {
 	ThreadID string `json:"threadId,omitempty"`
 }
 
-type ItemUpdatedEvent struct {
-	ThreadID string `json:"threadId,omitempty"`
-	TurnID   string `json:"turnId,omitempty"`
-	Item     *Item  `json:"item,omitempty"`
-}
-
 type ServerRequestResolvedEvent struct {
 	ThreadID  string          `json:"threadId,omitempty"`
 	RequestID string          `json:"requestId,omitempty"`

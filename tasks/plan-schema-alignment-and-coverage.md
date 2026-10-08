@@ -274,15 +274,17 @@
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：
 
-| SDK 现有方法 | 上游现状 | 处置 |
+| SDK 现有方法 | 上游现状与**权威参数形状**（取自 codex 源码） | 处置 |
 |---|---|---|
-| `config/update` | 不存在；改为 `config/value/write`（带 `expectedVersion` 乐观并发） | 迁移 `SetModel`/`SetApprovalPolicy`/`SetSandbox`；需先 `config/read` 取版本，属**行为变更** |
-| `thread/rollback` | 不存在；改为 `thread/revert` | 迁移 `ThreadRollback`/`SessionThread.Rollback` |
-| `turn/diff` | **不存在对应请求方法**（只有 `turn/diff/updated` 通知） | `TurnDiff`/`GitDiff` 无直接替代；需决定改用 `turn/read` 的 items 或删除该 API |
-| `item/mcp/requestApproval` | 改为 `mcpServer/elicitation/request` | = 原 D3，见 §5.3 T2.8 |
-| `item/updated` | 上游已无此通知 | 删除 `ItemUpdatedEvent` 及解码分支（未知通知本就回退为 `RawNotificationEvent`） |
+| `config/update` | 不存在。替代为 `config/value/write`，其 `ConfigValueWriteParams { key_path, value, merge_strategy, file_path?: Option, expected_version?: Option }`（`protocol/v2/config.rs:1101-1110`）；版本需先经 `config/read`（`ConfigReadParams { include_layers, cwd? }` → `ConfigReadResponse { config, origins, layers? }`）取 `origins[key].version` | 迁移 `SetModel`/`SetApprovalPolicy`/`SetSandbox`。**非改名**：需补 `keyPath`+`mergeStrategy`，并新增乐观并发读版本流程；还要确定 `model`/`approval_policy`/`sandbox_mode` 的真实配置键名 |
+| `thread/rollback` | 不存在。替代为 `thread/revert`，`ThreadRevertParams { thread_id, before_turn_id }`（`protocol/v2/thread.rs:1288-1292`），语义是"**排除该 turn 及其之后的所有 turn**"；响应 `ThreadRevertResponse { thread, cursor }`，`turns` 恒为空，须用 `thread/turns/list` 回填 | **非改名 → 语义变更**：现有 `ThreadRollback(ctx, ThreadRollbackRequest{TurnIDs []string})` 是"按 id 列表回滚"，无法一一对应。需重新设计 API（单 `beforeTurnID` + 游标回填），并同步 `SessionThread.Rollback` |
+| `turn/diff` | **不存在对应请求方法**（仅有 `turn/diff/updated` 通知） | `TurnDiff`/`GitDiff` 无直接替代；**需产品决策**：改用 `turn/read` + `thread/items/list` 自行拼 diff，或删除该 API。本轮不做 |
+| `item/mcp/requestApproval` | → `mcpServer/elicitation/request` | = 原 D3，见 §5.3 T2.8 |
+| `item/updated` | 上游已无此通知 | ✅ **已完成**：删除 `MethodItemUpdated`、`ItemUpdatedEvent` 结构体/别名/解码分支/deref 分支；`wait.go` 的 `eventMatchesTurn` 改由既有的 `RawNotificationEvent` 分支覆盖（`wait.go:197`）。原测试改写为 `TestRemovedNotificationFallsBackToRaw`，断言回退为 `RawNotificationEvent` |
 
-**验收**：`make conformance-strict` 的 `wires-up-but-not-upstream` 检查为空。
+> ⚠️ **重要更正**：I5 初版把 `thread/rollback → thread/revert` 与 `config/update → config/value/write` 视为"改名迁移"。读源码后确认二者都是**语义变更**，迁移成本远高于改名，必须按新 API 设计而非机械替换。`turn/diff` 更须产品决策。
+
+**验收**：`make conformance-strict` 的 `wires-up-but-not-upstream` 检查为空。当前剩余 4 项（`config/update`、`thread/rollback`、`turn/diff`、`item/mcp/requestApproval`）。
 
 ### T1.2 生成 Go 协议类型
 

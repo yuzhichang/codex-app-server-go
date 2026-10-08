@@ -184,8 +184,6 @@ func eventMatchesTurn(event Event, threadID, turnID string) bool {
 		return v.ThreadID == threadID
 	case ThreadGoalClearedEvent:
 		return v.ThreadID == threadID
-	case ItemUpdatedEvent:
-		return v.ThreadID == threadID && v.TurnID == turnID
 	case ServerRequestResolvedEvent:
 		return v.ThreadID == threadID
 	case ThreadTokenUsageUpdatedEvent:

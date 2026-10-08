@@ -25,7 +25,6 @@ type (
 	ThreadStatusChangedEvent     = protocol.ThreadStatusChangedEvent
 	ThreadGoalUpdatedEvent       = protocol.ThreadGoalUpdatedEvent
 	ThreadGoalClearedEvent       = protocol.ThreadGoalClearedEvent
-	ItemUpdatedEvent             = protocol.ItemUpdatedEvent
 	ServerRequestResolvedEvent   = protocol.ServerRequestResolvedEvent
 )
 
@@ -203,8 +202,6 @@ func decodeEvent(method string, raw json.RawMessage) Event {
 		target = &ThreadGoalUpdatedEvent{}
 	case protocol.MethodThreadGoalCleared:
 		target = &ThreadGoalClearedEvent{}
-	case protocol.MethodItemUpdated:
-		target = &ItemUpdatedEvent{}
 	case protocol.MethodServerRequestResolved:
 		target = &ServerRequestResolvedEvent{}
 	case protocol.MethodAccountLoginCompleted:
@@ -287,8 +284,6 @@ func derefEventValue(v any) any {
 	case *ThreadGoalUpdatedEvent:
 		return *x
 	case *ThreadGoalClearedEvent:
-		return *x
-	case *ItemUpdatedEvent:
 		return *x
 	case *ServerRequestResolvedEvent:
 		return *x

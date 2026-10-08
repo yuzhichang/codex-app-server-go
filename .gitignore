@@ -1,3 +1,10 @@
 memory/
 __pycache__/
 *.pyc
+
+# Compiled binaries. `e2e.test` (a test binary) and `simple` (a build of
+# examples/simple) were committed by accident and are removed from the index. Go writes
+# `*.test` beside the package by default, so the pattern is deliberately broad.
+*.test
+/simple
+/examples/*/simple

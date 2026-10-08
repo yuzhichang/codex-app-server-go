@@ -312,6 +312,36 @@
 >
 > **新增不变量测试 `TestMarshalledParamsSendEveryField`**：用反射把三个手写 marshaller 对应的结构体**每个可设置字段**填成非零标记，再断言**每个字段都出现在线上 JSON 里**。已**验证它会失败**（临时把 `Skill` 加回去 ⇒ 报 `field "skill" is settable but never reaches the wire`），不是空跑。这把"新增字段必须同步改第二处"从**隐性义务**变成**受检属性**。
 
+### T1.2 分诊结论（26 项逐项定级）
+
+分诊方法：**按 JSON 语义而非 Go 类型文本**分类（`*T` 与 `T`、`string` 与字符串别名同族，不算差异），再交叉两点 —— **该类型是否被别名/使用**、**是否有手写 marshaller 接管线上形状**。
+
+**① 死重复（2 项，可直接删或自由重生成）**
+`schema.Thread` / `schema.Turn` 与运行时类型 `protocol.Thread` / `protocol.Turn` **同名但不同物**：后者在 `internal/protocol/types.go` 声明并带有**自定义 `UnmarshalJSON`**（弹性时间解析），而根包的 `codexgo.Thread`/`Turn` 别名指向 `protocol.*`。**没有任何地方别名或解码 `schema.Thread`/`schema.Turn`** ⇒ 它们是**死副本**。
+> 这也解释了那两个最刺眼的差异（`CreatedAt`/`StartedAt` 手写为 `*time.Time`，上游是 `int64`）**为什么无害** —— 真正解码的是带弹性解析的运行时类型。**"看起来最危险"的两项实际风险为零。**
+
+**② 已别名且被使用 ⇒ 形状有意义（真正的活）**
+`ClientInfo`、`InitializeParams`、`InitializeCapabilities`、`ThreadStartParams`、`TurnStartParams`、`TurnSteerParams`、`ThreadListParams`、`ThreadForkParams`、`ThreadResumeParams`、`ReviewStartParams`、`ThreadGoal{Set,Clear}Params`、`Skills*Params`、`SkillMetadata`、`TurnError`。
+
+**③ 未被包外使用（4 项，差异无害）**
+`SkillInterface`、`SkillSummary`、`ThreadForkResponse`、`ThreadListResponse`。
+
+**④ 真问题（已定级，尚未修）**
+
+| 类型 | 问题 | 性质 |
+|---|---|---|
+| `ReviewStartParams` | 缺 **required** 的 `Target`（上游 `ReviewTarget`），且无 marshaller | **很可能是真断的**：发不出合法 review/start |
+| `ThreadResumeParams.ExcludeTurns` | 手写 `[]string`，上游 **`bool`** | **类型不匹配**，发出的 JSON 形状错误 |
+| `TurnError` | 缺 `CodexErrorInfo`/`AdditionalDetails`/`Misalignment`，多出 `Code`/`Data` | **解码丢字段** + 自造字段 |
+| `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached` 全部自造；上游是 `originUrl`/`sha` | **自造结构**，解码全空 |
+
+**⑤ 能力缺口（非错误，但用户无法表达）**
+多个请求参数缺上游字段，其中最多的是 `ThreadForkParams`（14）、`ThreadListParams`（11）、`ThreadResumeParams`（11）、`ThreadStartParams`（10）。
+
+**⚠️ 一处方法学更正**：我第一次统计"哪些类型被使用"时按**裸名**匹配，把 `schema.Thread` 与 `protocol.Thread`、`codexgo.Thread` **混为一谈**，得出"22 项被生产代码使用"——该数字**不可信**。改为按**包限定名**核查后才得到上面的分诊。**同名不同类型是这个代码库反复出现的陷阱**，任何基于名字的统计都必须限定包。
+
+**下一步（未开工）**：先修 ④ 的四项（都是**具体、可验证**的 bug），再决定 ② 的其余项是改为生成、白名单、还是补全字段；最后才把 `type_shape_check` 提为门禁。
+
 **以下为原始度量结果（部分结论已被上面的更正推翻，保留以记录过程）：**
 
 | 类型 | SDK 手写 | 上游实际 |

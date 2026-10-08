@@ -185,6 +185,13 @@ const (
 	MethodConfigMcpServerReload       = "config/mcpServer/reload"
 	MethodMcpServerElicitationRequest = "mcpServer/elicitation/request"
 
+	// Legacy v1 server requests. Declared stable upstream but not implemented as features
+	// (decision R4); the SDK still answers them, because leaving a server request
+	// unanswered can end the turn. See internal/protocol/approvals.go for the wire shape.
+	MethodApplyPatchApproval  = "applyPatchApproval"
+	MethodExecCommandApproval = "execCommandApproval"
+	MethodAttestationGenerate = "attestation/generate"
+
 	// Plugin / marketplace RPCs (client -> server).
 	//
 	// Several of these are declared upstream with `serialization: global("config")`

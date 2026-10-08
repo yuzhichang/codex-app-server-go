@@ -26,7 +26,28 @@ const (
 	// EventMethodPendingApprovalLost reports a server-initiated request that can never be
 	// answered because the connection carrying it went away.
 	EventMethodPendingApprovalLost = "sdk/pendingApprovalLost"
+	// EventMethodUnhandledServerRequest reports a server request the SDK answered on the
+	// caller's behalf, because no handler was configured for it.
+	EventMethodUnhandledServerRequest = "sdk/unhandledServerRequest"
 )
+
+// UnhandledServerRequestEvent reports a server-initiated request that reached no configured
+// handler, and what the SDK replied instead.
+//
+// This is the observability half of decision R9: refusing a request must not end the session,
+// but it must not be silent either, or an application would never learn that the server
+// asked it something.
+type UnhandledServerRequestEvent struct {
+	Method string
+	// Action is what the SDK replied: "declined" (a valid protocol refusal) or
+	// "methodNotFound" (the SDK has no idea what the method is).
+	Action string
+	// Reason explains the choice, for logs.
+	Reason string
+	// ThreadID and TurnID are best-effort: most payloads carry them, but not all do.
+	ThreadID string
+	TurnID   string
+}
 
 // ReconnectStartedEvent is emitted when the SDK begins re-establishing protocol state.
 type ReconnectStartedEvent struct {

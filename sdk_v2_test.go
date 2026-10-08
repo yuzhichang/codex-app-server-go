@@ -2463,8 +2463,20 @@ func TestAuthTokensRefreshWithoutHandlerDoesNotFabricateToken(t *testing.T) {
 	if strings.Contains(string(result), "accessToken") {
 		t.Fatalf("no handler is installed, yet the SDK fabricated a token: %s", result)
 	}
-	if len(result) != 0 && string(result) != "null" && !strings.Contains(string(result), "error") {
-		t.Fatalf("expected a refusal, got: %s", result)
+	// Assert the actual contract now that the harness surfaces error envelopes: a refusal
+	// carrying a code, not a bare null that could equally mean "nothing happened".
+	var refusal struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(result, &refusal); err != nil {
+		t.Fatalf("refusal is not an error envelope: %v (raw: %s)", err, result)
+	}
+	if refusal.Code == 0 {
+		t.Fatalf("refusal has no JSON-RPC error code: %s", result)
+	}
+	if refusal.Message == "" {
+		t.Fatalf("refusal has no message explaining why: %s", result)
 	}
 }
 

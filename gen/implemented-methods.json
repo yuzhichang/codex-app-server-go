@@ -1553,18 +1553,34 @@
     "face": "server_request",
     "kind": "server_request_handler",
     "wiring": [
-      "interaction.go",
-      "internal/protocol/decode.go"
+      "interaction.go"
     ],
     "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "applyPatchApproval",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go"
+    ],
+    "test": "unhandled_request_test.go"
+  },
+  {
+    "method": "execCommandApproval",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go"
+    ],
+    "test": "unhandled_request_test.go"
   },
   {
     "method": "item/commandExecution/requestApproval",
     "face": "server_request",
     "kind": "server_request_handler",
     "wiring": [
-      "interaction.go",
-      "internal/protocol/decode.go"
+      "interaction.go"
     ],
     "test": "approval_adapter_test.go"
   },
@@ -1573,17 +1589,7 @@
     "face": "server_request",
     "kind": "server_request_handler",
     "wiring": [
-      "interaction.go",
-      "internal/protocol/decode.go"
-    ],
-    "test": "approval_adapter_test.go"
-  },
-  {
-    "method": "item/permissions/requestApproval",
-    "face": "server_request",
-    "kind": "server_request_handler",
-    "wiring": [
-      "internal/protocol/decode.go"
+      "interaction.go"
     ],
     "test": "approval_adapter_test.go"
   },
@@ -1597,21 +1603,11 @@
     "test": "sdk_v2_test.go"
   },
   {
-    "method": "item/tool/requestUserInput",
-    "face": "server_request",
-    "kind": "server_request_handler",
-    "wiring": [
-      "internal/protocol/decode.go"
-    ],
-    "test": "client_stdio_test.go"
-  },
-  {
     "method": "mcpServer/elicitation/request",
     "face": "server_request",
     "kind": "server_request_handler",
     "wiring": [
-      "interaction.go",
-      "internal/protocol/decode.go"
+      "interaction.go"
     ],
     "test": "sdk_v2_test.go"
   }

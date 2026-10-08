@@ -3,6 +3,7 @@ package codexgo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -76,6 +77,12 @@ func New(opts ...Option) (*Client, error) {
 	if cfg.requestHandler != nil {
 		cfg.transport.SetRequestHandler(cfg.requestHandler)
 	}
+	// A *Dispatcher can report requests it answered on the caller's behalf. Wire that to the
+	// event stream, but only if the caller has not set their own hook.
+	var dispatcher *Dispatcher
+	if d, ok := cfg.requestHandler.(*Dispatcher); ok {
+		dispatcher = d
+	}
 
 	client := &Client{transport: cfg.transport, proc: proc}
 	if source, ok := cfg.transport.(notificationSource); ok {
@@ -85,6 +92,16 @@ func New(opts ...Option) (*Client, error) {
 		}
 		client.events = newEventBroker(brokerCfg)
 		go client.notificationLoop(source.Notifications())
+	}
+
+	if dispatcher != nil && dispatcher.OnUnhandled == nil {
+		// Publishing through the broker rather than a log call so it rides the same
+		// subscription as everything else; a caller who wants logging can select on it.
+		dispatcher.OnUnhandled = func(ev UnhandledServerRequestEvent) {
+			if client.events != nil {
+				client.events.publish(Event{Method: EventMethodUnhandledServerRequest, Value: ev})
+			}
+		}
 	}
 
 	if cfg.autoReconnect {
@@ -663,7 +680,15 @@ func (s *stdioTransport) requestLoop() {
 				Params: req.Params(),
 			})
 			if err != nil {
-				_ = req.ReplyError(req.Context(), -32603, err.Error(), nil)
+				// -32601 tells the server "I do not know this method", which it can act on.
+				// Anything else is reported as -32603, which it may treat as a broken
+				// session -- so the distinction has to survive this far.
+				code := -32603
+				var notFound *protocol.MethodNotFoundError
+				if errors.As(err, &notFound) {
+					code = -32601
+				}
+				_ = req.ReplyError(req.Context(), code, err.Error(), nil)
 				continue
 			}
 			_ = req.Reply(req.Context(), json.RawMessage(resp.Result))

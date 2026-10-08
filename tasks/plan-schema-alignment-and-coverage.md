@@ -509,7 +509,13 @@
 
 **非 scope 集（另一类，登记于 `gen/not-in-scope.txt`）**：experimental 89 项 = 65 ClientRequest + 1 ServerRequest（`currentTime/read`）+ 23 通知。依据：源码 `#[experimental("...")]` 标注。
 
-### 5.8 未实现 / 未配置的 server-initiated request 策略（T2.13）
+### 5.8 未实现 / 未配置的 server-initiated request 策略（T2.13）✅ 已实施（含对计划书的一处更正）
+
+> ⚠️ **更正：计划书原定的应答值 `"denied"` 是错的。** 上游 `ReviewDecision::Denied` 是 **struct variant**（`Denied { rejection: String }`），serde 外部标签下序列化为 **`{"denied":{"rejection":"denied"}}`**，而**不是**裸字符串 `"denied"` —— 裸串没有任何 unit variant 与之匹配，会被服务端拒绝，把一个可恢复的 deny 变成协议错误。已按导出的 schema（`schema/json/ApplyPatchApprovalResponse.json`）核实并实施；测试同时断言**不得**出现裸串形式，也**不得**出现 `abort`（那会中止会话）。
+>
+> ⚠️ **更正 2：门禁的 `server_request_handler` 判据原先过宽。** T1.1 原文写的是"`Dispatcher.HandleServerRequest` 有 `case`"，但实现里把 `internal/protocol/decode.go` 也算作证据 —— 而"能解码参数"不等于"有人处理该请求"。收紧为只认 `interaction.go` 后，暴露出 **2 个此前被虚报为已实现的方法**：`item/permissions/requestApproval` 与 `item/tool/requestUserInput` **只有解码分支、没有任何 dispatch 分支**（`grep` 确认二者在 `interaction.go` 中 0 次出现）。缺口因此从 0 变为 **2**（这才是真实状态）。
+
+
 
 **目标**：不实现某个 server→client 请求**不得终止会话/轮次**。对外是正常协议应答，对内留下可观测记录。
 

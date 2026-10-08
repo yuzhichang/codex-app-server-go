@@ -59,7 +59,12 @@ NON_EVIDENCE_PREFIXES = (
 # Roles that must be evidenced from a specific layer, so that an incidental mention
 # elsewhere does not count as wiring.
 DECODER_FILES = ("events.go", "events_extra.go")
-HANDLER_FILES = ("interaction.go", "internal/protocol/decode.go")
+# `server_request_handler` means the *Dispatcher* answers the request, per T1.1: "Dispatcher
+# .HandleServerRequest has a case". internal/protocol/decode.go only proves the params can be
+# decoded, which is a different thing -- accepting it caused two decode-only methods
+# (item/permissions/requestApproval, item/tool/requestUserInput) to be reported as
+# implemented while nothing actually handled them.
+HANDLER_FILES = ("interaction.go",)
 
 # A client request must be evidenced by a call site outside the decoding/handling layer:
 # appearing only in event decoders would mean it is declared but never called.

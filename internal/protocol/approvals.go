@@ -221,6 +221,76 @@ type ChatgptAuthTokensRefreshResponse struct {
 	ChatgptPlanType  string `json:"chatgptPlanType,omitempty"`
 }
 
+// --- Legacy v1 approvals (`applyPatchApproval`, `execCommandApproval`) ---
+//
+// These two methods are declared stable upstream but deliberately not implemented as
+// features (decision R4); the SDK still has to answer them, because leaving a server request
+// unanswered can end the turn.
+//
+// The types are v1 (`protocol/v1.rs:156-180`) and absent from the v2 aggregate, so they are
+// modelled from the exported schema (schema/json/ApplyPatchApprovalResponse.json).
+//
+// CRITICAL WIRE DETAIL: the decision we send is the `Denied` variant, which upstream declares
+// as `Denied { rejection: String }` -- a STRUCT variant. With serde's default externally
+// tagged representation that serializes to
+//
+//	{"denied": {"rejection": "denied"}}
+//
+// NOT to the bare string "denied". The bare string looks right from the Rust enum's
+// `rename_all = "snake_case"` but would be rejected: no *unit* variant named `denied` exists,
+// because the variant carries a payload. Sending it would turn a recoverable deny into a
+// protocol error. This mirrors upstream's own `Default for ReviewDecision`, which is
+// `Denied { rejection: "denied" }`.
+//
+// Note also that v1 casing (snake_case) must not be confused with v2's approvals, whose
+// vocabulary is accept/decline/cancel. `abort` in particular must never be used here: it
+// stops the session rather than continuing it.
+
+// ReviewDecision is the v1 approval decision. Only the denial branch is modelled, because it
+// is the only decision the SDK ever sends.
+type ReviewDecision struct {
+	Denied *ReviewDenial `json:"denied,omitempty"`
+}
+
+// ReviewDenial is the payload of the `denied` variant.
+type ReviewDenial struct {
+	Rejection string `json:"rejection"`
+}
+
+// DenyReview is the answer the SDK gives when no handler is configured. Its semantics
+// upstream are "do not execute this, but continue the session and try something else".
+func DenyReview() ReviewDecision {
+	return ReviewDecision{Denied: &ReviewDenial{Rejection: "denied"}}
+}
+
+// ApplyPatchApprovalResponse is the reply to the legacy `applyPatchApproval` request.
+type ApplyPatchApprovalResponse struct {
+	Decision ReviewDecision `json:"decision"`
+}
+
+// ExecCommandApprovalResponse is the reply to the legacy `execCommandApproval` request.
+type ExecCommandApprovalResponse struct {
+	Decision ReviewDecision `json:"decision"`
+}
+
+// MethodNotFoundError marks an inbound server request whose method the SDK does not
+// implement.
+//
+// It exists so the request loop can answer JSON-RPC -32601 "method not found" instead of
+// -32603. The distinction matters to the server: -32603 means "I tried and failed" (which may
+// end the turn), while -32601 means "I do not know this method", which it can handle.
+type MethodNotFoundError struct {
+	Method string
+}
+
+func (e *MethodNotFoundError) Error() string {
+	return "protocol: method not found: " + e.Method
+}
+
+// Unwrap lets errors.Is(err, ErrUnsupportedServerRequest) keep working for callers that
+// already test for the sentinel.
+func (e *MethodNotFoundError) Unwrap() error { return ErrUnsupportedServerRequest }
+
 type AttestationGenerateResponse struct {
 	Token string `json:"token"`
 }

@@ -200,6 +200,16 @@ func (s *MockServer) readLoop() {
 					if ok {
 						payload := msg.Result
 						if len(payload) == 0 {
+							if msg.Error != nil {
+								// Surface the error envelope instead of collapsing it to
+								// null. Without this a test cannot observe the JSON-RPC
+								// error code at all, so error paths were untestable.
+								if enc, err := json.Marshal(msg.Error); err == nil {
+									payload = enc
+								}
+							}
+						}
+						if len(payload) == 0 {
 							payload = json.RawMessage(`null`)
 						}
 						select {

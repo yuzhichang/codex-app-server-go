@@ -193,15 +193,39 @@ type Dispatcher struct {
 	AuthTokens AuthTokensHandler
 
 	// Fallback is consulted for any request method not matched by the above.
-	// If nil, unmatched requests return ErrUnsupportedServerRequest.
+	// If nil, unmatched requests are answered with JSON-RPC -32601 (method not found).
 	Fallback RequestHandler
+
+	// OnUnhandled is called whenever a request reaches no configured handler, so the
+	// application can learn that the server asked it something and what was replied instead.
+	//
+	// The client installs this automatically when it is given a *Dispatcher, publishing
+	// sdk/unhandledServerRequest on Events(). It may also be set directly by callers that
+	// construct a Dispatcher themselves.
+	OnUnhandled UnhandledServerRequestFunc
 }
+
+// UnhandledServerRequestFunc receives a report for each server request the dispatcher could
+// not route to a configured handler.
+type UnhandledServerRequestFunc func(UnhandledServerRequestEvent)
 
 // HandleServerRequest implements RequestHandler.
 func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest) (ServerResponse, error) {
 	switch req.Method {
+	// Legacy v1 approvals. Not implemented as features (decision R4), but they must still be
+	// answered with a *valid* decision: a JSON-RPC error can end the turn, whereas a `denied`
+	// decision lets the session continue and try something else.
+	case protocol.MethodApplyPatchApproval:
+		d.notifyUnhandled(req, "declined", "applyPatchApproval is not implemented (decision R4)")
+		return serverResponseFrom(protocol.ApplyPatchApprovalResponse{Decision: protocol.DenyReview()})
+
+	case protocol.MethodExecCommandApproval:
+		d.notifyUnhandled(req, "declined", "execCommandApproval is not implemented (decision R4)")
+		return serverResponseFrom(protocol.ExecCommandApprovalResponse{Decision: protocol.DenyReview()})
+
 	case protocol.MethodItemCommandExecutionRequestApproval:
 		if d.Exec == nil {
+			d.notifyUnhandled(req, "declined", "no ExecApprovalHandler configured")
 			return serverResponseFrom(CommandExecutionApprovalResult{Decision: ApprovalDecisionDecline})
 		}
 		var r CommandExecutionApprovalRequest
@@ -216,6 +240,7 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 
 	case protocol.MethodItemFileChangeRequestApproval:
 		if d.File == nil {
+			d.notifyUnhandled(req, "declined", "no FileApprovalHandler configured")
 			return serverResponseFrom(FileChangeApprovalResult{Decision: FileChangeApprovalDecisionDecline})
 		}
 		var r FileChangeApprovalRequest
@@ -230,6 +255,7 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 
 	case protocol.MethodItemToolCall:
 		if d.DynamicTool == nil {
+			d.notifyUnhandled(req, "declined", "no DynamicToolHandler configured")
 			return serverResponseFrom(DynamicToolCallResult{Content: []json.RawMessage{}})
 		}
 		var r DynamicToolCallRequest
@@ -246,6 +272,7 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if d.Elicitation == nil {
 			// Decline rather than error: refusing an elicitation is a valid protocol
 			// answer and must not terminate the turn (decision R9).
+			d.notifyUnhandled(req, "declined", "no ElicitationHandler configured")
 			return serverResponseFrom(protocol.DeclineElicitation())
 		}
 		var r McpServerElicitationRequestParams
@@ -261,6 +288,9 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 	case protocol.MethodChatgptAuthTokensRefresh:
 		if d.AuthTokens == nil {
 			// No decline shape exists for a token request; see the field comment above.
+			// This is the one case in R9 where the honest answer is an error rather than a
+			// protocol-level refusal, so it is reported as "refused" rather than "declined".
+			d.notifyUnhandled(req, "refused", "no AuthTokensHandler configured and a token request has no decline shape")
 			return ServerResponse{}, protocol.ErrUnsupportedServerRequest
 		}
 		var r ChatgptAuthTokensRefreshParams
@@ -277,8 +307,35 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if d.Fallback != nil {
 			return d.Fallback.HandleServerRequest(ctx, req)
 		}
-		return ServerResponse{}, protocol.ErrUnsupportedServerRequest
+		// -32601 rather than an error the server cannot classify: "I do not know this
+		// method" is actionable (it can stop asking), whereas a generic failure may be
+		// treated as a broken session (decision R9).
+		d.notifyUnhandled(req, "methodNotFound", "no handler for this method")
+		return ServerResponse{}, &protocol.MethodNotFoundError{Method: req.Method}
 	}
+}
+
+// notifyUnhandled records that the SDK answered a server request on the caller's behalf
+// because no handler was configured for it.
+//
+// The dispatcher is constructed by the caller and has no back-reference to the client, so it
+// reports through a callback the client installs on it.
+func (d *Dispatcher) notifyUnhandled(req ServerRequest, action, reason string) {
+	if d == nil || d.OnUnhandled == nil {
+		return
+	}
+	ev := UnhandledServerRequestEvent{Method: req.Method, Action: action, Reason: reason}
+	// Thread/turn ids are best-effort: most payloads carry them, but not all request types do.
+	if len(req.Params) > 0 {
+		var probe struct {
+			ThreadID string `json:"threadId"`
+			TurnID   string `json:"turnId"`
+		}
+		if err := json.Unmarshal(req.Params, &probe); err == nil {
+			ev.ThreadID, ev.TurnID = probe.ThreadID, probe.TurnID
+		}
+	}
+	d.OnUnhandled(ev)
 }
 
 // TurnInput is a single typed input item for a turn or steer request. Construct

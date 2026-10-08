@@ -348,7 +348,12 @@
   - ✅ `WithAutoReconnect` 在传输**无法报告重连**时**显式报错**（而非静默无效），否则调用方会误以为会话在被恢复。
   - ⏳ **未实施**：事件缺口回填（`thread/turns/list` + `thread/items/list`）。重连后**不重放**丢失的通知，只恢复握手与 thread 订阅；上游无重放，回填需自行拉取历史。
 - **T2.3 在途操作**：修正 `retry.go:125-127`（`ErrClosed` 不可重试导致掉线瞬间全硬失败）；区分只读可重试 / 写不重试；`Notify` 与 server-request 回包不重试。
-- ⏳ **T2.4 审批跨重连（未实施）**：`PendingApprovalLostEvent{ThreadID, TurnID, Method}` 的**类型已定义**（`supervisor.go`），但**尚未接线** —— 还没有代码检测"在途 server-request 因连接消失而永远无法应答"。需与 §5.8 的 `UnhandledServerRequestEvent` 一起做（两者都是"请求落空"的可观测性）。approval 可配置超时亦未做。
+- ✅ **T2.4 审批跨重连（已实施）**：`requestLoop` 原先用 `_ = req.Reply(...)` **丢弃所有回包错误** —— 这是**处理器自身无法察觉**的失效：它可能已经做出决定（甚至批准了命令），而该决定被丢弃。现检查回包错误并发出 `sdk/pendingApprovalLost`（含 method 与尽力提取的 thread/turn id）；同一请求的**二次回包被过滤**（那是编程错误，不是"落空"）。
+  - ⚠️ **覆盖范围caveat（已写在调用点注释）**：stdio 传输底层是 jrpc2，它把回包交给自己的 channel，因此那里丢失的回包可能表现为**正常返回**。故 WebSocket/HTTP 上检测可靠，stdio 上为**尽力而为**。
+  - ⏳ 未做：approval 可配置超时。
+- ✅ **T2.5 可观测性事件（已完成）**：`ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）/ `UnhandledServerRequestEvent` / `PendingApprovalLostEvent`。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
+  - ✅ `EventsLostError`/`EventsLostEvent` 新增 **`GapFrom`/`GapTo`**：界定被丢弃事件的时间窗口。**刻意用时间戳而非序号** —— 上游通知**不带序号**，"按位置命名缺口"根本无法导出；时间是**可导出**的，且足以把丢失与同期发生的事关联起来。窗口只覆盖**终止时仍在排队**的事件（已交给消费者的事件不算丢失 —— 测试显式钉住了这点，我第一版断言就把一个**已经投递**的事件算了进去）。
+  - ⏳ **未做**：跨重连**重放**丢失的通知（上游无重放，需经 `thread/turns/list` + `thread/items/list` 回填历史，属独立工作）。
 - ✅ **T2.5 可观测性事件（部分已实施）**：已实现 `ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**（`sdk/reconnectStarted` 等）投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
   - ⏳ 未实施：`EventsLost{GapFrom, GapTo}`（丢失量目前由 `EventsLostError.LostCount` 报告，但无"缺口区间"语义）、`PendingApprovalLost`、`UnhandledServerRequest`。
 

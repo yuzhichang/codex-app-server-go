@@ -127,6 +127,38 @@ type GitInfo struct {
 	Sha       string `json:"sha,omitempty"`
 }
 
+// --- Skill metadata (hand-written: unreachable from any method's params/response) ---
+//
+// gen_go_types --from-surface only emits types reachable from a method's params or response.
+// These two are referenced only by other hand-written skill types, so the generator never
+// reaches them, and they must be maintained by hand. Their shapes are the generator's own
+// output, so type-shape-check compares clean.
+
+// SkillInterface mirrors the upstream `SkillInterface` definition.
+type SkillInterface struct {
+	BrandColor       string           `json:"brandColor,omitempty"`
+	DefaultPrompt    string           `json:"defaultPrompt,omitempty"`
+	DisplayName      string           `json:"displayName,omitempty"`
+	IconLarge        *AbsolutePathBuf `json:"iconLarge,omitempty"`
+	IconLargeURL     string           `json:"iconLargeUrl,omitempty"`
+	IconSmall        *AbsolutePathBuf `json:"iconSmall,omitempty"`
+	IconSmallURL     string           `json:"iconSmallUrl,omitempty"`
+	ShortDescription string           `json:"shortDescription,omitempty"`
+}
+
+// SkillMetadata mirrors the upstream `SkillMetadata` definition.
+type SkillMetadata struct {
+	Dependencies     *SkillDependencies  `json:"dependencies,omitempty"`
+	Description      string              `json:"description"`
+	Enabled          bool                `json:"enabled"`
+	Interface        *SkillInterface     `json:"interface,omitempty"`
+	Name             string              `json:"name"`
+	Path             LegacyAppPathString `json:"path"`
+	PluginID         string              `json:"pluginId,omitempty"`
+	Scope            SkillScope          `json:"scope"`
+	ShortDescription string              `json:"shortDescription,omitempty"`
+}
+
 // --- Core data models (schema-faithful; runtime types with custom decoders live in protocol) ---
 
 // ThreadItem mirrors the Item definition from the schema.
@@ -486,20 +518,6 @@ type TurnInterruptParams struct {
 
 // --- Thread fork / list / archive / setName / rollback ---
 
-type ThreadForkParams struct {
-	ThreadID string `json:"threadId"`
-	TurnID   string `json:"turnId,omitempty"` // fork at specific turn
-}
-
-type ThreadForkResponse struct {
-	Thread Thread `json:"thread"`
-}
-
-type ThreadListParams struct {
-	Limit  int    `json:"limit,omitempty"`
-	Cursor string `json:"cursor,omitempty"`
-}
-
 type ThreadListResponse struct {
 	Threads []Thread `json:"threads"`
 	Cursor  string   `json:"cursor,omitempty"`
@@ -648,15 +666,6 @@ type SkillErrorInfo struct {
 }
 
 // SkillInterface holds UI-facing metadata for a skill (display name, icon, etc.).
-type SkillInterface struct {
-	BrandColor       string `json:"brandColor,omitempty"`
-	DefaultPrompt    string `json:"defaultPrompt,omitempty"`
-	DisplayName      string `json:"displayName,omitempty"`
-	IconLarge        string `json:"iconLarge,omitempty"`
-	IconSmall        string `json:"iconSmall,omitempty"`
-	ShortDescription string `json:"shortDescription,omitempty"`
-}
-
 // SkillToolDependency describes a tool dependency declared by a skill.
 type SkillToolDependency struct {
 	Type        string `json:"type"`
@@ -673,17 +682,6 @@ type SkillDependencies struct {
 }
 
 // SkillMetadata is the full metadata for a skill (name, path, scope, etc.).
-type SkillMetadata struct {
-	Name             string             `json:"name"`
-	Description      string             `json:"description"`
-	Enabled          bool               `json:"enabled"`
-	Path             string             `json:"path"`
-	Scope            SkillScope         `json:"scope"`
-	ShortDescription string             `json:"shortDescription,omitempty"`
-	Interface        *SkillInterface    `json:"interface,omitempty"`
-	Dependencies     *SkillDependencies `json:"dependencies,omitempty"`
-}
-
 // SkillSummary is a lighter view of a skill (no path or scope required).
 type SkillSummary struct {
 	Name             string          `json:"name"`
@@ -774,13 +772,6 @@ type ThreadGoal struct {
 }
 
 // ThreadGoalSetParams is the request type for threadGoal/set.
-type ThreadGoalSetParams struct {
-	ThreadID    string            `json:"threadId"`
-	Objective   string            `json:"objective,omitempty"`
-	Status      *ThreadGoalStatus `json:"status,omitempty"`
-	TokenBudget *int64            `json:"tokenBudget,omitempty"`
-}
-
 // ThreadGoalSetResponse is the response type for threadGoal/set.
 type ThreadGoalSetResponse struct {
 	Goal ThreadGoal `json:"goal"`
@@ -797,10 +788,6 @@ type ThreadGoalGetResponse struct {
 }
 
 // ThreadGoalClearParams is the request type for threadGoal/clear.
-type ThreadGoalClearParams struct {
-	ThreadID string `json:"threadId"`
-}
-
 // ThreadGoalClearResponse is the response type for threadGoal/clear.
 type ThreadGoalClearResponse struct {
 	Cleared bool `json:"cleared"`

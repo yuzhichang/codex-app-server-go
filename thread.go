@@ -265,16 +265,22 @@ func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs .
 	return err
 }
 
-// Fork creates a new thread branching from this thread at the given turnID.
-// If turnID is empty the server forks from the latest turn.
+// Fork creates a new thread branching from this thread.
+//
+// turnID is the last turn to fork THROUGH, inclusive: turns after it are omitted from the
+// fork. An empty turnID forks from the latest turn. (The field used to be sent as `turnId`,
+// which upstream does not define on thread/fork -- it is `lastTurnId`, and the semantics are
+// "up to and including", not "starting at".)
 func (t *SessionThread) Fork(ctx context.Context, turnID string, opts ...ThreadOption) (*SessionThread, error) {
 	release, err := t.client.acquireThreadSlot(ctx)
 	if err != nil {
 		return nil, err
 	}
+	// LastTurnID is omitempty, so an empty turnID is simply not sent -- which is upstream's
+	// "fork from the latest turn".
 	thread, err := t.client.ThreadFork(ctx, ThreadForkParams{
-		ThreadID: t.threadID,
-		TurnID:   turnID,
+		ThreadID:   t.threadID,
+		LastTurnID: turnID,
 	})
 	if err != nil {
 		release()

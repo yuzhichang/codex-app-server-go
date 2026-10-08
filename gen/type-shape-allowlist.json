@@ -5,16 +5,6 @@
     "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
-    "name": "SkillInterface",
-    "status": "pending",
-    "reason": "2 upstream field(s) not surfaced (capability gap): IconLargeURL, IconSmallURL. Needs a decision: surface them, or accept the gap."
-  },
-  {
-    "name": "SkillMetadata",
-    "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap): PluginID. Needs a decision: surface them, or accept the gap."
-  },
-  {
     "name": "SkillSummary",
     "status": "deliberate",
     "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
@@ -35,34 +25,9 @@
     "reason": "Not reachable: the runtime type is protocol.Thread, which carries the custom UnmarshalJSON for flexible timestamps. Nothing aliases or decodes this copy."
   },
   {
-    "name": "ThreadForkParams",
-    "status": "pending",
-    "reason": "14 upstream field(s) not surfaced (capability gap): ApprovalPolicy, ApprovalsReviewer, BaseInstructions, CWD, Config, DeveloperInstructions .... Needs a decision: surface them, or accept the gap."
-  },
-  {
-    "name": "ThreadForkResponse",
-    "status": "pending",
-    "reason": "10 upstream field(s) not surfaced (capability gap): ApprovalPolicy, ApprovalsReviewer, CWD, DisabledPluginIDs, InstructionSources, Model .... Needs a decision: surface them, or accept the gap."
-  },
-  {
     "name": "ThreadGoal",
     "status": "deliberate",
     "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
-  },
-  {
-    "name": "ThreadGoalClearParams",
-    "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap): Origin. Needs a decision: surface them, or accept the gap."
-  },
-  {
-    "name": "ThreadGoalSetParams",
-    "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap): Origin. Needs a decision: surface them, or accept the gap."
-  },
-  {
-    "name": "ThreadListParams",
-    "status": "pending",
-    "reason": "11 upstream field(s) not surfaced (capability gap): Archived, CWD, ExcludedThreadIDs, ModelProviders, Originators, SearchTerm .... Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "ThreadListResponse",

@@ -1936,6 +1936,63 @@ type ThreadDeletedNotification struct {
 	ThreadID string `json:"threadId"`
 }
 
+// ThreadForkParams mirrors the upstream `ThreadForkParams` definition.
+type ThreadForkParams struct {
+	ApprovalPolicy        *AskForApproval    `json:"approvalPolicy,omitempty"`
+	ApprovalsReviewer     *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
+	BaseInstructions      string             `json:"baseInstructions,omitempty"`
+	Config                map[string]any     `json:"config,omitempty"`
+	CWD                   string             `json:"cwd,omitempty"`
+	DeveloperInstructions string             `json:"developerInstructions,omitempty"`
+	Ephemeral             bool               `json:"ephemeral,omitempty"`
+	ExcludeTurns          bool               `json:"excludeTurns,omitempty"`
+	LastTurnID            string             `json:"lastTurnId,omitempty"`
+	Model                 string             `json:"model,omitempty"`
+	ModelProvider         string             `json:"modelProvider,omitempty"`
+	Sandbox               *SandboxMode       `json:"sandbox,omitempty"`
+	ServiceTier           string             `json:"serviceTier,omitempty"`
+	ThreadID              string             `json:"threadId"`
+	ThreadSource          *ThreadSource      `json:"threadSource,omitempty"`
+}
+
+// ThreadForkResponse mirrors the upstream `ThreadForkResponse` definition.
+type ThreadForkResponse struct {
+	ApprovalPolicy     AskForApproval        `json:"approvalPolicy"`
+	ApprovalsReviewer  ApprovalsReviewer     `json:"approvalsReviewer"`
+	CWD                AbsolutePathBuf       `json:"cwd"`
+	DisabledPluginIDs  []string              `json:"disabledPluginIds,omitempty"`
+	InstructionSources []LegacyAppPathString `json:"instructionSources,omitempty"`
+	Model              string                `json:"model"`
+	ModelProvider      string                `json:"modelProvider"`
+	ReasoningEffort    *ReasoningEffort      `json:"reasoningEffort,omitempty"`
+	Sandbox            SandboxPolicy         `json:"sandbox"`
+	ServiceTier        string                `json:"serviceTier,omitempty"`
+	Thread             Thread                `json:"thread"`
+}
+
+// ThreadGoalClearParams mirrors the upstream `ThreadGoalClearParams` definition.
+type ThreadGoalClearParams struct {
+	Origin   *ThreadGoalMutationOrigin `json:"origin,omitempty"`
+	ThreadID string                    `json:"threadId"`
+}
+
+// ThreadGoalMutationOrigin mirrors the upstream `ThreadGoalMutationOrigin` enum.
+type ThreadGoalMutationOrigin string
+
+const (
+	ThreadGoalMutationOriginUser      ThreadGoalMutationOrigin = "user"
+	ThreadGoalMutationOriginAutomatic ThreadGoalMutationOrigin = "automatic"
+)
+
+// ThreadGoalSetParams mirrors the upstream `ThreadGoalSetParams` definition.
+type ThreadGoalSetParams struct {
+	Objective   string                    `json:"objective,omitempty"`
+	Origin      *ThreadGoalMutationOrigin `json:"origin,omitempty"`
+	Status      *ThreadGoalStatus         `json:"status,omitempty"`
+	ThreadID    string                    `json:"threadId"`
+	TokenBudget int64                     `json:"tokenBudget,omitempty"`
+}
+
 // ThreadInjectItemsParams mirrors the upstream `ThreadInjectItemsParams` definition.
 type ThreadInjectItemsParams struct {
 	Items    []json.RawMessage `json:"items"`
@@ -1973,6 +2030,26 @@ type ThreadItemsListResponse struct {
 	BackwardsCursor string            `json:"backwardsCursor,omitempty"`
 	Data            []ThreadItemEntry `json:"data"`
 	NextCursor      string            `json:"nextCursor,omitempty"`
+}
+
+// ThreadListCwdFilter mirrors the upstream `ThreadListCwdFilter` definition.
+type ThreadListCwdFilter = json.RawMessage
+
+// ThreadListParams mirrors the upstream `ThreadListParams` definition.
+type ThreadListParams struct {
+	Archived          bool                 `json:"archived,omitempty"`
+	Cursor            string               `json:"cursor,omitempty"`
+	CWD               *ThreadListCwdFilter `json:"cwd,omitempty"`
+	ExcludedThreadIDs []string             `json:"excludedThreadIds,omitempty"`
+	Limit             int64                `json:"limit,omitempty"`
+	ModelProviders    []string             `json:"modelProviders,omitempty"`
+	Originators       []string             `json:"originators,omitempty"`
+	SearchTerm        string               `json:"searchTerm,omitempty"`
+	SectionID         string               `json:"sectionId,omitempty"`
+	SortDirection     *SortDirection       `json:"sortDirection,omitempty"`
+	SortKey           *ThreadSortKey       `json:"sortKey,omitempty"`
+	SourceKinds       []ThreadSourceKind   `json:"sourceKinds,omitempty"`
+	UseStateDbOnly    bool                 `json:"useStateDbOnly,omitempty"`
 }
 
 // ThreadLoadedListParams mirrors the upstream `ThreadLoadedListParams` definition.
@@ -2117,6 +2194,35 @@ type ThreadShellCommandParams struct {
 
 // ThreadShellCommandResponse mirrors the upstream `ThreadShellCommandResponse` definition.
 type ThreadShellCommandResponse = struct{}
+
+// ThreadSortKey mirrors the upstream `ThreadSortKey` enum.
+type ThreadSortKey string
+
+const (
+	ThreadSortKeyCreatedAt       ThreadSortKey = "created_at"
+	ThreadSortKeyUpdatedAt       ThreadSortKey = "updated_at"
+	ThreadSortKeyRecencyAt       ThreadSortKey = "recency_at"
+	ThreadSortKeySectionPosition ThreadSortKey = "section_position"
+)
+
+// ThreadSource mirrors the upstream `ThreadSource` definition.
+type ThreadSource = string
+
+// ThreadSourceKind mirrors the upstream `ThreadSourceKind` enum.
+type ThreadSourceKind string
+
+const (
+	ThreadSourceKindCli                 ThreadSourceKind = "cli"
+	ThreadSourceKindVscode              ThreadSourceKind = "vscode"
+	ThreadSourceKindExec                ThreadSourceKind = "exec"
+	ThreadSourceKindAppServer           ThreadSourceKind = "appServer"
+	ThreadSourceKindSubAgent            ThreadSourceKind = "subAgent"
+	ThreadSourceKindSubAgentReview      ThreadSourceKind = "subAgentReview"
+	ThreadSourceKindSubAgentCompact     ThreadSourceKind = "subAgentCompact"
+	ThreadSourceKindSubAgentThreadSpawn ThreadSourceKind = "subAgentThreadSpawn"
+	ThreadSourceKindSubAgentOther       ThreadSourceKind = "subAgentOther"
+	ThreadSourceKindUnknown             ThreadSourceKind = "unknown"
+)
 
 // ThreadStartResponse mirrors the upstream `ThreadStartResponse` definition.
 type ThreadStartResponse struct {

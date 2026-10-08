@@ -326,7 +326,18 @@
 **③ 未被包外使用（4 项，差异无害）**
 `SkillInterface`、`SkillSummary`、`ThreadForkResponse`、`ThreadListResponse`。
 
-**④ 真问题（已定级，尚未修）**
+**④ 真问题（✅ 四项已全部修复）**
+
+| 类型 | 问题 | 修复 |
+|---|---|---|
+| `ReviewStartParams` | 缺 required 的 `target`；`turnId` 自造；响应被丢弃 | `dc46d71`：建模 `ReviewTarget`（4 变体扁平联合体）+ `ReviewDelivery` + 4 个构造器；移除 `turnId`；`ReviewStart` 返回 `ReviewStartResponse` |
+| `ThreadResumeParams` | 5 个字段中 4 个自造（`history`/`path`/`initialTurnsPage`）、`excludeTurns` 类型错（`[]string` vs `bool`）；11 个上游字段不可达 | `1b8f7c9`：字段集对齐；`ExcludeTurns bool`；顺带把重复声明的 `SandboxMode` 与 schema 类型统一为别名 |
+| `TurnError` | `code`/`data` 自造；缺 `codexErrorInfo`/`additionalDetails`/`misalignment`（**解码时全部丢失**） | `52c1086`：采用生成形状。注意区分：这是**输出**字段，可读即可；`CodexErrorInfo` 为 `*json.RawMessage`、`MisalignmentErrorDetails` 为内部结构体指针（可读、不必可构造） |
+| `GitInfo` | 6 个字段中 5 个自造；与**已有且正确**的 `ThreadMetadataGitInfo`（patch 方向）自相矛盾 | `ca91695`：读取方向对齐为 `{branch,originUrl,sha}`；`ThreadMetadataGitInfo` **刻意保持独立声明** —— 读取方向用 `string` 无法区分"缺失"与"空"，而 patch 方向必须区分（nil 不动、`""` 清空） |
+
+`make type-shape-check`：**26 → 23**（3 项完全清除；`ThreadResumeParams` 仍被标记，但只剩**三处刻意的类型简化**，已在类型注释里说明理由）。
+
+**④ 原始定级（保留以记录过程）**
 
 | 类型 | 问题 | 性质 |
 |---|---|---|

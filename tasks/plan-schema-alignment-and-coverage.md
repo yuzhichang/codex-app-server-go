@@ -62,6 +62,8 @@
 | **I3** | 三处实现细节澄清：① 仓库已提交的 `schema/json/` 就是 **stable** 面（`ClientRequest.json` = 105，与 precomputed stable 一致），可直接作为汇总 schema 的 vendor 源（622KB）；② 两个 internal-only 通知的排除理由**有上游显式注释**（`common.rs:1977`/`:1979` *"This event is internal-only"*），理由由推断升级为有据；③ precomputed 解压后约 **4.9MB**，不宜 vendor | T0.1 改为 vendor **聚合 stable schema（622KB）+ 派生的 method-set 小文件**；`verify` 因此不需要 `zstandard`、不需要 repo、不需要网络（CI 安全） |
 
 | **I4** | **D4 的原任务描述有误**：`emittedAtMs` 不是 `params` 的成员。上游 `#[serde(flatten)]` 使线上形状为 `{"method":…,"params":{…},"emittedAtMs":123}`，该字段与 `method`/`params` **同级**，而现有 transport 只取 `raw["params"]`，同级字段在读取阶段即被丢弃 | D4 改为**在 transport 层捕获**（`Notification` 增加 `EmittedAtMs`），并同步修正 §2.3 的 D4 行与 T1.3 |
+| **I5** | **T1.1b 审计结果远超计划预期：SDK 有 5 个（不是 1 个）方法被上游删除/改名**，均由 `scripts/coverage_gate.py` 的"wires-up-but-not-upstream"检查机械发现（见 `gen/unknown-methods.txt`）：<br>`config/update`（SetModel/SetApprovalPolicy/SetSandbox 在用）→ 上游改为 `config/value/write`（带 `expectedVersion` 乐观并发）<br>`thread/rollback` → 上游为 `thread/revert`<br>`turn/diff` → 上游**无对应请求方法**（只有 `turn/diff/updated` 通知），需另寻替代或删除<br>`item/mcp/requestApproval` → `mcpServer/elicitation/request`（= 已知 D3）<br>`item/updated` → 上游**已无此通知** | 按 R3 全部迁移/删除；新增任务 **T1.5**。注意 `config/update`、`thread/rollback`、`turn/diff` 三项是**计划书原先未识别的破坏性变更** |
+| **I6** | **计划书的"43 已实现"高估了完成度**：它统计的是"有接线"的方法，而 T1.1 的判据要求"接线 **且** 有测试证据"。机械统计（`make coverage`）的真实分布为：**已实现 59 + 已接线但缺测试 44 + 完全未开始 72 + 待迁移 5**（declared_stable=182，白名单 7） | 计划书中 M2–M5 的工作量按"72 未开始 + 44 补测试"重新理解；补测试是低成本项，应优先清掉 |
 
 > 附带结论 1：M0 的机械提取（`scripts/codex_schema_surface.py`）**独立复现了计划书的全部计数**（173/65/108、11/1/10、86/23/63、1/0/1），且 6 条集合断言全绿 —— 此前手工推导的数字现已变为**机器验证**。
 >
@@ -261,7 +263,26 @@
   (b) 上游已移除/改名（如 `item/mcp/requestApproval`）→ 按 R3 删除；
   (c) 属于 experimental → 按 R2 需移除或明确保留理由。
   结果写入 `gen/implemented-methods.json` 并附对账说明。**在 (b) 清理完成前，不得把 43 当作有效基数**。
-- **输出**：`gen/conformance-report.md`、`gen/missing-methods.txt`、`gen/not-implemented.txt`、`gen/method-surface.json`、`gen/export-exclusions.json`、`gen/implemented-methods.json`。
+- ✅ **已实施**：`scripts/coverage_gate.py`（`report` / `write` / `check [--strict]`）+ `gen/whitelist.json`（7 项）+ `gen/implemented-methods.json` + `gen/unknown-methods.txt`；`make coverage` / `make conformance` / `make conformance-strict`。
+  - **判据按 face 绑定 kind**（不用"扫描全部 role 再取优先级"——`client.go` 同时承载 client_request 与唯一 client notification，那种写法会把请求误判为 `client_notification_sender` 后被 Notify 检查丢弃，实测造成 44 个方法的假缺口）。
+  - **测试证据放宽**为"引用常量 **或** 引用 wire 方法字符串"：SDK 的测试普遍用 wire 字符串驱动 mock server，只认常量会严重低估。
+  - 新增 4 条自检：白名单项必须属于 `declared_stable`；白名单项不得已被实现（矛盾）；已接线但上游已删除的方法必须为空；双向一致。
+- **实测结果（`make coverage`）**：`declared_stable=182 / 白名单=7 / 已实现=59 / 缺口=116`，其中 **未开始 72 + 已接线但缺测试 44**；另有 **5 个待迁移方法**（I5）。
+- **输出**：`gen/method-surface.json`、`gen/export-exclusions.json`、`gen/not-in-scope.txt`、`gen/whitelist.json`、`gen/implemented-methods.json`、`gen/unknown-methods.txt`。
+
+### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
+
+`scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：
+
+| SDK 现有方法 | 上游现状 | 处置 |
+|---|---|---|
+| `config/update` | 不存在；改为 `config/value/write`（带 `expectedVersion` 乐观并发） | 迁移 `SetModel`/`SetApprovalPolicy`/`SetSandbox`；需先 `config/read` 取版本，属**行为变更** |
+| `thread/rollback` | 不存在；改为 `thread/revert` | 迁移 `ThreadRollback`/`SessionThread.Rollback` |
+| `turn/diff` | **不存在对应请求方法**（只有 `turn/diff/updated` 通知） | `TurnDiff`/`GitDiff` 无直接替代；需决定改用 `turn/read` 的 items 或删除该 API |
+| `item/mcp/requestApproval` | 改为 `mcpServer/elicitation/request` | = 原 D3，见 §5.3 T2.8 |
+| `item/updated` | 上游已无此通知 | 删除 `ItemUpdatedEvent` 及解码分支（未知通知本就回退为 `RawNotificationEvent`） |
+
+**验收**：`make conformance-strict` 的 `wires-up-but-not-upstream` 检查为空。
 
 ### T1.2 生成 Go 协议类型
 

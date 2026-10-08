@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli conformance build test
+.PHONY: sync verify diff-cli coverage conformance conformance-strict build test
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -23,7 +23,19 @@ diff-cli:
 	codex app-server generate-json-schema --out "$$TMPDIR" 2>/dev/null && \
 	python3 $(SDK_DIR)/scripts/codex_schema_surface.py diff-cli --bundle "$$TMPDIR"
 
+# Implementation coverage. `report` is informational (safe mid-implementation); the gate
+# itself lives in `check`, which is what CI must run once the surface is complete.
+coverage:
+	python3 $(SDK_DIR)/scripts/coverage_gate.py report
+
+# Mid-implementation: reconciliation must pass; coverage gaps are reported but not fatal.
 conformance: verify
+	@python3 $(SDK_DIR)/scripts/coverage_gate.py report
+
+# Final gate: no gap, no untested wiring, no stale methods. This is the CI target once
+# the work in tasks/plan-schema-alignment-and-coverage.md is complete.
+conformance-strict: verify
+	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
 
 build:
 	cd $(SDK_DIR) && go build ./...

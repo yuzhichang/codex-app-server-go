@@ -1,0 +1,536 @@
+[
+  {
+    "method": "initialized",
+    "face": "client_notification",
+    "kind": "client_notification_sender",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "account_test.go"
+  },
+  {
+    "method": "account/login/start",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "account.go"
+    ],
+    "test": "account_test.go"
+  },
+  {
+    "method": "account/logout",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "account.go"
+    ],
+    "test": "account_test.go"
+  },
+  {
+    "method": "account/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "account.go"
+    ],
+    "test": "account_test.go"
+  },
+  {
+    "method": "initialize",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "account_test.go"
+  },
+  {
+    "method": "model/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "client_test.go"
+  },
+  {
+    "method": "thread/archive",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "thread/compact/start",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "thread.go",
+      "turn.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "thread/fork",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "thread/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "thread/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "client_extended_test.go"
+  },
+  {
+    "method": "thread/resume",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "client_extended_test.go"
+  },
+  {
+    "method": "thread/start",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "client_extended_test.go"
+  },
+  {
+    "method": "turn/interrupt",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "client_extended_test.go"
+  },
+  {
+    "method": "turn/start",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "client_extended_test.go"
+  },
+  {
+    "method": "turn/steer",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "client.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "account/login/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "account_test.go"
+  },
+  {
+    "method": "account/rateLimits/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "account/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "app/list/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "configWarning",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "deprecationNotice",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "error",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "client_stdio_test.go"
+  },
+  {
+    "method": "externalAgentConfig/import/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "externalAgentConfig/import/progress",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "fs/changed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "guardianWarning",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "hook/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "hook/started",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "item/agentMessage/delta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "internal/protocol/schema/client_types_wire_test.go"
+  },
+  {
+    "method": "item/commandExecution/outputDelta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "item/commandExecution/terminalInteraction",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "item/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "events_wait_test.go"
+  },
+  {
+    "method": "item/mcpToolCall/progress",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "item/started",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "mcpServer/oauthLogin/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "mcpServer/startupStatus/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "model/rerouted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "model/verification",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "rawResponseItem/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "remoteControl/status/changed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "serverRequest/resolved",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "skills/changed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "thread/compacted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "thread/deleted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "thread/name/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "thread/started",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "internal/protocol/schema/client_types_wire_test.go"
+  },
+  {
+    "method": "thread/status/changed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "thread/tokenUsage/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "turn/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "events_wait_test.go"
+  },
+  {
+    "method": "turn/started",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "internal/protocol/item_test.go"
+  },
+  {
+    "method": "warning",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "windows/worldWritableWarning",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "windowsSandbox/setupCompleted",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events_extra.go"
+    ],
+    "test": "events_extra_test.go"
+  },
+  {
+    "method": "item/commandExecution/requestApproval",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go",
+      "internal/protocol/decode.go"
+    ],
+    "test": "approval_adapter_test.go"
+  },
+  {
+    "method": "item/fileChange/requestApproval",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go",
+      "internal/protocol/decode.go"
+    ],
+    "test": "approval_adapter_test.go"
+  },
+  {
+    "method": "item/permissions/requestApproval",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "internal/protocol/decode.go"
+    ],
+    "test": "approval_adapter_test.go"
+  },
+  {
+    "method": "item/tool/call",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go"
+    ],
+    "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "item/tool/requestUserInput",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "internal/protocol/decode.go"
+    ],
+    "test": "client_stdio_test.go"
+  }
+]

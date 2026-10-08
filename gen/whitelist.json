@@ -1,0 +1,38 @@
+[
+  {
+    "method": "getAuthStatus",
+    "face": "client_request",
+    "reason": "R4: v1 deprecated top-level method; deliberately not implemented. Also dropped by the upstream export (see gen/export-exclusions.json)."
+  },
+  {
+    "method": "getConversationSummary",
+    "face": "client_request",
+    "reason": "R4: v1 deprecated top-level method; deliberately not implemented. Also dropped by the upstream export."
+  },
+  {
+    "method": "gitDiffToRemote",
+    "face": "client_request",
+    "reason": "R4: v1 deprecated top-level method; deliberately not implemented. Also dropped by the upstream export."
+  },
+  {
+    "method": "applyPatchApproval",
+    "face": "server_request",
+    "reason": "R4: legacy approval flow not implemented. Inbound requests are declined by policy (see T2.13 / section 5.8) rather than erroring out."
+  },
+  {
+    "method": "execCommandApproval",
+    "face": "server_request",
+    "reason": "R4: legacy approval flow not implemented. Declined in-band per T2.13."
+  },
+  {
+    "method": "attestation/generate",
+    "face": "server_request",
+    "reason": "R4: no handler. Default capabilities do not declare requestAttestation, so the server should not send it; if it does, T2.13 answers -32601 and records it."
+  },
+  {
+    "method": "rawResponse/completed",
+    "face": "server_notification",
+    "reason": "Internal-only upstream (common.rs:1979 'This event is internal-only'); also excluded from the export. No decoder is provided."
+  }
+]
+

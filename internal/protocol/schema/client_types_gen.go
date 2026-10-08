@@ -182,23 +182,20 @@ type RPCError struct {
 }
 
 type RPCRequest struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	Method  string          `json:"method"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Params  json.RawMessage `json:"params,omitempty"`
+	Method string          `json:"method"`
+	ID     json.RawMessage `json:"id,omitempty"`
+	Params json.RawMessage `json:"params,omitempty"`
 }
 
 type RPCResponse struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
-	Error   *RPCError       `json:"error,omitempty"`
+	ID     json.RawMessage `json:"id,omitempty"`
+	Result json.RawMessage `json:"result,omitempty"`
+	Error  *RPCError       `json:"error,omitempty"`
 }
 
 type RPCNotification struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params,omitempty"`
+	Method string          `json:"method"`
+	Params json.RawMessage `json:"params,omitempty"`
 }
 
 // InitializedNotification is the empty notification sent after Initialize.
@@ -208,18 +205,48 @@ type InitializedNotification struct{}
 
 type ClientInfo struct {
 	Name    string `json:"name,omitempty"`
+	Title   string `json:"title,omitempty"`
 	Version string `json:"version,omitempty"`
 }
 
+// Capabilities mirrors the upstream InitializeCapabilities
+// (app-server-protocol/src/protocol/v1.rs:46-70).
+//
+// Upstream `capabilities` is `Option<InitializeCapabilities>`; InitializeRequest therefore
+// holds a pointer so that "no capabilities" is actually omitted from the wire. A struct
+// value would always be serialized (encoding/json never treats a struct as empty).
 type Capabilities struct {
-	ExperimentalAPI                bool `json:"experimentalApi,omitempty"`
-	OptOutNotificationMethods      bool `json:"optOutNotificationMethods,omitempty"`
+	// ExplicitGatewayOauth uses explicit gateway OAuth login instead of automatic browser
+	// authorization. Applies to the app-server's gateway runtime.
+	ExplicitGatewayOauth bool `json:"explicitGatewayOauth,omitempty"`
+
+	// ExperimentalAPI opts into experimental methods and fields. The SDK defaults this to
+	// FALSE: per decision R2 no experimental surface is implemented, so declaring it would
+	// only invite notifications we deliberately do not handle.
+	ExperimentalAPI bool `json:"experimentalApi,omitempty"`
+
+	// RequestAttestation opts into `attestation/generate` server requests. Defaults to
+	// false, matching decision R4 (no attestation handler is provided).
+	RequestAttestation bool `json:"requestAttestation,omitempty"`
+
+	// MCPServerOpenAIFormElicitation is the legacy opt-in for the `openai/form` MCP
+	// extension. New clients should declare it via Extensions instead.
 	MCPServerOpenAIFormElicitation bool `json:"mcpServerOpenaiFormElicitation,omitempty"`
+
+	// OptOutNotificationMethods lists exact notification method names to suppress for this
+	// connection (for example "thread/started").
+	//
+	// D2: this was previously typed `bool`, which made the field silently useless --
+	// upstream is `Option<Vec<String>>` (protocol/v1.rs:65).
+	OptOutNotificationMethods []string `json:"optOutNotificationMethods,omitempty"`
+
+	// Extensions declares MCP extension settings.
+	Extensions map[string]any `json:"extensions,omitempty"`
 }
 
 type InitializeRequest struct {
-	ClientInfo   ClientInfo   `json:"clientInfo"`
-	Capabilities Capabilities `json:"capabilities,omitempty"`
+	ClientInfo   ClientInfo    `json:"clientInfo"`
+	Capabilities *Capabilities `json:"capabilities,omitempty"`
 }
 
 type InitializeResult struct {
@@ -273,7 +300,7 @@ type TurnStartRequest struct {
 	MultiAgentMode      string          `json:"multiAgentMode,omitempty"`
 	Environments        []string        `json:"environments,omitempty"`
 	// Skill triggers a specific named skill for this turn (using $ prefix equivalent).
-	Skill               string          `json:"skill,omitempty"`
+	Skill string `json:"skill,omitempty"`
 }
 
 type TurnInterruptRequest struct {
@@ -413,8 +440,8 @@ type SkillSummary struct {
 
 // SkillsListEntry groups skills and errors for a single cwd.
 type SkillsListEntry struct {
-	CWD    string          `json:"cwd"`
-	Skills []SkillMetadata `json:"skills"`
+	CWD    string           `json:"cwd"`
+	Skills []SkillMetadata  `json:"skills"`
 	Errors []SkillErrorInfo `json:"errors"`
 }
 
@@ -470,12 +497,12 @@ type PluginSkillReadResponse struct {
 type ThreadGoalStatus string
 
 const (
-	ThreadGoalStatusActive       ThreadGoalStatus = "active"
-	ThreadGoalStatusPaused       ThreadGoalStatus = "paused"
-	ThreadGoalStatusBlocked      ThreadGoalStatus = "blocked"
-	ThreadGoalStatusUsageLimited ThreadGoalStatus = "usageLimited"
+	ThreadGoalStatusActive        ThreadGoalStatus = "active"
+	ThreadGoalStatusPaused        ThreadGoalStatus = "paused"
+	ThreadGoalStatusBlocked       ThreadGoalStatus = "blocked"
+	ThreadGoalStatusUsageLimited  ThreadGoalStatus = "usageLimited"
 	ThreadGoalStatusBudgetLimited ThreadGoalStatus = "budgetLimited"
-	ThreadGoalStatusComplete     ThreadGoalStatus = "complete"
+	ThreadGoalStatusComplete      ThreadGoalStatus = "complete"
 )
 
 // ThreadGoal tracks a goal/objective set for a thread, including usage budgets.

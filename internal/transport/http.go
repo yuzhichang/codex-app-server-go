@@ -125,7 +125,12 @@ func (h *HTTPTransport) Call(ctx context.Context, method string, params any, res
 	id := h.nextID
 	h.mu.Unlock()
 
-	respBody, err := h.post(ctx, requestEnvelope{Version: "2.0", Method: method, ID: id, Params: params})
+	respBody, err := h.post(ctx, requestEnvelope{
+		Method: method,
+		ID:     id,
+		Params: params,
+		Trace:  TraceContextFromContext(ctx),
+	})
 	if err != nil {
 		return err
 	}
@@ -158,7 +163,7 @@ func (h *HTTPTransport) Notify(ctx context.Context, method string, params any) e
 		return ctx.Err()
 	default:
 	}
-	_, err := h.post(ctx, notificationEnvelope{Version: "2.0", Method: method, Params: params})
+	_, err := h.post(ctx, notificationEnvelope{Method: method, Params: params})
 	return err
 }
 
@@ -254,7 +259,7 @@ func (h *HTTPTransport) awaitReply(ctx context.Context, req *Request) {
 		return
 	}
 
-	reply := replyEnvelope{Version: "2.0", ID: cloneRaw(req.id)}
+	reply := replyEnvelope{ID: cloneRaw(req.id)}
 	if rr.isErr {
 		rpcErr := &RPCError{Code: rr.code, Message: rr.msg}
 		if rr.data != nil {

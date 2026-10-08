@@ -6,7 +6,9 @@ import (
 	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
 )
 
-const JSONRPCVersion = "2.0"
+// NOTE (D1 / decision R3): there is deliberately no JSONRPCVersion constant here.
+// Upstream app-server does not use true JSON-RPC 2.0 -- see the note in
+// internal/transport/transport.go and app-server-protocol/src/rpc.rs:1-2.
 
 // Method name constants for all JSON-RPC methods.
 const (

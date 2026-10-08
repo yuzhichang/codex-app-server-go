@@ -90,11 +90,16 @@ func New(opts ...Option) (*Client, error) {
 	if cfg.autoInit {
 		initCtx, initCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer initCancel()
+		info := cfg.clientInfo
+		if info.Name == "" {
+			info.Name = defaultClientName
+		}
+		if info.Version == "" {
+			info.Version = Version
+		}
 		initReq := InitializeRequest{
-			ClientInfo: ClientInfo{Name: "codex-go-sdk", Version: "0.1.0"},
-			Capabilities: Capabilities{
-				ExperimentalAPI: true,
-			},
+			ClientInfo:   info,
+			Capabilities: cfg.initCapabilities,
 		}
 		if _, err := client.Initialize(initCtx, initReq); err != nil {
 			_ = client.Close()

@@ -60,9 +60,8 @@ func TestRPCNotificationDecodeParams(t *testing.T) {
 	}
 
 	n := RPCNotification{
-		Version: JSONRPCVersion,
-		Method:  MethodTurnStarted,
-		Params:  params,
+		Method: MethodTurnStarted,
+		Params: params,
 	}
 
 	var decoded TurnStartedEvent

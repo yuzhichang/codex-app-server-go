@@ -183,7 +183,7 @@ func initialize(t *testing.T, client *codexgo.Client) codexgo.InitializeResult {
 			Name:    "codex-go-e2e",
 			Version: "0.0.1",
 		},
-		Capabilities: codexgo.Capabilities{
+		Capabilities: &codexgo.Capabilities{
 			ExperimentalAPI: true,
 		},
 	})

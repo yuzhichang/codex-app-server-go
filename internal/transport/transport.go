@@ -122,9 +122,8 @@ func (r *Request) Reply(ctx context.Context, result any) error {
 		return ErrClosed
 	}
 	return r.transport.send(ctx, r.sessionID, replyEnvelope{
-		Version: "2.0",
-		ID:      cloneRaw(r.id),
-		Result:  result,
+		ID:     cloneRaw(r.id),
+		Result: result,
 	})
 }
 
@@ -157,9 +156,8 @@ func (r *Request) ReplyError(ctx context.Context, code int, message string, data
 		rpcErr.Data = raw
 	}
 	return r.transport.send(ctx, r.sessionID, replyEnvelope{
-		Version: "2.0",
-		ID:      cloneRaw(r.id),
-		Error:   rpcErr,
+		ID:    cloneRaw(r.id),
+		Error: rpcErr,
 	})
 }
 
@@ -268,7 +266,9 @@ func (t *JSONRPCTransport) Call(ctx context.Context, method string, params any, 
 	conn := t.conn
 	t.mu.Unlock()
 
-	if err := t.writeJSON(conn, payload.withID(id)); err != nil {
+	env := payload.withID(id)
+	env.Trace = TraceContextFromContext(ctx)
+	if err := t.writeJSON(conn, env); err != nil {
 		t.removePending(id)
 		return err
 	}
@@ -297,7 +297,6 @@ func (t *JSONRPCTransport) Call(ctx context.Context, method string, params any, 
 // Notify sends a JSON-RPC notification.
 func (t *JSONRPCTransport) Notify(ctx context.Context, method string, params any) error {
 	payload := notificationEnvelope{Method: method, Params: params}
-	payload.Version = "2.0"
 	if ctx != nil {
 		select {
 		case <-ctx.Done():
@@ -570,28 +569,69 @@ type callEnvelope struct {
 }
 
 func (c callEnvelope) withID(id uint64) requestEnvelope {
-	return requestEnvelope{Version: "2.0", Method: c.Method, ID: id, Params: c.Params}
+	return requestEnvelope{Method: c.Method, ID: id, Params: c.Params}
 }
 
+// TraceContext is the W3C Trace Context carried on JSON-RPC requests.
+//
+// Upstream defines this in a different crate (`codex-rs/protocol/src/protocol.rs`), so it
+// does NOT appear in the generated app-server schema; the shape is mirrored here.
+type TraceContext struct {
+	Traceparent string `json:"traceparent,omitempty"`
+	Tracestate  string `json:"tracestate,omitempty"`
+}
+
+// traceContextKey carries an optional *TraceContext through a context.Context.
+type traceContextKey struct{}
+
+// WithTraceContext returns a context carrying tc, to be attached to outbound requests.
+func WithTraceContext(ctx context.Context, tc *TraceContext) context.Context {
+	if tc == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, traceContextKey{}, tc)
+}
+
+// TraceContextFromContext returns the *TraceContext attached to ctx, if any.
+func TraceContextFromContext(ctx context.Context) *TraceContext {
+	if ctx == nil {
+		return nil
+	}
+	tc, _ := ctx.Value(traceContextKey{}).(*TraceContext)
+	return tc
+}
+
+// NOTE ON WIRE SHAPE (D1 / decision R3)
+//
+// Upstream is explicit (`app-server-protocol/src/rpc.rs:1-2`):
+//
+//	//! We do not do true JSON-RPC 2.0, as we neither send nor expect the
+//	//! "jsonrpc": "2.0" field.
+//
+// The envelopes below therefore carry NO `jsonrpc` field. Do not reintroduce it, and do
+// not "fix" its absence on the outbound path.
+//
+// One related deviation is unavoidable and intentional: the stdio transport is backed by
+// jrpc2, a strict JSON-RPC 2.0 implementation that both emits and requires the field. Its
+// inbound workaround lives in stdio.go (versionFixerReader) and must stay until/unless
+// jrpc2 is replaced. The transports below are the ones we control, so they are aligned.
 type requestEnvelope struct {
-	Method  string `json:"method"`
-	Version string `json:"jsonrpc"`
-	ID      uint64 `json:"id"`
-	Params  any    `json:"params,omitempty"`
+	Method string        `json:"method"`
+	ID     uint64        `json:"id"`
+	Params any           `json:"params,omitempty"`
+	Trace  *TraceContext `json:"trace,omitempty"`
 }
 
 type notificationEnvelope struct {
-	Version string `json:"jsonrpc"`
-	Method  string `json:"method"`
-	Params  any    `json:"params,omitempty"`
+	Method string `json:"method"`
+	Params any    `json:"params,omitempty"`
 }
 
 type replyEnvelope struct {
-	Version string          `json:"jsonrpc"`
-	Method  string          `json:"method,omitempty"`
-	ID      json.RawMessage `json:"id"`
-	Result  any             `json:"result"`
-	Error   *RPCError       `json:"error,omitempty"`
+	Method string          `json:"method,omitempty"`
+	ID     json.RawMessage `json:"id"`
+	Result any             `json:"result"`
+	Error  *RPCError       `json:"error,omitempty"`
 }
 
 // --- helpers ---

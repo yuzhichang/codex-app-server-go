@@ -11,9 +11,25 @@ import (
 
 type Option func(*clientConfig) error
 
+// Version is the SDK version reported to the app-server as ClientInfo.Version.
+//
+// It is a var so releases can inject it at build time instead of hand-editing a literal:
+//
+//	go build -ldflags "-X github.com/zealbase/codex-app-server-go.Version=$(cat VERSION)"
+var Version = "0.2.0"
+
+// defaultClientName is used when WithClientInfo is not supplied.
+const defaultClientName = "codex-go-sdk"
+
 type clientConfig struct {
 	transport      Transport
 	requestHandler RequestHandler
+
+	// clientInfo / initCapabilities configure the initialize handshake. A nil
+	// initCapabilities means the `capabilities` field is omitted from the wire, which
+	// mirrors upstream's Option<InitializeCapabilities>.
+	clientInfo       ClientInfo
+	initCapabilities *Capabilities
 	// maxThreads sets the maximum number of concurrent live SessionThreads.
 	// 0 means use the default (64). -1 means unlimited.
 	maxThreads int
@@ -48,6 +64,28 @@ type clientConfig struct {
 	// adaptation. New() applies the retry policy to it (if any) regardless of
 	// option ordering, then adapts it into cfg.transport.
 	innerTransport transport.Transport
+}
+
+// WithClientInfo overrides the ClientInfo sent during the initialize handshake.
+// Empty fields fall back to defaults: name "codex-go-sdk", version Version (@build-time).
+func WithClientInfo(name, title, version string) Option {
+	return func(cfg *clientConfig) error {
+		cfg.clientInfo = ClientInfo{Name: name, Title: title, Version: version}
+		return nil
+	}
+}
+
+// WithInitializeCapabilities sets the capabilities declared during the initialize
+// handshake. Nil (the default) omits `capabilities` from the wire entirely.
+//
+// Note: the SDK implements no experimental surface (decision R2), and
+// `requestAttestation` has no handler (decision R4), so enabling either is not normally
+// useful. Defaults are deliberately all-false.
+func WithInitializeCapabilities(c *Capabilities) Option {
+	return func(cfg *clientConfig) error {
+		cfg.initCapabilities = c
+		return nil
+	}
 }
 
 func WithTransport(t Transport) Option {

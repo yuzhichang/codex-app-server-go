@@ -61,7 +61,11 @@
 | **I2** | **生成的 `version.go` 不得含时间戳。** 原 T0.2 要求记录 `GeneratedAt`，但时间戳会让每次 `sync` 都产生 diff，**直接违反 T0.1/T0.4 的"幂等、`git diff` 为空"验收** | T0.2 移除 `GeneratedAt`；`version.go` 只含确定性值（commit、schema sha256、各面计数）。实测已确认 `sync` 幂等 |
 | **I3** | 三处实现细节澄清：① 仓库已提交的 `schema/json/` 就是 **stable** 面（`ClientRequest.json` = 105，与 precomputed stable 一致），可直接作为汇总 schema 的 vendor 源（622KB）；② 两个 internal-only 通知的排除理由**有上游显式注释**（`common.rs:1977`/`:1979` *"This event is internal-only"*），理由由推断升级为有据；③ precomputed 解压后约 **4.9MB**，不宜 vendor | T0.1 改为 vendor **聚合 stable schema（622KB）+ 派生的 method-set 小文件**；`verify` 因此不需要 `zstandard`、不需要 repo、不需要网络（CI 安全） |
 
-> 附带结论：M0 的机械提取（`scripts/codex_schema_surface.py`）**独立复现了计划书的全部计数**（173/65/108、11/1/10、86/23/63、1/0/1），且 6 条集合断言全绿 —— 此前手工推导的数字现已变为**机器验证**。
+| **I4** | **D4 的原任务描述有误**：`emittedAtMs` 不是 `params` 的成员。上游 `#[serde(flatten)]` 使线上形状为 `{"method":…,"params":{…},"emittedAtMs":123}`，该字段与 `method`/`params` **同级**，而现有 transport 只取 `raw["params"]`，同级字段在读取阶段即被丢弃 | D4 改为**在 transport 层捕获**（`Notification` 增加 `EmittedAtMs`），并同步修正 §2.3 的 D4 行与 T1.3 |
+
+> 附带结论 1：M0 的机械提取（`scripts/codex_schema_surface.py`）**独立复现了计划书的全部计数**（173/65/108、11/1/10、86/23/63、1/0/1），且 6 条集合断言全绿 —— 此前手工推导的数字现已变为**机器验证**。
+>
+> 附带结论 2：D1 的移除已在本机真实 `codex app-server --listen ws://…` 上验证通过（无 `jsonrpc` 字段的握手与只读 RPC 均成功）。同时发现 **stdio 路径无法对齐**：它由 `jrpc2` 驱动，该库自身会发出并要求 `jsonrpc` 字段，故 `versionFixerReader` 入站修补必须保留 —— 这是"library 行为"而非我们可删的兼容 shim。
 
 ---
 
@@ -133,7 +137,7 @@
 | D1 | SDK 发送 `"jsonrpc":"2.0"`；上游既不发送也不期望 | 上游 `rpc.rs:1-2`；SDK `internal/transport/transport.go` | **删除，不提供开关** |
 | D2 | `Capabilities.OptOutNotificationMethods` 类型为 `bool`，上游是 `Option<Vec<String>>` | 上游 `protocol/v1.rs:65`；SDK `client_types_gen.go` | 改 `[]string`（静默失效 bug） |
 | D3 | SDK 用 `item/mcp/requestApproval`；上游已无此名 | SDK `envelope.go:46`、`interaction.go:218`；上游 ServerRequest 面 | 迁移到 `mcpServer/elicitation/request`，**删旧名** |
-| D4 | 通知信封新增 `ServerNotificationEnvelope.emittedAtMs`，SDK 未建模 | 上游 `common.rs:2063-2080` | 建模并解码 |
+| D4 | 通知信封新增 `ServerNotificationEnvelope.emittedAtMs`，SDK 未建模 | 上游 `common.rs:2067-2080` | **建模并在 transport 层捕获**（`emittedAtMs` 与 `method`/`params` **同级**，见 T1.3 的 D4 说明；放在解码器里无效） |
 | D5 | `InitializeCapabilities` 缺 `explicitGatewayOauth`/`requestAttestation`/`extensions`；`ClientInfo` 缺 `title`；`client.go` 硬编码 `codex-go-sdk/0.1.0` | 上游 `protocol/v1.rs:29-70`；SDK `client.go:90-109` | 补字段；`ClientInfo` 可配置 |
 | D5b | 默认宣告 `experimentalApi: true`，与 R2 矛盾 | SDK `client.go:95-97` | **默认 false** |
 | D6 | 版本元数据矛盾（`0.141.0` vs `0.142.0`；`v0.1.2` vs `v0.2.0`；同步脚本路径失效且不写 pinned 版本） | `version.go:3-4`、`VERSION`、`README.md:9,40,106`、`scripts/update-codex-go-schema.sh:6-7` | 由生成器/单一来源产出 |
@@ -267,18 +271,21 @@
 
 ### T1.3 修复类型/建模缺陷（D2/D4/D5/D5b）
 
-- D2：`OptOutNotificationMethods` → `[]string`。
-- D5：`Capabilities` 补 `explicitGatewayOauth`/`requestAttestation`/`extensions`；`ClientInfo` 补 `title`；新增 `WithClientInfo(name, title, version)`。
-- D5b：默认 `experimentalApi = false`、`requestAttestation = false`。
-- D4：`ServerNotificationEnvelope{ EmittedAtMs *int64 }`，兼容"有/无 envelope"。
-- `InitializeRequest.Capabilities` 改为指针。
+- ✅ **D2 已修**：`Capabilities.OptOutNotificationMethods` → `[]string`；回归测试同时断言"旧 `bool` 形状必须解码失败"。
+- ✅ **D5 已修**：`Capabilities` 补 `ExplicitGatewayOauth`/`RequestAttestation`/`Extensions`；`ClientInfo` 补 `Title`；新增 `WithClientInfo(name, title, version)`；新增 `options.go` 的 `Version` 变量（可由 `-ldflags -X` 注入，取代硬编码 `0.1.0`）。
+- ✅ **D5b 已修**：默认不宣告任何 capabilities —— `InitializeRequest.Capabilities` 改为**指针**（`nil` → 字段整体从线上省略，对齐上游 `Option`）；`New()` 不再硬编码 `ExperimentalAPI: true`；新增 `WithInitializeCapabilities` 供显式覆盖。
+- ✅ **D1 配套**：`RPCRequest`/`RPCResponse`/`RPCNotification` 移除 `Version`（实测聚合 schema 中根本不存在 JSONRPC 信封类型，故这三个 `Version` 字段本就是 SDK 自造）。
+- ⏳ **D4 待办（本轮未做，发现需改设计）**：`ServerNotificationEnvelope.emittedAtMs` **不是 `params` 的成员** —— 上游 `#[serde(flatten)] notification` + `emitted_at_ms`（`common.rs:2067-2080`）意味着线上形状是 `{"method":…,"params":{…},"emittedAtMs":123}`，`emittedAtMs` 与 `method`/`params` **同级**。而现有 transport 只把 `raw["params"]` 取出（`websocket.go` / `transport.go` 的 readLoop），**同级字段在这一步就被丢弃**。因此 D4 必须在 **transport 层**（`Notification` 增加 `EmittedAtMs`）而不是解码器里实现 —— 原任务描述有误，已修正。
 
-### T1.4 线格式严格对齐（D1 + trace）✅
+### T1.4 线格式严格对齐（D1 + trace）✅ 已完成
 
-- **删除 `"jsonrpc":"2.0"`**（`requestEnvelope`/`notificationEnvelope` 移除 `Version`；删除 `JSONRPCVersion`）。**不做兼容开关。** 前置：真实 server 验证，纳入 `tests/real/`。
-- **新增 `trace`**（上游 `rpc.rs:45-56`）：`WithTraceContext(ctx)` 或在 transport 层从 `ctx` 提取。
+- ✅ **删除 `"jsonrpc":"2.0"`**：`requestEnvelope`/`notificationEnvelope`/`replyEnvelope` 移除 `Version`；删除 `JSONRPCVersion` 常量；`transport.go` / `http.go` / `websocket.go` 中全部 `Version: "2.0"` 字面量清除。**未提供兼容开关**（R3）。
+  - **唯一保留的例外（必要且有意）**：stdio 传输由 `jrpc2`（严格 JSON-RPC 2.0 实现）驱动，它既发出也要求该字段；其入站修补 `versionFixerReader`（`stdio.go:153-196`）必须保留，除非替换 jrpc2。已在 `transport.go` 与 `stdio.go` 就地注释说明。
+- ✅ **新增 `trace`**：`TraceContext{Traceparent, Tracestate}`（形状取自 `codex-rs/protocol/src/protocol.rs:168-175`；该类型不在 app-server 聚合 schema 中，故本地建模）+ `WithTraceContext(ctx, *TraceContext)` / `TraceContextFromContext(ctx)`；`JSONRPCTransport.Call`、`WebSocketTransport.Call`、`HTTPTransport.Call` 自动注入。**仅请求携带**（上游 `JSONRPCNotification` 无 `trace`）。
+- ✅ **回归测试**：`internal/transport/wire_shape_test.go`（出站无 `jsonrpc`、trace 仅在请求上、helper nil 安全）、`internal/protocol/schema/client_types_wire_test.go`。
+- ✅ **真实 server 验证**（T1.4 明确要求）：`tests/real/wire_alignment_real_test.go` 对本地 `codex app-server --listen ws://…` 执行**无 `jsonrpc` 字段**的 `initialize`+`initialized` 握手与只读 RPC，**实测通过**。
 
-**验收**：出站**不含** `jsonrpc`；`trace` 可注入且 server 侧可见；D2/D4/D5 有回归单测。
+**验收**：出站不含 `jsonrpc` ✅；`trace` 可注入 ✅；D2/D5 有回归单测 ✅；真实 server 接受无字段信封 ✅。
 
 ---
 

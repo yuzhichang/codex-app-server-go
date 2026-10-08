@@ -159,7 +159,7 @@ func (w *WebSocketTransport) readLoop(ctx context.Context) {
 func (w *WebSocketTransport) awaitReply(ctx context.Context, id json.RawMessage, replyCh chan replyResult) {
 	select {
 	case rr := <-replyCh:
-		env := replyEnvelope{Version: "2.0", ID: id}
+		env := replyEnvelope{ID: id}
 		if rr.isErr {
 			rpcErr := &RPCError{Code: rr.code, Message: rr.msg}
 			if rr.data != nil {
@@ -228,7 +228,7 @@ func (w *WebSocketTransport) Call(ctx context.Context, method string, params any
 	w.pending[id] = replyCh
 	w.mu.Unlock()
 
-	env := requestEnvelope{Version: "2.0", Method: method, ID: id, Params: params}
+	env := requestEnvelope{Method: method, ID: id, Params: params, Trace: TraceContextFromContext(ctx)}
 	if err := w.write(ctx, env); err != nil {
 		w.removePending(id)
 		return err
@@ -269,7 +269,7 @@ func (w *WebSocketTransport) Notify(ctx context.Context, method string, params a
 		default:
 		}
 	}
-	env := notificationEnvelope{Version: "2.0", Method: method, Params: params}
+	env := notificationEnvelope{Method: method, Params: params}
 	return w.write(ctx, env)
 }
 

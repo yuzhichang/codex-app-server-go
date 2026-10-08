@@ -43,35 +43,33 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SDK_ROOT = SCRIPT_DIR.parent
 GEN_DIR = SDK_ROOT / "gen"
 
-# Roles -> the real source files that constitute wiring evidence for each kind.
-# Deliberately excludes internal/protocol/envelope.go (declaration) and the generated
-# internal/protocol/schema package.
-KIND_FILES = {
-    "client_method": [
-        "client.go",
-        "thread.go",
-        "turn.go",
-        "account.go",
-        "commandexec.go",
-        "rpc_extras.go",
-        "output.go",
-        "wait.go",
-    ],
-    "notification_decoder": ["events.go", "events_extra.go"],
-    "server_request_handler": ["interaction.go", "internal/protocol/decode.go"],
-    "client_notification_sender": ["client.go"],
+# Wiring evidence is located by *role*, not by a fixed allow-list of files. An earlier
+# version enumerated the files that "obviously" held client methods, which silently stopped
+# seeing any method implemented in a new file (the fs/mcp work in fs.go and mcp.go was
+# invisible to the gate until this was fixed).
+#
+# Files that can never be evidence, regardless of role.
+NON_EVIDENCE_FILES = {
+    "internal/protocol/envelope.go",  # the declaration itself
 }
+NON_EVIDENCE_PREFIXES = (
+    "internal/protocol/schema/",  # generated types
+)
+
+# Roles that must be evidenced from a specific layer, so that an incidental mention
+# elsewhere does not count as wiring.
+DECODER_FILES = ("events.go", "events_extra.go")
+HANDLER_FILES = ("interaction.go", "internal/protocol/decode.go")
+
+# A client request must be evidenced by a call site outside the decoding/handling layer:
+# appearing only in event decoders would mean it is declared but never called.
+CLIENT_METHOD_EXCLUDE = set(DECODER_FILES) | set(HANDLER_FILES)
 
 FACE_KIND = {
     "client_request": "client_method",
     "server_request": "server_request_handler",
     "server_notification": "notification_decoder",
     "client_notification": "client_notification_sender",
-}
-
-# Files that must never be treated as evidence (declaration / generated / test).
-NON_EVIDENCE_FILES = {
-    "internal/protocol/envelope.go",
 }
 
 _CONST_DECL = re.compile(r'^\s*(Method\w+)\s*=\s*"([^"]+)"', re.M)
@@ -119,6 +117,28 @@ def load_json(path: Path, default):
     return json.loads(path.read_text())
 
 
+def _is_evidence_file(rel: str) -> bool:
+    if rel in NON_EVIDENCE_FILES:
+        return False
+    if rel.endswith("_test.go") or rel in {"MEMORY.md", "Makefile"}:
+        return False
+    return not rel.startswith(NON_EVIDENCE_PREFIXES)
+
+
+def _evidence_files(kind: str, const: str, idents: dict[str, set[str]]) -> list[str]:
+    """Files that constitute wiring evidence for `kind` (see the role notes above)."""
+    candidates = [rel for rel in idents if _is_evidence_file(rel)]
+    if kind == "notification_decoder":
+        pool = [rel for rel in candidates if rel in DECODER_FILES]
+    elif kind == "server_request_handler":
+        pool = [rel for rel in candidates if rel in HANDLER_FILES]
+    elif kind == "client_method":
+        pool = [rel for rel in candidates if rel not in CLIENT_METHOD_EXCLUDE]
+    else:  # client_notification_sender -- anywhere a Notify call could live
+        pool = candidates
+    return sorted(rel for rel in pool if const in idents.get(rel, set()))
+
+
 def build_evidence(
     consts: dict[str, str],
     face_by_wire: dict[str, str],
@@ -138,10 +158,7 @@ def build_evidence(
         face = face_by_wire.get(wire)
         if face:
             kind = FACE_KIND[face]
-            hits = [
-                rel for rel in KIND_FILES[kind]
-                if rel not in NON_EVIDENCE_FILES and const in idents.get(rel, ())
-            ]
+            hits = _evidence_files(kind, const, idents)
             if not hits:
                 continue
             # A client notification must have an actual send (Notify) call site; a bare
@@ -152,15 +169,15 @@ def build_evidence(
                     continue
         else:
             # Not declared upstream: classify across every role purely so the R3 removal
-            # report can name what the stale wiring is.
-            kind, hits = None, []
-            for cand, files in KIND_FILES.items():
-                for rel in files:
-                    if rel in NON_EVIDENCE_FILES:
-                        continue
-                    if const in idents.get(rel, ()):
-                        hits.append(rel)
-                        kind = kind or cand
+            # report can name what the stale wiring is. A stale binding is most often a
+            # call site, so the client-method rule is the primary probe.
+            kind = None
+            hits = []
+            for cand in ("client_method", "server_request_handler", "notification_decoder"):
+                found = _evidence_files(cand, const, idents)
+                if found:
+                    kind, hits = cand, found
+                    break
             if not hits:
                 continue
 

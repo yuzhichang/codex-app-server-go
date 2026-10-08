@@ -276,6 +276,14 @@
 - **实测结果（`make coverage`）**：`declared_stable=182 / 白名单=7 / 已实现=60 / 缺口=115`，其中 **未开始 71 + 已接线但缺测试 44**；另有 **2 个待迁移方法**（`config/update`、`item/mcp/requestApproval`）。
 - **输出**：`gen/method-surface.json`、`gen/export-exclusions.json`、`gen/not-in-scope.txt`、`gen/whitelist.json`、`gen/implemented-methods.json`、`gen/unknown-methods.txt`。
 
+### M2 实施状态（2026-10-08）
+
+- ✅ **T1.2 部分落地**：新增 `scripts/gen_go_types.py` + `make generate-types`，从 vendor 的聚合 schema 生成 Go 类型（**只生成 SDK 缺失的定义**，避免与 `client_types_gen.go` 的既有 55 个手写结构体冲突；全量替换仍属 T1.2 剩余工作）。已处理 schemars 的两个坑：单元素 `allOf` 包裹的 `$ref` 必须解包（否则每个带 description 的路径字段都会退化成 `json.RawMessage`），以及无 properties 的 `object` 应生成 `struct{}` 而非 `map[string]any`。
+- ✅ **§5.2 fs 完成（9 RPC + 1 通知）**：`fs.go` 提供 `FSReadFile`/`FSWriteFile`/`FSCreateDirectory`/`FSGetMetadata`/`FSReadDirectory`/`FSRemove`/`FSCopy`/`FSWatch`/`FSUnwatch`，外加 `FSReadFileBytes`/`FSWriteFileBytes` 做 base64 往返。`fs/changed` 通知**此前已实现**（`events_extra.go` 早有 `FsChangedEvent` 与解码分支）——即通知面先于 RPC 面存在。
+- ✅ **§5.3 MCP 完成（5 RPC）**：`mcp.go` 提供 `MCPServerOauthLogin`/`MCPServerStatusList`/`MCPServerResourceRead`/`MCPServerToolCall`/`ConfigMCPServerReload`；两个通知 (`mcpServer/oauthLogin/completed`、`mcpServer/startupStatus/updated`) 同样**此前已实现**。
+- ⏳ **MCP elicitation 待办**：`mcpServer/elicitation/request` 的方法本身是 **stable**，但其**载荷类型完全不在 vendor 的 schema 里** —— 因为 `McpServerElicitationRequestParams.request` 带 `#[experimental(nested)]`，导出一并省略。因此这几个类型必须**照 Rust 源码手写**（属"真正需要才自造"的正当情形，需在 `gen/type-allowlist.json` 登记理由），并同时完成 `item/mcp/requestApproval` → `mcpServer/elicitation/request` 的 dispatcher 替换（R3/D3）。
+- ⚠️ **门禁自身修了一个会漏报的 bug**：`coverage_gate.py` 原来用**硬编码文件清单**判断 client_method 的接线证据，导致实现于新文件（`fs.go`/`mcp.go`）的方法**完全不可见**（80 项被漏报）。已改为**按角色定位**：client_method = 除解码层/处理层与生成物之外的任意调用点；notification_decoder / server_request_handler 仍限定在各自层次内。修复后 implemented **60 → 74**。
+
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：

@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck conformance conformance-strict build test
+.PHONY: sync verify diff-cli coverage typecheck generate-types conformance conformance-strict build test
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -32,6 +32,14 @@ coverage:
 # be allow-listed with a reason (see gen/type-allowlist.json).
 typecheck:
 	python3 $(SDK_DIR)/scripts/type_check.py report
+
+# Regenerate the schema-derived Go types. Deterministic: a no-op re-run leaves git clean.
+# (Currently scoped to the definitions the SDK was missing; see the script's header.)
+generate-types:
+	python3 $(SDK_DIR)/scripts/gen_go_types.py \
+		--match '^(Fs|Mcp|ListMcp|ConfigMcpServerReload)' \
+		--out internal/protocol/schema/generated_fs_mcp.go
+	gofmt -w $(SDK_DIR)/internal/protocol/schema/generated_fs_mcp.go
 
 # Mid-implementation: reconciliation must pass; coverage gaps are reported but not fatal.
 conformance: verify

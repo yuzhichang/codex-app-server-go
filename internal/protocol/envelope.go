@@ -163,6 +163,29 @@ const (
 	MethodThreadGoalUpdated     = "thread/goal/updated"
 	MethodThreadGoalCleared     = "thread/goal/cleared"
 	MethodServerRequestResolved = "serverRequest/resolved"
+
+	// Filesystem RPCs (client -> server). These act on the *host* filesystem the
+	// app-server runs on, not the client's. (`MethodFsChanged` already exists above --
+	// the notification side of fs/* was wired before the RPCs were.)
+	MethodFsReadFile        = "fs/readFile"
+	MethodFsWriteFile       = "fs/writeFile"
+	MethodFsCreateDirectory = "fs/createDirectory"
+	MethodFsGetMetadata     = "fs/getMetadata"
+	MethodFsReadDirectory   = "fs/readDirectory"
+	MethodFsRemove          = "fs/remove"
+	MethodFsCopy            = "fs/copy"
+	MethodFsWatch           = "fs/watch"
+	MethodFsUnwatch         = "fs/unwatch"
+
+	// MCP lifecycle RPCs (client -> server). The notification counterparts
+	// (`mcpServer/oauthLogin/completed`, `mcpServer/startupStatus/updated`) already exist
+	// above as MethodMcpServerOauthLoginCompleted / MethodMcpServerStatusUpdated.
+	MethodMcpServerOauthLogin         = "mcpServer/oauth/login"
+	MethodMcpServerStatusList         = "mcpServerStatus/list"
+	MethodMcpServerResourceRead       = "mcpServer/resource/read"
+	MethodMcpServerToolCall           = "mcpServer/tool/call"
+	MethodConfigMcpServerReload       = "config/mcpServer/reload"
+	MethodMcpServerElicitationRequest = "mcpServer/elicitation/request"
 )
 
 // NOTE: there are deliberately no JSON-RPC envelope types or aliases here.

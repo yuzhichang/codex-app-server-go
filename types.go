@@ -40,6 +40,53 @@ type (
 	ItemKind               = protocol.ItemKind
 	TokenUsage             = protocol.TokenUsage
 	TurnError              = protocol.TurnError
+
+	// Filesystem RPC types (fs/*).
+	AbsolutePathBuf           = schematypes.AbsolutePathBuf
+	FsReadFileParams          = schematypes.FsReadFileParams
+	FsReadFileResponse        = schematypes.FsReadFileResponse
+	FsWriteFileParams         = schematypes.FsWriteFileParams
+	FsWriteFileResponse       = schematypes.FsWriteFileResponse
+	FsCreateDirectoryParams   = schematypes.FsCreateDirectoryParams
+	FsCreateDirectoryResponse = schematypes.FsCreateDirectoryResponse
+	FsGetMetadataParams       = schematypes.FsGetMetadataParams
+	FsGetMetadataResponse     = schematypes.FsGetMetadataResponse
+	FsReadDirectoryParams     = schematypes.FsReadDirectoryParams
+	FsReadDirectoryResponse   = schematypes.FsReadDirectoryResponse
+	FsReadDirectoryEntry      = schematypes.FsReadDirectoryEntry
+	FsRemoveParams            = schematypes.FsRemoveParams
+	FsRemoveResponse          = schematypes.FsRemoveResponse
+	FsCopyParams              = schematypes.FsCopyParams
+	FsCopyResponse            = schematypes.FsCopyResponse
+	FsWatchParams             = schematypes.FsWatchParams
+	FsWatchResponse           = schematypes.FsWatchResponse
+	FsUnwatchParams           = schematypes.FsUnwatchParams
+	FsUnwatchResponse         = schematypes.FsUnwatchResponse
+	// NOTE: FsChangedEvent already exists in events_extra.go (it is one of the
+	// notifications wired before the fs/* RPCs were). Do not re-alias it here.
+
+	// MCP lifecycle RPC types (mcpServer/*). Names follow upstream exactly --
+	// `ListMcpServerStatusParams` and `McpResourceReadParams` keep their upstream
+	// prefixes rather than being renamed for local taste.
+	McpServerOauthLoginParams        = schematypes.McpServerOauthLoginParams
+	McpServerOauthLoginResponse      = schematypes.McpServerOauthLoginResponse
+	ListMcpServerStatusParams        = schematypes.ListMcpServerStatusParams
+	ListMcpServerStatusResponse      = schematypes.ListMcpServerStatusResponse
+	McpServerStatus                  = schematypes.McpServerStatus
+	McpServerStatusDetail            = schematypes.McpServerStatusDetail
+	McpResourceReadParams            = schematypes.McpResourceReadParams
+	McpResourceReadResponse          = schematypes.McpResourceReadResponse
+	McpServerToolCallParams          = schematypes.McpServerToolCallParams
+	McpServerToolCallResponse        = schematypes.McpServerToolCallResponse
+	McpServerRefreshResponse         = schematypes.McpServerRefreshResponse
+	McpServerStartupState            = schematypes.McpServerStartupState
+	McpServerStartupFailureReason    = schematypes.McpServerStartupFailureReason
+	McpAuthStatus                    = schematypes.McpAuthStatus
+	McpServerConnectionStatus        = schematypes.McpServerConnectionStatus
+	McpServerOauthClientRegistration = schematypes.McpServerOauthClientRegistration
+	McpToolCallResult                = schematypes.McpToolCallResult
+	// NOTE: McpServerOauthLoginCompletedEvent and McpServerStatusUpdatedEvent already
+	// exist in events_extra.go. Do not re-alias them here.
 )
 
 const (
@@ -52,6 +99,32 @@ const (
 const (
 	ThreadActiveFlagWaitingOnApproval  = protocol.ThreadActiveFlagWaitingOnApproval
 	ThreadActiveFlagWaitingOnUserInput = protocol.ThreadActiveFlagWaitingOnUserInput
+)
+
+// MCP enum values. A type alias does not carry its constants, so every enum the SDK
+// re-exports needs its values re-exported here too.
+const (
+	McpAuthStatusUnknown     = schematypes.McpAuthStatusUnknown
+	McpAuthStatusUnsupported = schematypes.McpAuthStatusUnsupported
+	McpAuthStatusNotLoggedIn = schematypes.McpAuthStatusNotLoggedIn
+	McpAuthStatusBearerToken = schematypes.McpAuthStatusBearerToken
+	McpAuthStatusOAuth       = schematypes.McpAuthStatusOAuth
+
+	McpServerStartupStateStarting  = schematypes.McpServerStartupStateStarting
+	McpServerStartupStateReady     = schematypes.McpServerStartupStateReady
+	McpServerStartupStateFailed    = schematypes.McpServerStartupStateFailed
+	McpServerStartupStateCancelled = schematypes.McpServerStartupStateCancelled
+
+	McpServerStatusDetailFull             = schematypes.McpServerStatusDetailFull
+	McpServerStatusDetailToolsAndAuthOnly = schematypes.McpServerStatusDetailToolsAndAuthOnly
+
+	McpServerConnectionStatusNotStarted             = schematypes.McpServerConnectionStatusNotStarted
+	McpServerConnectionStatusStarting               = schematypes.McpServerConnectionStatusStarting
+	McpServerConnectionStatusConnected              = schematypes.McpServerConnectionStatusConnected
+	McpServerConnectionStatusAuthenticationRequired = schematypes.McpServerConnectionStatusAuthenticationRequired
+	McpServerConnectionStatusFailed                 = schematypes.McpServerConnectionStatusFailed
+	McpServerConnectionStatusCancelled              = schematypes.McpServerConnectionStatusCancelled
+	McpServerConnectionStatusDisabled               = schematypes.McpServerConnectionStatusDisabled
 )
 
 const (

@@ -36,6 +36,96 @@
     "test": "account_test.go"
   },
   {
+    "method": "config/mcpServer/reload",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "mcp.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/copy",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/createDirectory",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/getMetadata",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/readDirectory",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/readFile",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/remove",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/unwatch",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/watch",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "fs/writeFile",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "fs.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
     "method": "initialize",
     "face": "client_request",
     "kind": "client_method",
@@ -45,11 +135,48 @@
     "test": "account_test.go"
   },
   {
+    "method": "mcpServer/oauth/login",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "mcp.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "mcpServer/resource/read",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "mcp.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "mcpServer/tool/call",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "mcp.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
+    "method": "mcpServerStatus/list",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "mcp.go"
+    ],
+    "test": "fs_mcp_test.go"
+  },
+  {
     "method": "model/list",
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
-      "client.go"
+      "client.go",
+      "client_test_helpers.go"
     ],
     "test": "client_test.go"
   },
@@ -95,7 +222,8 @@
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
-      "client.go"
+      "client.go",
+      "client_test_helpers.go"
     ],
     "test": "client_extended_test.go"
   },
@@ -104,7 +232,8 @@
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
-      "client.go"
+      "client.go",
+      "client_test_helpers.go"
     ],
     "test": "client_extended_test.go"
   },
@@ -122,7 +251,8 @@
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
-      "client.go"
+      "client.go",
+      "client_test_helpers.go"
     ],
     "test": "client_extended_test.go"
   },
@@ -140,7 +270,8 @@
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
-      "client.go"
+      "client.go",
+      "client_test_helpers.go"
     ],
     "test": "client_extended_test.go"
   },

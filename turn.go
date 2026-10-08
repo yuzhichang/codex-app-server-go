@@ -111,10 +111,11 @@ func WithEffort(effort string) TurnOption {
 	}
 }
 
-// WithSkill sets a specific skill to invoke for this turn.
-func WithSkill(skill string) TurnOption {
-	return func(r *TurnStartParams) { r.Skill = skill }
-}
+// NOTE: WithSkill was removed. `TurnStartParams` has no `skill` field upstream, so the
+// option set a field that could never be transmitted -- it had no effect on the server. The
+// hand-written marshaller in internal/protocol/schema/marshal_ext.go re-lists every field by
+// hand, and `Skill` was omitted from it, which is why the option appeared to work while
+// doing nothing.
 
 // WithOutputSchema sets the output schema for constraining the assistant's final message.
 func WithOutputSchema(schema any) TurnOption {

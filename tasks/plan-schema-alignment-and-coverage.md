@@ -304,7 +304,15 @@
 | 其中在聚合 schema 中有同名定义 | **49**（唯一例外 `InitializeResponse`，已白名单） |
 | **字段形状不一致的** | **26**（`make type-shape-check` 可复现） |
 
-**关键发现：不一致不是命名风格问题，而是真实的线上形状错误**，其中一条影响 SDK 主入口：
+> ⚠️ **自我更正（重要）**：我最初据此断言"`SessionThread.Run` 发出了畸形载荷"，**这是错的**。`internal/protocol/schema/marshal_ext.go` 为 `TurnStartParams` / `TurnSteerParams` / `ThreadStartParams` 提供了**手写 `MarshalJSON`**，其中 `wireInput` 会把 Go 字符串**正确转成** `[{"type":"text","text":…}]` —— **线上形状一直是对的**。该设计刻意保留"Go 侧用字符串"的人机工程。教训：类型名/字段名不一致**不等于**协议错误，必须继续追一层到序列化行为。
+>
+> 但追这一层也**确实挖到两个真问题**：
+> 1. **`TurnStartParams.Skill` 可设置但永不上线** —— 手写 marshaller 用一个 `alias` 结构**逐字段重新列出**，`Skill` 漏了；而它的测试只断言 `req.Skill` 被设置（**断言了本地字段而非载荷**），所以 no-op 长期无人发现。且**上游 `TurnStartParams` 根本没有 `skill` 字段** ⇒ 该字段与 `WithSkill` 选项均为**死 API**，已删除（含其误导性测试）。
+> 2. `Environments` 上游标为 **`#[experimental("turn/start.environments")]`** ⇒ 按 R2 本不该暴露（且上游类型是 `Vec<TurnEnvironmentParams>`，SDK 是 `[]string`）。**未改**，记为待办。
+>
+> **新增不变量测试 `TestMarshalledParamsSendEveryField`**：用反射把三个手写 marshaller 对应的结构体**每个可设置字段**填成非零标记，再断言**每个字段都出现在线上 JSON 里**。已**验证它会失败**（临时把 `Skill` 加回去 ⇒ 报 `field "skill" is settable but never reaches the wire`），不是空跑。这把"新增字段必须同步改第二处"从**隐性义务**变成**受检属性**。
+
+**以下为原始度量结果（部分结论已被上面的更正推翻，保留以记录过程）：**
 
 | 类型 | SDK 手写 | 上游实际 |
 |---|---|---|

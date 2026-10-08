@@ -279,8 +279,6 @@ type TurnStartParams struct {
 	CollaborationMode   string          `json:"collaborationMode,omitempty"`
 	MultiAgentMode      string          `json:"multiAgentMode,omitempty"`
 	Environments        []string        `json:"environments,omitempty"`
-	// Skill triggers a specific named skill for this turn (using $ prefix equivalent).
-	Skill string `json:"skill,omitempty"`
 }
 
 type TurnInterruptParams struct {

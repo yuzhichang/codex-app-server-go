@@ -2491,18 +2491,9 @@ func TestAuthTokensRefreshWithoutHandlerDoesNotFabricateToken(t *testing.T) {
 	}
 }
 
-// ---- Deliverable 2: TestWithSkillOption ----
-
-func TestWithSkillOption(t *testing.T) {
-	req := codexgo.TurnStartParams{
-		ThreadID: "thread-skill",
-		Input:    "hello",
-	}
-	codexgo.WithSkill("my-skill")(&req)
-	if req.Skill != "my-skill" {
-		t.Fatalf("expected req.Skill == \"my-skill\", got %q", req.Skill)
-	}
-}
+// TestWithSkillOption was removed together with WithSkill: TurnStartParams has no `skill`
+// field upstream, so the option set a field that was never transmitted. The old test only
+// asserted the local field, which is precisely why the no-op went unnoticed.
 
 // TestSessionThreadGitDiff was removed along with Client.TurnDiff / SessionThread.GitDiff:
 // upstream declares no `turn/diff` request, so the SDK no longer models a pull-style diff

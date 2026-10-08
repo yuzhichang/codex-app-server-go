@@ -27,15 +27,16 @@ thread, err := client.ResumeThread(ctx, id, opts...)
 thread.Close()  // release semaphore slot
 
 # ThreadOption helpers:
-#   WithThreadModel(model), WithThreadApprovalMode(mode), WithThreadCWD(cwd)
+#   WithThreadModel(model), WithThreadApprovalPolicy(policy), WithThreadCWD(cwd)
 #   WithThreadEphemeral(bool), WithInitialInput(input)
 
 result, err := thread.Run(ctx, "prompt", opts...)   // synchronous turn
-# TurnOption: WithModel, WithApprovalMode, WithSandboxMode, WithCWD, WithEffort, WithSkill, WithInputs
+# TurnOption: WithModel, WithApprovalPolicy, WithApprovalsReviewer, WithSandboxPolicy, WithSandboxMode,
+#   WithCWD, WithEffort, WithOutputSchema, WithInputs
 
 result.FinalAgentText() string  -- last agent-message text (searches Items, Turn.Items, DeltaText)
 result.Turn.Status              -- "completed" | "interrupted" | "failed"
-result.Usage                    -- *TokenUsage; nil when server does not report it
+result.Usage                    -- *ThreadTokenUsage; nil unless thread/tokenUsage/updated arrived
 result.Items                    -- []Item captured via streaming events
 result.DeltaText                -- streaming delta fallback text
 
@@ -121,10 +122,10 @@ for event := range sub.C() {
 
 ## Key types
 Thread{ID, Name, Status ThreadStatus, Turns []Turn}
-Turn{ID, Items []Item, ItemsView TurnItemsView, Status TurnStatus, Usage *TokenUsage, StartedAt, CompletedAt *time.Time}
+Turn{ID, Items []Item, ItemsView TurnItemsView, Status TurnStatus, StartedAt, CompletedAt}   // no Usage: see thread/tokenUsage/updated
 Item{ID, Kind ItemKind, Payload json.RawMessage}
-TurnResult{Turn, Items []Item, Usage *TokenUsage, Error *TurnError, DeltaText string}
-TokenUsage{InputTokens, OutputTokens, TotalTokens int}
+TurnResult{Turn, Items []Item, Usage *ThreadTokenUsage, Error *TurnError, DeltaText string}
+ThreadTokenUsage{Last, Total TokenUsageBreakdown; ModelContextWindow int64}
 
 ## Enums (wire values in quotes)
 ThreadStatus: "notLoaded" | "idle" | "active" | "systemError"
@@ -145,7 +146,7 @@ HandleUserInputRequest(ctx, UserInputRequest) (UserInputResult, error)
 # Decision values: accept | acceptForSession | decline | cancel (+ exec/network policy amendments)
 
 ## Server-push notification types
-TurnStartedEvent, TurnCompletedEvent{Usage *TokenUsage}, ItemStartedEvent, ItemCompletedEvent,
+TurnStartedEvent, TurnCompletedEvent{}, ItemStartedEvent, ItemCompletedEvent,
 ItemUpdatedEvent, TurnDiffUpdatedEvent, TurnPlanUpdatedEvent, ThreadTokenUsageUpdatedEvent,
 ThreadStartedEvent, ThreadArchivedEvent, ThreadUnarchivedEvent, ThreadClosedEvent,
 ThreadStatusChangedEvent, ThreadGoalUpdatedEvent, ThreadGoalClearedEvent,

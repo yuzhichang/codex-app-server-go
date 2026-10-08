@@ -5,7 +5,6 @@ package schema
 
 import (
 	"encoding/json"
-	"strings"
 )
 
 // MarshalJSON omits the Ephemeral field when false so the wire format stays
@@ -33,78 +32,5 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		Personality:           r.Personality,
 		DynamicTools:          r.DynamicTools,
 		Metadata:              r.Metadata,
-	})
-}
-
-// wireInput converts a string Input field into the multi-part array shape the
-// server expects. When the string is a pre-encoded JSON array (typed inputs),
-// it is passed through verbatim.
-func wireInput(s string) any {
-	switch {
-	case strings.HasPrefix(strings.TrimSpace(s), "["):
-		return json.RawMessage(s)
-	case s != "":
-		return []map[string]string{{"type": "text", "text": s}}
-	default:
-		return []map[string]string{}
-	}
-}
-
-// MarshalJSON converts the string Input into the multi-part array format the
-// server expects and passes all other fields through unchanged.
-func (r TurnSteerParams) MarshalJSON() ([]byte, error) {
-	type alias struct {
-		ThreadID            string `json:"threadId"`
-		ExpectedTurnID      string `json:"expectedTurnId"`
-		Input               any    `json:"input"`
-		ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
-	}
-	return json.Marshal(alias{
-		ThreadID:            r.ThreadID,
-		ExpectedTurnID:      r.ExpectedTurnID,
-		Input:               wireInput(r.Input),
-		ClientUserMessageID: r.ClientUserMessageID,
-	})
-}
-
-// MarshalJSON converts the string Input into the multi-part array format the
-// server expects and passes all other fields through unchanged.
-func (r TurnStartParams) MarshalJSON() ([]byte, error) {
-	type alias struct {
-		ThreadID            string             `json:"threadId"`
-		Input               any                `json:"input"`
-		ClientUserMessageID string             `json:"clientUserMessageId,omitempty"`
-		CWD                 string             `json:"cwd,omitempty"`
-		ApprovalPolicy      *AskForApproval    `json:"approvalPolicy,omitempty"`
-		ApprovalsReviewer   *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
-		SandboxPolicy       *SandboxPolicy     `json:"sandboxPolicy,omitempty"`
-		Permissions         []string           `json:"permissions,omitempty"`
-		Model               string             `json:"model,omitempty"`
-		ServiceTier         string             `json:"serviceTier,omitempty"`
-		Effort              string             `json:"effort,omitempty"`
-		Summary             string             `json:"summary,omitempty"`
-		OutputSchema        any                `json:"outputSchema,omitempty"`
-		CollaborationMode   string             `json:"collaborationMode,omitempty"`
-		MultiAgentMode      string             `json:"multiAgentMode,omitempty"`
-		Environments        []string           `json:"environments,omitempty"`
-	}
-
-	return json.Marshal(alias{
-		ThreadID:            r.ThreadID,
-		Input:               wireInput(r.Input),
-		ClientUserMessageID: r.ClientUserMessageID,
-		CWD:                 r.CWD,
-		ApprovalPolicy:      r.ApprovalPolicy,
-		ApprovalsReviewer:   r.ApprovalsReviewer,
-		SandboxPolicy:       r.SandboxPolicy,
-		Permissions:         r.Permissions,
-		Model:               r.Model,
-		ServiceTier:         r.ServiceTier,
-		Effort:              r.Effort,
-		Summary:             r.Summary,
-		OutputSchema:        r.OutputSchema,
-		CollaborationMode:   r.CollaborationMode,
-		MultiAgentMode:      r.MultiAgentMode,
-		Environments:        r.Environments,
 	})
 }

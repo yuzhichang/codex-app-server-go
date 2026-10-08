@@ -153,7 +153,7 @@ func TestTurnStartAndRead(t *testing.T) {
 
 	turn, err := h.client.TurnStart(turnCtx, codexgo.TurnStartParams{
 		ThreadID: threadID,
-		Input:    "Write a haiku about Go programming.",
+		Input:    codexgo.TextInputs("Write a haiku about Go programming."),
 	})
 	if err != nil {
 		t.Fatalf("TurnStart: %v", err)

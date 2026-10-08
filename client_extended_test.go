@@ -151,7 +151,7 @@ func TestTurnStart(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
-	got, err := client.TurnStart(context.Background(), TurnStartParams{ThreadID: "thread-1", Input: "hello"})
+	got, err := client.TurnStart(context.Background(), TurnStartParams{ThreadID: "thread-1", Input: TextInputs("hello")})
 	if err != nil {
 		t.Fatalf("TurnStart() error = %v", err)
 	}

@@ -25,7 +25,7 @@ func TestTurnInterrupt(t *testing.T) {
 	// when we call TurnInterrupt a few seconds later.
 	turn, err := h.client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: threadID,
-		Input:    "Write a very long story — at least 500 words — about a robot exploring Mars.",
+		Input:    codexgo.TextInputs("Write a very long story — at least 500 words — about a robot exploring Mars."),
 	})
 	if err != nil {
 		t.Fatalf("TurnStart: %v", err)
@@ -98,7 +98,7 @@ func TestSessionStop(t *testing.T) {
 	// Start a turn — don't wait for it to finish.
 	turn, err := h.client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: threadID,
-		Input:    "Write a haiku.",
+		Input:    codexgo.TextInputs("Write a haiku."),
 	})
 	if err != nil {
 		t.Fatalf("TurnStart: %v", err)

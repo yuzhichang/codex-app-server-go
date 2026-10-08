@@ -120,11 +120,21 @@ func (t *SessionThread) ID() string {
 // The subscription to server events is established before TurnStart is called so
 // that item/completed and turn/completed notifications are never missed, even on
 // fast (mock) servers where events fire before TurnStart returns.
+//
+// Run starts a turn from a plain prompt.
+//
+// It is RunInputs with a single text element, so there is one implementation and the two
+// cannot drift.
 func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOption) (*TurnResult, error) {
+	return t.RunInputs(ctx, TextInputs(input), opts...)
+}
+
+// RunInputs starts a turn from structured input: text, images, skills or mentions.
+func (t *SessionThread) RunInputs(ctx context.Context, inputs []UserInput, opts ...TurnOption) (*TurnResult, error) {
 	t.turnMu.Lock()
 	defer t.turnMu.Unlock()
 
-	req := TurnStartParams{ThreadID: t.threadID, Input: input}
+	req := TurnStartParams{ThreadID: t.threadID, Input: inputs}
 	applyTurnOptions(&req, opts)
 
 	// Subscribe before TurnStart to capture all events for this turn.
@@ -178,7 +188,7 @@ func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOptio
 func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, error) {
 	t.turnMu.Lock()
 
-	req := TurnStartParams{ThreadID: t.threadID, Input: input}
+	req := TurnStartParams{ThreadID: t.threadID, Input: TextInputs(input)}
 	applyTurnOptions(&req, opts)
 
 	turn, err := t.client.TurnStart(ctx, req)
@@ -249,18 +259,18 @@ func (t *SessionThread) Steer(ctx context.Context, turnID, input string) error {
 	_, err := t.client.TurnSteer(ctx, TurnSteerParams{
 		ThreadID:       t.threadID,
 		ExpectedTurnID: turnID,
-		Input:          input,
+		Input:          TextInputs(input),
 	})
 	return err
 }
 
-// SteerInputs sends typed multi-part input to an in-progress turn, mirroring
-// Steer but accepting TurnInput items instead of a plain string.
-func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs ...TurnInput) error {
+// SteerInputs sends typed multi-part input to an in-progress turn, mirroring Steer but
+// accepting structured UserInput items instead of a plain string.
+func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs ...UserInput) error {
 	_, err := t.client.TurnSteer(ctx, TurnSteerParams{
 		ThreadID:       t.threadID,
 		ExpectedTurnID: turnID,
-		Input:          encodeInputs(inputs),
+		Input:          inputs,
 	})
 	return err
 }

@@ -103,12 +103,14 @@ func WithSandboxMode(mode SandboxMode) TurnOption {
 	}
 }
 
-// WithInputs sets typed multi-part inputs for the turn, replacing any plain
-// string input. Use TextInput, ImageInput, LocalImageInput, SkillInput, and
-// MentionInput to construct the items.
-func WithInputs(inputs ...TurnInput) TurnOption {
+// WithInputs sets structured multi-part input for the turn.
+//
+// Use TextInput, ImageInput, LocalImageInput, SkillInput and MentionInput to build the items.
+// Input is a typed slice now, so a malformed element is a compile error rather than a payload
+// the server rejects.
+func WithInputs(inputs ...UserInput) TurnOption {
 	return func(r *TurnStartParams) {
-		r.Input = encodeInputs(inputs)
+		r.Input = inputs
 	}
 }
 

@@ -278,7 +278,7 @@ func TestMockServerTurnStart(t *testing.T) {
 
 	turn, err := client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: "thread-1",
-		Input:    "hello world",
+		Input:    codexgo.TextInputs("hello world"),
 	})
 	if err != nil {
 		t.Fatalf("TurnStart(): %v", err)
@@ -2724,7 +2724,7 @@ func TestTurnStartSendsSandboxPolicyObject(t *testing.T) {
 
 	if _, err := client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: "thr-s",
-		Input:    "hi",
+		Input:    codexgo.TextInputs("hi"),
 		SandboxPolicy: func() *codexgo.SandboxPolicy {
 			p := codexgo.WorkspaceWritePolicy()
 			p.WritableRoots = []string{"/tmp/w"}
@@ -2839,7 +2839,7 @@ func TestTurnStartSendsApprovalsReviewerSeparately(t *testing.T) {
 
 	if _, err := client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID:          "thr-a",
-		Input:             "hi",
+		Input:             codexgo.TextInputs("hi"),
 		ApprovalPolicy:    codexgo.Ptr(codexgo.ApprovalOnRequest()),
 		ApprovalsReviewer: codexgo.Ptr(codexgo.ApprovalsReviewerAutoReview),
 	}); err != nil {
@@ -2885,7 +2885,7 @@ func TestTurnSteerSendsExpectedTurnID(t *testing.T) {
 	resp, err := client.TurnSteer(ctx, codexgo.TurnSteerParams{
 		ThreadID:       "thr-x",
 		ExpectedTurnID: "turn-x",
-		Input:          "also check the tests",
+		Input:          codexgo.TextInputs("also check the tests"),
 	})
 	if err != nil {
 		t.Fatalf("TurnSteer: %v", err)
@@ -2899,9 +2899,15 @@ func TestTurnSteerSendsExpectedTurnID(t *testing.T) {
 		if _, ok := raw["turnId"]; ok {
 			t.Error("turnId is not an upstream field on turn/steer and must not be sent")
 		}
-		// Input still goes through the multi-part encoder.
-		if v := string(raw["input"]); v != `[{"text":"also check the tests","type":"text"}]` {
-			t.Errorf("input = %s", v)
+		// Input is the multi-part array upstream requires. Parse it rather than compare
+		// bytes: JSON object key order is not significant, and a byte comparison would
+		// encode an implementation detail as a requirement.
+		var items []map[string]string
+		if err := json.Unmarshal(raw["input"], &items); err != nil {
+			t.Fatalf("input is not an array of objects: %v (%s)", err, raw["input"])
+		}
+		if len(items) != 1 || items[0]["type"] != "text" || items[0]["text"] != "also check the tests" {
+			t.Errorf("input = %s", raw["input"])
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("turn/steer was never called")

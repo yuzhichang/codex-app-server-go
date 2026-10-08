@@ -385,10 +385,12 @@ func SandboxPolicyFromMode(m SandboxMode) *SandboxPolicy {
 }
 
 type TurnStartParams struct {
-	ThreadID            string `json:"threadId"`
-	Input               string `json:"input,omitempty"`
-	ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
-	CWD                 string `json:"cwd,omitempty"`
+	ThreadID string `json:"threadId"`
+	// Input is required upstream and is an array of tagged objects, not a bare string. Use
+	// TextInput for the common case, or build the elements directly.
+	Input               []UserInput `json:"input"`
+	ClientUserMessageID string      `json:"clientUserMessageId,omitempty"`
+	CWD                 string      `json:"cwd,omitempty"`
 	// ApprovalPolicy overrides the approval policy for this turn and onwards.
 	ApprovalPolicy *AskForApproval `json:"approvalPolicy,omitempty"`
 	// ApprovalsReviewer routes approval requests to a reviewer. This is where `auto_review`
@@ -449,9 +451,10 @@ type ThreadRevertResponse struct {
 type TurnSteerParams struct {
 	ThreadID string `json:"threadId"`
 	// ExpectedTurnID is the turn this input is steered into. Required.
-	ExpectedTurnID      string `json:"expectedTurnId"`
-	Input               string `json:"input"`
-	ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
+	ExpectedTurnID string `json:"expectedTurnId"`
+	// Input is []UserInput for the same reason as TurnStartParams.Input.
+	Input               []UserInput `json:"input"`
+	ClientUserMessageID string      `json:"clientUserMessageId,omitempty"`
 }
 
 // --- Review ---

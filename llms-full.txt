@@ -125,7 +125,7 @@ StartThread and ResumeThread return a *SessionThread, which:
 ThreadOption values:
     codexgo.WithThreadModel(model string)
     codexgo.WithThreadApprovalPolicy(policy string)
-    codexgo.WithThreadApprovalMode(mode ApprovalMode)
+    codexgo.WithThreadApprovalPolicy(policy AskForApproval)
     codexgo.WithThreadCWD(cwd string)
     codexgo.WithThreadEphemeral(ephemeral bool)
     codexgo.WithInitialInput(input string)
@@ -149,20 +149,19 @@ ThreadOption values:
 TurnOption values:
     codexgo.WithModel(model string)
     codexgo.WithApprovalPolicy(policy string)
-    codexgo.WithApprovalMode(mode ApprovalMode)
+    codexgo.WithApprovalPolicy(policy AskForApproval)
     codexgo.WithSandbox(policy string)
     codexgo.WithSandboxMode(mode SandboxMode)
     codexgo.WithCWD(cwd string)
     codexgo.WithEffort(effort string)
-    codexgo.WithSkill(skill string)
-    codexgo.WithInputs(inputs ...TurnInput)
+    codexgo.WithInputs(inputs ...UserInput)
 
 ### Mid-turn control
 
     err := thread.Steer(ctx context.Context, turnID, input string) error
         Send additional text input to an in-progress turn.
 
-    err := thread.SteerInputs(ctx context.Context, turnID string, inputs ...TurnInput) error
+    err := thread.SteerInputs(ctx context.Context, turnID string, inputs ...UserInput) error
         Send typed multi-part input to an in-progress turn.
 
     err := thread.Interrupt(ctx context.Context, turnID string) error
@@ -192,7 +191,7 @@ TurnOption values:
     type TurnResult struct {
         Turn      Turn        // final turn state; always populated
         Items     []Item      // items from streaming events + turn state
-        Usage     *TokenUsage // nil when server does not report usage
+        Usage     *ThreadTokenUsage // nil until thread/tokenUsage/updated arrives
         Error     *TurnError  // non-nil when Status is "failed"
         DeltaText string      // reconstructed agent text from delta events
     }
@@ -345,11 +344,11 @@ Notes:
 All events have ThreadID and TurnID (where applicable):
 
     TurnStartedEvent{ThreadID, TurnID string; Turn *Turn}
-    TurnCompletedEvent{ThreadID, TurnID string; Status TurnStatus; Turn *Turn; Usage *TokenUsage}
+    TurnCompletedEvent{ThreadID, TurnID string; Status TurnStatus; Turn *Turn}
     ItemStartedEvent{ThreadID, TurnID string; Item *Item}
     ItemCompletedEvent{ThreadID, TurnID string; Item *Item}
     ItemUpdatedEvent{ThreadID, TurnID string; Item *Item}
-    ThreadTokenUsageUpdatedEvent{ThreadID string; Usage *TokenUsage}
+    ThreadTokenUsageUpdatedEvent{ThreadID, TurnID string; TokenUsage *ThreadTokenUsage}
     TurnDiffUpdatedEvent{ThreadID, TurnID string; Diff json.RawMessage}
     TurnPlanUpdatedEvent{ThreadID, TurnID string; Plan json.RawMessage}
     ErrorEvent{ThreadID, TurnID, Message, Code string; Data json.RawMessage}
@@ -391,7 +390,7 @@ All events have ThreadID and TurnID (where applicable):
         StartedAt   *time.Time
         CompletedAt *time.Time
         DurationMS  int64
-        Usage       *TokenUsage
+        Usage       *ThreadTokenUsage
     }
 
     type Item struct {
@@ -404,10 +403,19 @@ All events have ThreadID and TurnID (where applicable):
     item.Decode(&v)       // unmarshal Payload into v
     item.PayloadBytes()   // raw JSON bytes of Payload
 
-    type TokenUsage struct {
-        InputTokens  int
-        OutputTokens int
-        TotalTokens  int
+    type TokenUsageBreakdown struct {
+        CachedInputTokens     int64
+        CacheWriteInputTokens int64
+        InputTokens           int64
+        OutputTokens          int64
+        ReasoningOutputTokens int64
+        TotalTokens           int64
+    }
+
+    type ThreadTokenUsage struct {
+        Last               TokenUsageBreakdown
+        Total              TokenUsageBreakdown
+        ModelContextWindow int64
     }
 
     type ThreadGoal struct {
@@ -501,9 +509,10 @@ FileChange decision constants:
   app-server is WebSocket-only; these transports require the ws-http-bridge sidecar
   (plugins/codex-server/ws-http-bridge) deployed in front of the server. Connecting
   directly to a WS-only server returns HTTP 405. Use WithWSTransport for remote servers.
-- Turn Usage (TokenUsage) is nil when the server does not include usage in the
-  turn/read response. Use WaitForFinalAgentMessage then TurnRead to get the most
-  up-to-date turn data.
+- TurnResult.Usage comes from thread/tokenUsage/updated and is nil until that notification
+  arrives; it is not part of turn/completed or turn/read. (An earlier version of this note
+  described that as a server limitation. It was a bug: the SDK modelled usage on the turn,
+  which upstream never sends.)
 - Events are not replayed: subscribe before TurnStart to avoid missing early events.
 
 ## Docs

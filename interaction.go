@@ -460,62 +460,66 @@ func (d *Dispatcher) notifyUnhandled(req ServerRequest, action, reason string) {
 // values with TextInput, ImageInput, LocalImageInput, SkillInput, or
 // MentionInput. Each serializes to the multi-part wire shape the app-server
 // expects.
-type TurnInput map[string]any
+// TextInputs wraps a plain prompt as the input array upstream requires.
+//
+// A bare string is not a valid value: upstream expects [{"type":"text","text":...}].
+func TextInputs(text string) []UserInput {
+	if text == "" {
+		return nil
+	}
+	return []UserInput{{Type: UserInputTypeText, Text: text}}
+}
+
+// TurnInput is the former map-based input type. Deprecated: UserInput is typed, so a
+// malformed element is a compile error instead of a payload the server rejects.
+type TurnInput = UserInput
 
 // TextInput wraps a plain text fragment: {"type":"text","text":...}.
-func TextInput(text string) TurnInput {
-	return TurnInput{"type": "text", "text": text}
+func TextInput(text string) UserInput {
+	return UserInput{Type: UserInputTypeText, Text: text}
 }
 
-// ImageInput references a remote image by URL: {"type":"image","url":...}.
-// mediaType is optional; when non-empty it is sent as "mediaType".
-func ImageInput(url, mediaType string) TurnInput {
-	item := TurnInput{"type": "image", "url": url}
-	if mediaType != "" {
-		item["mediaType"] = mediaType
-	}
-	return item
+// ImageInput references an image the server can fetch by URL: {"type":"image","url":...}.
+//
+// The former mediaType parameter is gone: `mediaType` is not a field of any UserInput variant,
+// so it was sent as an unrecognised extra and ignored. The server derives the type from the
+// response.
+func ImageInput(url string) UserInput {
+	return UserInput{Type: UserInputTypeImage, URL: url}
 }
 
-// LocalImageInput reads the file at path synchronously, base64-encodes it, and
-// produces an image input carrying a data: URI. The media type is inferred from
-// the file extension, defaulting to application/octet-stream.
-func LocalImageInput(path string) (TurnInput, error) {
+// LocalImageInput reads the file at path synchronously and produces an image input carrying a
+// data: URI, so the payload is self-contained. The media type is inferred from the file
+// extension, falling back to content sniffing.
+//
+// Upstream also has a `localImage` variant that takes the path instead; sending the bytes
+// avoids depending on the server having access to the same filesystem.
+func LocalImageInput(path string) (UserInput, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("local image input: %w", err)
+		return UserInput{}, fmt.Errorf("local image input: %w", err)
 	}
 	mediaType := mime.TypeByExtension(filepath.Ext(path))
 	if mediaType == "" {
 		mediaType = http.DetectContentType(data)
 	}
-	encoded := base64DataURI(mediaType, data)
-	return TurnInput{"type": "image", "url": encoded, "mediaType": mediaType}, nil
+	return UserInput{Type: UserInputTypeImage, URL: base64DataURI(mediaType, data)}, nil
 }
 
-// SkillInput references a named skill: {"type":"skill","name":...}.
-func SkillInput(skillName string) TurnInput {
-	return TurnInput{"type": "skill", "name": skillName}
+// SkillInput references a named skill: {"type":"skill","name":...,"path":...}.
+//
+// path is required upstream. The former single-argument form sent only `name`, so the server
+// rejected every skill input.
+func SkillInput(name, path string) UserInput {
+	return UserInput{Type: UserInputTypeSkill, Name: name, Path: path}
 }
 
-// MentionInput references an @mention resource:
-// {"type":"mention","id":...,"text":...}.
-func MentionInput(mentionID, text string) TurnInput {
-	return TurnInput{"type": "mention", "id": mentionID, "text": text}
-}
-
-// encodeInputs serializes typed inputs into the JSON-array string carried by the
-// Input field; TurnStartParams/TurnSteerParams marshaling pass it through as
-// the wire input array. Returns "" for an empty slice.
-func encodeInputs(inputs []TurnInput) string {
-	if len(inputs) == 0 {
-		return ""
-	}
-	b, err := json.Marshal(inputs)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+// MentionInput references an @mention resource: {"type":"mention","name":...,"path":...}.
+//
+// name and path are both required upstream. The former form sent `id` and `text` instead --
+// neither is a field of the mention variant -- so it was rejected on every count.
+func MentionInput(name, path string) UserInput {
+	return UserInput{Type: UserInputTypeMention, Name: name, Path: path}
 }
 
 func base64DataURI(mediaType string, data []byte) string {

@@ -16,13 +16,13 @@ import (
 func TestWithInputsWireFormat(t *testing.T) {
 	client, mock := newClientFromMock(t)
 
+	// The upstream shape of each variant, spelled out so the test cannot drift from it.
 	type inputItem struct {
-		Type      string `json:"type"`
-		Text      string `json:"text"`
-		URL       string `json:"url"`
-		MediaType string `json:"mediaType"`
-		Name      string `json:"name"`
-		ID        string `json:"id"`
+		Type string `json:"type"`
+		Text string `json:"text"`
+		URL  string `json:"url"`
+		Name string `json:"name"`
+		Path string `json:"path"`
 	}
 	captured := make(chan []inputItem, 1)
 	mock.Handle("turn/start", func(params json.RawMessage) (any, error) {
@@ -44,9 +44,9 @@ func TestWithInputsWireFormat(t *testing.T) {
 		req := codexgo.TurnStartParams{ThreadID: "thread-1"}
 		codexgo.WithInputs(
 			codexgo.TextInput("hello"),
-			codexgo.ImageInput("https://example.com/a.png", "image/png"),
-			codexgo.SkillInput("review"),
-			codexgo.MentionInput("m1", "@file"),
+			codexgo.ImageInput("https://example.com/a.png"),
+			codexgo.SkillInput("review", "/skills/review"),
+			codexgo.MentionInput("README.md", "/repo/README.md"),
 		)(&req)
 		return req
 	}())
@@ -62,13 +62,20 @@ func TestWithInputsWireFormat(t *testing.T) {
 		if items[0].Type != "text" || items[0].Text != "hello" {
 			t.Fatalf("bad text item: %+v", items[0])
 		}
-		if items[1].Type != "image" || items[1].URL != "https://example.com/a.png" || items[1].MediaType != "image/png" {
+		// image carries {type, url}. It used to also assert a `mediaType`, which is not a
+		// field of any UserInput variant -- the assertion is what kept the invented field
+		// alive.
+		if items[1].Type != "image" || items[1].URL != "https://example.com/a.png" {
 			t.Fatalf("bad image item: %+v", items[1])
 		}
-		if items[2].Type != "skill" || items[2].Name != "review" {
+		// skill requires {name, path} upstream. The old form sent only `name` and this test
+		// checked only `name`, so a payload the server rejects passed.
+		if items[2].Type != "skill" || items[2].Name != "review" || items[2].Path != "/skills/review" {
 			t.Fatalf("bad skill item: %+v", items[2])
 		}
-		if items[3].Type != "mention" || items[3].ID != "m1" || items[3].Text != "@file" {
+		// mention requires {name, path}. The old form sent `id` and `text`, neither of which
+		// the variant has.
+		if items[3].Type != "mention" || items[3].Name != "README.md" || items[3].Path != "/repo/README.md" {
 			t.Fatalf("bad mention item: %+v", items[3])
 		}
 	case <-time.After(2 * time.Second):
@@ -92,12 +99,13 @@ func TestLocalImageInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LocalImageInput: %v", err)
 	}
-	url, _ := item["url"].(string)
-	if !strings.HasPrefix(url, "data:image/png;base64,") {
-		t.Fatalf("expected png data URI, got %q", url)
+	// item is a typed UserInput now, not a map, so this cannot silently look up a field that
+	// does not exist.
+	if !strings.HasPrefix(item.URL, "data:image/png;base64,") {
+		t.Fatalf("expected png data URI, got %q", item.URL)
 	}
-	if item["type"] != "image" {
-		t.Fatalf("expected type image, got %v", item["type"])
+	if item.Type != codexgo.UserInputTypeImage {
+		t.Fatalf("expected type image, got %q", item.Type)
 	}
 }
 

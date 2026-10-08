@@ -220,7 +220,7 @@ func startTurn(t *testing.T, client *codexgo.Client, threadID, input string) str
 
 	turn, err := client.TurnStart(ctx, codexgo.TurnStartParams{
 		ThreadID: threadID,
-		Input:    input,
+		Input:    codexgo.TextInputs(input),
 		Model:    e2eModel(),
 	})
 	if err != nil {

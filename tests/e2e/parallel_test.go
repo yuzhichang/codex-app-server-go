@@ -50,7 +50,7 @@ func TestParallelSessions(t *testing.T) {
 
 			turn, err := h.client.TurnStart(ctx, codexgo.TurnStartParams{
 				ThreadID: thread.ID,
-				Input:    fmt.Sprintf("Number %d only.", i+1),
+				Input:    codexgo.TextInputs(fmt.Sprintf("Number %d only.", i+1)),
 				Model:    e2eModel(),
 			})
 			if err != nil {

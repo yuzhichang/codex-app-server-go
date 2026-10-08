@@ -58,10 +58,5 @@
     "name": "TurnStartParams",
     "status": "deliberate",
     "reason": "Input is a string encoded by the hand-written wireInput marshaller, which emits the required [{\"type\":\"text\",...}] array."
-  },
-  {
-    "name": "TurnSteerParams",
-    "status": "deliberate",
-    "reason": "Same Input design as TurnStartParams, for the same reason."
   }
 ]

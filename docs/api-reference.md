@@ -105,7 +105,7 @@ func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...T
 
 // Mid-turn input
 func (t *SessionThread) Steer(ctx context.Context, turnID, input string) error
-func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs ...TurnInput) error
+func (t *SessionThread) SteerInputs(ctx context.Context, turnID string, inputs ...UserInput) error
 func (t *SessionThread) Interrupt(ctx context.Context, turnID string) error
 
 // Thread management
@@ -128,7 +128,7 @@ func (t *SessionThread) ClearGoal(ctx context.Context) error
 type TurnResult struct {
     Turn      Turn        // final turn state from the server
     Items     []Item      // items captured via streaming events
-    Usage     *TokenUsage // token usage; nil when server does not report it
+    Usage     *ThreadTokenUsage // from thread/tokenUsage/updated; nil until it arrives
     Error     *TurnError  // non-nil when turn status is "failed"
     DeltaText string      // agent text from streaming deltas (fallback when Items empty)
 }
@@ -168,7 +168,7 @@ func WithMaxThreads(n int) Option // -1 = unlimited; 0 = default (64)
 ```go
 func WithThreadModel(model string) ThreadOption
 func WithThreadApprovalPolicy(policy string) ThreadOption
-func WithThreadApprovalMode(mode ApprovalMode) ThreadOption
+func WithThreadApprovalPolicy(policy AskForApproval) ThreadOption
 func WithThreadCWD(cwd string) ThreadOption
 func WithThreadEphemeral(ephemeral bool) ThreadOption
 func WithInitialInput(input string) ThreadOption // runs first turn immediately after start
@@ -179,13 +179,12 @@ func WithInitialInput(input string) ThreadOption // runs first turn immediately 
 ```go
 func WithModel(model string) TurnOption
 func WithApprovalPolicy(policy string) TurnOption
-func WithApprovalMode(mode ApprovalMode) TurnOption
+func WithApprovalPolicy(policy AskForApproval) TurnOption
 func WithSandbox(policy string) TurnOption
 func WithSandboxMode(mode SandboxMode) TurnOption
 func WithCWD(cwd string) TurnOption
 func WithEffort(effort string) TurnOption
-func WithSkill(skill string) TurnOption
-func WithInputs(inputs ...TurnInput) TurnOption
+func WithInputs(inputs ...UserInput) TurnOption
 ```
 
 ## Transport
@@ -220,11 +219,11 @@ Typed notification payloads:
 
 ```go
 type TurnStartedEvent struct { ThreadID, TurnID string; Turn *Turn }
-type TurnCompletedEvent struct { ThreadID, TurnID string; Status TurnStatus; Turn *Turn; Usage *TokenUsage }
+type TurnCompletedEvent struct { ThreadID, TurnID string; Status TurnStatus; Turn *Turn }
 type ItemStartedEvent struct { ThreadID, TurnID string; Item *Item }
 type ItemCompletedEvent struct { ThreadID, TurnID string; Item *Item }
 type ItemUpdatedEvent struct { ThreadID, TurnID string; Item *Item }
-type ThreadTokenUsageUpdatedEvent struct { ThreadID string; Usage *TokenUsage }
+type ThreadTokenUsageUpdatedEvent struct { ThreadID, TurnID string; TokenUsage *ThreadTokenUsage }
 type TurnDiffUpdatedEvent struct { ThreadID, TurnID string; Diff json.RawMessage }
 type TurnPlanUpdatedEvent struct { ThreadID, TurnID string; Plan json.RawMessage }
 type ErrorEvent struct { ThreadID, TurnID, Message, Code string; Data json.RawMessage }
@@ -333,7 +332,7 @@ type Turn struct {
     Items       []Item
     ItemsView   TurnItemsView
     Status      TurnStatus
-    Usage       *TokenUsage
+    Usage       *ThreadTokenUsage
     StartedAt   *time.Time
     CompletedAt *time.Time
     DurationMS  int64
@@ -345,10 +344,19 @@ type Item struct {
     Payload json.RawMessage
 }
 
-type TokenUsage struct {
-    InputTokens  int
-    OutputTokens int
-    TotalTokens  int
+type TokenUsageBreakdown struct {
+    CachedInputTokens     int64
+    CacheWriteInputTokens int64
+    InputTokens           int64
+    OutputTokens          int64
+    ReasoningOutputTokens int64
+    TotalTokens           int64
+}
+
+type ThreadTokenUsage struct {
+    Last               TokenUsageBreakdown
+    Total              TokenUsageBreakdown
+    ModelContextWindow int64
 }
 
 type ThreadGoal struct {

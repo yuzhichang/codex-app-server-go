@@ -31,6 +31,9 @@ type (
 	TurnSteerParams        = schematypes.TurnSteerParams
 	ReviewStartParams      = schematypes.ReviewStartParams
 	SandboxPolicy          = schematypes.SandboxPolicy
+	UserInput              = schematypes.UserInput
+	TextElement            = schematypes.TextElement
+	ImageDetail            = schematypes.ImageDetail
 	ReviewStartResponse    = schematypes.ReviewStartResponse
 	TurnSteerResponse      = schematypes.TurnSteerResponse
 	ReviewTarget           = schematypes.ReviewTarget
@@ -222,7 +225,16 @@ const (
 	SandboxPolicyTypeReadOnly         = schematypes.SandboxPolicyTypeReadOnly
 	SandboxPolicyTypeExternalSandbox  = schematypes.SandboxPolicyTypeExternalSandbox
 	SandboxPolicyTypeWorkspaceWrite   = schematypes.SandboxPolicyTypeWorkspaceWrite
-	ReviewDeliveryDetached            = schematypes.ReviewDeliveryDetached
+
+	// UserInput discriminators, matching the upstream variant tags.
+	UserInputTypeText       = schematypes.UserInputTypeText
+	UserInputTypeImage      = schematypes.UserInputTypeImage
+	UserInputTypeLocalImage = schematypes.UserInputTypeLocalImage
+	UserInputTypeAudio      = schematypes.UserInputTypeAudio
+	UserInputTypeLocalAudio = schematypes.UserInputTypeLocalAudio
+	UserInputTypeSkill      = schematypes.UserInputTypeSkill
+	UserInputTypeMention    = schematypes.UserInputTypeMention
+	ReviewDeliveryDetached  = schematypes.ReviewDeliveryDetached
 
 	MergeStrategyReplace = schematypes.MergeStrategyReplace
 	MergeStrategyUpsert  = schematypes.MergeStrategyUpsert

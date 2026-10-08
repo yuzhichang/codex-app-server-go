@@ -29,8 +29,6 @@ type (
 	ThreadRollbackRequest  = schematypes.ThreadRollbackRequest
 	TurnSteerRequest       = schematypes.TurnSteerRequest
 	ReviewStartRequest     = schematypes.ReviewStartRequest
-	TurnDiffRequest        = schematypes.TurnDiffRequest
-	TurnDiffResult         = schematypes.TurnDiffResult
 	Thread                 = protocol.Thread
 	Turn                   = protocol.Turn
 	Item                   = protocol.Item

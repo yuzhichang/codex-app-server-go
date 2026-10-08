@@ -56,7 +56,6 @@ ThreadRollback(ctx, ThreadRollbackRequest) error
 TurnStart(ctx, TurnStartRequest) (Turn, error)
 TurnInterrupt(ctx, TurnInterruptRequest) error
 TurnSteer(ctx, TurnSteerRequest) error
-TurnDiff(ctx, TurnDiffRequest) (TurnDiffResult, error)
 TurnRead(ctx, threadID, turnID string) (Turn, error)
 ThreadGoalSet/Get/Clear(ctx, req)
 SetModel(ctx, model) / SetApprovalPolicy(ctx, policy) / SetSandboxPolicy(ctx, policy)
@@ -107,7 +106,6 @@ thread.Archive(ctx) / Unarchive(ctx) / SetName(ctx, name) error
 thread.Fork(ctx, turnID, opts...) (*SessionThread, error)
 thread.Rollback(ctx, turnIDs) error
 thread.Compact(ctx) error
-thread.GitDiff(ctx, turnID) (string, error)
 thread.SetGoal/GetGoal/ClearGoal(ctx, ...) error
 
 ## Event subscription

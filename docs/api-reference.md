@@ -26,7 +26,6 @@ func (c *Client) ThreadRollback(ctx context.Context, req ThreadRollbackRequest) 
 func (c *Client) TurnStart(ctx context.Context, req TurnStartRequest) (Turn, error)
 func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptRequest) error
 func (c *Client) TurnSteer(ctx context.Context, req TurnSteerRequest) error
-func (c *Client) TurnDiff(ctx context.Context, req TurnDiffRequest) (TurnDiffResult, error)
 func (c *Client) TurnRead(ctx context.Context, threadID, turnID string) (Turn, error)
 
 // Thread goals
@@ -116,7 +115,6 @@ func (t *SessionThread) SetName(ctx context.Context, name string) error
 func (t *SessionThread) Fork(ctx context.Context, turnID string, opts ...ThreadOption) (*SessionThread, error)
 func (t *SessionThread) Rollback(ctx context.Context, turnIDs []string) error
 func (t *SessionThread) Compact(ctx context.Context) error
-func (t *SessionThread) GitDiff(ctx context.Context, turnID string) (string, error)
 
 // Goals
 func (t *SessionThread) SetGoal(ctx context.Context, goal string) error

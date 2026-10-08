@@ -2233,47 +2233,10 @@ func TestWithSkillOption(t *testing.T) {
 	}
 }
 
-// ---- Deliverable 3: TestSessionThreadGitDiff ----
-
-func TestSessionThreadGitDiff(t *testing.T) {
-	client, mock := newClientFromMock(t)
-
-	mock.Handle("thread/start", func(_ json.RawMessage) (any, error) {
-		return map[string]any{
-			"thread": map[string]any{"id": "thread-diff", "status": "idle"},
-		}, nil
-	})
-	mock.Handle("turn/diff", func(params json.RawMessage) (any, error) {
-		var req struct {
-			ThreadID string `json:"threadId"`
-			TurnID   string `json:"turnId"`
-		}
-		testutil.MustReadParams(params, &req)
-		return map[string]any{
-			"diff": "--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new\n",
-		}, nil
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	st, err := client.StartThread(ctx)
-	if err != nil {
-		t.Fatalf("StartThread(): %v", err)
-	}
-	defer st.Close()
-
-	diff, err := st.GitDiff(ctx, "")
-	if err != nil {
-		t.Fatalf("GitDiff(): %v", err)
-	}
-	if diff == "" {
-		t.Fatal("expected non-empty diff")
-	}
-	if len(diff) == 0 || diff[:3] != "---" {
-		t.Fatalf("expected diff to start with ---, got: %q", diff)
-	}
-}
+// TestSessionThreadGitDiff was removed along with Client.TurnDiff / SessionThread.GitDiff:
+// upstream declares no `turn/diff` request, so the SDK no longer models a pull-style diff
+// API. The aggregated diff arrives via the `turn/diff/updated` notification instead, and
+// per-file diffs are available from ThreadItem fileChange entries. See plan T1.5.
 
 // ---- Integration: serverRequest/resolved notification ----
 

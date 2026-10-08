@@ -212,9 +212,6 @@ ids, _ := client.ThreadLoadedList(ctx)
 
 // Read a specific turn
 turn, _ := client.TurnRead(ctx, threadID, turnID)
-
-// Get a git diff for the latest turn
-diff, _ := thread.GitDiff(ctx, "" /* latest */)
 ```
 
 ## Concurrency

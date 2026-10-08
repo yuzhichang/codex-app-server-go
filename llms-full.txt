@@ -180,9 +180,6 @@ TurnOption values:
     forked, err := thread.Fork(ctx context.Context, turnID string, opts ...ThreadOption) (*SessionThread, error)
         Create a new thread branching from this one. turnID="" forks from latest.
 
-    diff, err := thread.GitDiff(ctx context.Context, turnID string) (string, error)
-        Returns unified diff for the given turn (or latest if turnID="").
-
 ### Goal tracking
 
     err := thread.SetGoal(ctx context.Context, goal string) error
@@ -234,7 +231,6 @@ All methods take context.Context as the first argument.
     (c *Client) TurnStart(ctx, TurnStartRequest) (Turn, error)
     (c *Client) TurnInterrupt(ctx, TurnInterruptRequest) error
     (c *Client) TurnSteer(ctx, TurnSteerRequest) error
-    (c *Client) TurnDiff(ctx, TurnDiffRequest) (TurnDiffResult, error)
     (c *Client) TurnRead(ctx, threadID, turnID string) (Turn, error)
 
 ### Thread goals

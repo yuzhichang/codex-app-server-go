@@ -46,7 +46,6 @@ const (
 	MethodItemToolRequestUserInput            = "item/tool/requestUserInput"
 	MethodItemToolCall                        = "item/tool/call"
 	MethodItemMCPRequestApproval              = "item/mcp/requestApproval"
-	MethodTurnDiff                            = "turn/diff"
 
 	// Thread lifecycle
 	MethodThreadCompact    = "thread/compact/start"

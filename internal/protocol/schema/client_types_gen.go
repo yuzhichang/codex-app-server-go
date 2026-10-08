@@ -363,15 +363,11 @@ type ReviewStartRequest struct {
 }
 
 // --- Turn diff ---
-
-type TurnDiffRequest struct {
-	ThreadID string `json:"threadId"`
-	TurnID   string `json:"turnId,omitempty"`
-}
-
-type TurnDiffResult struct {
-	Diff string `json:"diff,omitempty"`
-}
+//
+// NOTE: there is no `turn/diff` request upstream. The turn's aggregated diff is only ever
+// PUSHED, via the `turn/diff/updated` notification (TurnDiffUpdatedEvent). Per-file diffs
+// are pullable from ThreadItem fileChange entries. The old pull-style TurnDiffRequest /
+// TurnDiffResult pair was removed accordingly (see plan T1.5).
 
 // --- Skills ---
 

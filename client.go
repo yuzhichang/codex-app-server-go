@@ -330,13 +330,9 @@ func (c *Client) TurnRead(ctx context.Context, threadID, turnID string) (Turn, e
 	return c.readTurn(ctx, threadID, turnID)
 }
 
-func (c *Client) TurnDiff(ctx context.Context, req TurnDiffRequest) (TurnDiffResult, error) {
-	var result TurnDiffResult
-	if err := c.transport.Call(ctx, protocol.MethodTurnDiff, req, &result); err != nil {
-		return TurnDiffResult{}, err
-	}
-	return result, nil
-}
+// NOTE: `Client.TurnDiff` was removed -- upstream declares no `turn/diff` request. The
+// aggregated diff is pushed via the `turn/diff/updated` notification instead, and per-file
+// diffs are available from ThreadItem fileChange entries. See plan T1.5.
 
 // StartThread creates a new session thread on the server and returns a
 // stateful SessionThread that can be used to run turns.

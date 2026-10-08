@@ -278,7 +278,7 @@
 |---|---|---|
 | `config/update` | 不存在。替代为 `config/value/write`，其 `ConfigValueWriteParams { key_path, value, merge_strategy, file_path?: Option, expected_version?: Option }`（`protocol/v2/config.rs:1101-1110`）；版本需先经 `config/read`（`ConfigReadParams { include_layers, cwd? }` → `ConfigReadResponse { config, origins, layers? }`）取 `origins[key].version` | 迁移 `SetModel`/`SetApprovalPolicy`/`SetSandbox`。**非改名**：需补 `keyPath`+`mergeStrategy`，并新增乐观并发读版本流程；还要确定 `model`/`approval_policy`/`sandbox_mode` 的真实配置键名 |
 | `thread/rollback` | 不存在。替代为 `thread/revert`，`ThreadRevertParams { thread_id, before_turn_id }`（`protocol/v2/thread.rs:1288-1292`），语义是"**排除该 turn 及其之后的所有 turn**"；响应 `ThreadRevertResponse { thread, cursor }`，`turns` 恒为空，须用 `thread/turns/list` 回填 | **非改名 → 语义变更**：现有 `ThreadRollback(ctx, ThreadRollbackRequest{TurnIDs []string})` 是"按 id 列表回滚"，无法一一对应。需重新设计 API（单 `beforeTurnID` + 游标回填），并同步 `SessionThread.Rollback` |
-| `turn/diff` | **不存在对应请求方法**（仅有 `turn/diff/updated` 通知） | `TurnDiff`/`GitDiff` 无直接替代；**需产品决策**：改用 `turn/read` + `thread/items/list` 自行拼 diff，或删除该 API。本轮不做 |
+| `turn/diff` | **不存在对应的请求方法**（`turn/*` 仅有 interrupt/settings-update/start/steer 四个请求；`Turn` 结构体也**无 diff 字段**，`thread_data.rs:386-409`）。diff 数据仍可取（聚合 diff 只经 `turn/diff/updated` 通知推送；逐文件 diff 在 `FileUpdateChange.diff`，`item.rs:1146-1150`），但**JSON-RPC 层面没有 `turn/diff` 这个方法** | ✅ **已完成（用户决策）**：JSON-RPC 没有 `turn/diff`，**SDK 侧就不实现它**。删除 `MethodTurnDiff`、`TurnDiffRequest`/`TurnDiffResult`、`Client.TurnDiff`、`SessionThread.GitDiff` 及 `types.go` 别名；同步清理 `docs/api-reference.md`、`docs/index.md`、`llms.txt`、`llms-full.txt` 的悬空引用；`TestSessionThreadGitDiff` 一并删除。**保留** `TurnDiffUpdatedEvent`（它是真实存在的上游通知） |
 | `item/mcp/requestApproval` | → `mcpServer/elicitation/request` | = 原 D3，见 §5.3 T2.8 |
 | `item/updated` | 上游已无此通知 | ✅ **已完成**：删除 `MethodItemUpdated`、`ItemUpdatedEvent` 结构体/别名/解码分支/deref 分支；`wait.go` 的 `eventMatchesTurn` 改由既有的 `RawNotificationEvent` 分支覆盖（`wait.go:197`）。原测试改写为 `TestRemovedNotificationFallsBackToRaw`，断言回退为 `RawNotificationEvent` |
 
@@ -596,6 +596,8 @@
 | 17 | 实施 I1：锚点被误设为 CLI | 采纳：锚点 = **codex 仓库 commit**；CLI 仅作 `diff-cli` 漂移守卫（实测 0.160.0 落后 1 个方法 + 1 个通知） |
 | 18 | 实施 I2：`GeneratedAt` 破坏幂等 | 采纳：`version.go` 不含时间戳，仅确定性值 |
 | 19 | 实施 I3：vendor 对象与理由证据 | 采纳：vendor 聚合 stable schema + 派生方法集；internal-only 排除理由已有上游注释背书 |
+| 20 | 实施 I5 的 `item/updated` | 采纳：删除该通知类型与解码分支，测试改为断言回退 `RawNotificationEvent` |
+| 21 | **`turn/diff` 的处置（用户决策）** | JSON-RPC 无 `turn/diff` 方法 → **SDK 侧不实现**。删除 `Client.TurnDiff`/`SessionThread.GitDiff`/`TurnDiffRequest`/`TurnDiffResult`/`MethodTurnDiff` 及相关文档引用；保留 `TurnDiffUpdatedEvent` 通知 |
 
 > 无遗留开放项。
 

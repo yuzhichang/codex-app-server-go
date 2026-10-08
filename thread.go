@@ -317,18 +317,10 @@ func (t *SessionThread) Rollback(ctx context.Context, turnIDs []string) error {
 	return t.client.ThreadRollback(ctx, ThreadRollbackRequest{ThreadID: t.threadID, TurnIDs: turnIDs})
 }
 
-// GitDiff requests the diff for the latest (or specified) turn on this thread.
-// Returns the unified diff string.
-func (t *SessionThread) GitDiff(ctx context.Context, turnID string) (string, error) {
-	result, err := t.client.TurnDiff(ctx, TurnDiffRequest{
-		ThreadID: t.threadID,
-		TurnID:   turnID,
-	})
-	if err != nil {
-		return "", err
-	}
-	return result.Diff, nil
-}
+// NOTE: `SessionThread.GitDiff` was removed together with `Client.TurnDiff` -- upstream
+// declares no `turn/diff` request (see plan T1.5). To obtain diffs use the
+// `turn/diff/updated` notification, or assemble per-file diffs from ThreadItem
+// fileChange entries.
 
 // --- thread/metadata/update ---
 

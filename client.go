@@ -171,8 +171,8 @@ func New(opts ...Option) (*Client, error) {
 			info.Version = Version
 		}
 		initReq := InitializeParams{
-			ClientInfo:             info,
-			InitializeCapabilities: cfg.initCapabilities,
+			ClientInfo:   info,
+			Capabilities: cfg.initCapabilities,
 		}
 		if _, err := client.Initialize(initCtx, initReq); err != nil {
 			_ = client.Close()

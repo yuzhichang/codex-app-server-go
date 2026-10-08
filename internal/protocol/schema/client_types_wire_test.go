@@ -51,8 +51,8 @@ func TestInitializeRequestCapabilitiesAreOptional(t *testing.T) {
 	}
 
 	withCaps, err := json.Marshal(InitializeParams{
-		ClientInfo:             ClientInfo{Name: "n"},
-		InitializeCapabilities: &InitializeCapabilities{},
+		ClientInfo:   ClientInfo{Name: "n"},
+		Capabilities: &InitializeCapabilities{},
 	})
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
@@ -66,7 +66,7 @@ func TestInitializeRequestCapabilitiesAreOptional(t *testing.T) {
 // implementing no experimental surface (R2) would invite notifications we do not handle.
 func TestCapabilitiesDefaultsAreAllFalse(t *testing.T) {
 	var c InitializeCapabilities
-	if c.ExperimentalAPI || c.RequestAttestation || c.ExplicitGatewayOauth || c.MCPServerOpenAIFormElicitation {
+	if c.ExperimentalAPI || c.RequestAttestation || c.ExplicitGatewayOauth || c.McpServerOpenaiFormElicitation {
 		t.Errorf("zero-value capabilities must be all-false, got %+v", c)
 	}
 	if c.OptOutNotificationMethods != nil || c.Extensions != nil {

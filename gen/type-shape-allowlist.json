@@ -1,48 +1,33 @@
 [
   {
     "name": "ClientInfo",
-    "status": "pending",
-    "reason": "2 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
-  },
-  {
-    "name": "InitializeCapabilities",
-    "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
-  },
-  {
-    "name": "InitializeParams",
-    "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+    "status": "deliberate",
+    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
     "name": "SkillInterface",
     "status": "pending",
-    "reason": "2 upstream field(s) not surfaced (capability gap); 2 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "2 upstream field(s) not surfaced (capability gap): IconLargeURL, IconSmallURL. Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "SkillMetadata",
     "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap); 1 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "1 upstream field(s) not surfaced (capability gap): PluginID. Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "SkillSummary",
-    "status": "pending",
-    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+    "status": "deliberate",
+    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
     "name": "SkillsConfigWriteParams",
-    "status": "pending",
-    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+    "status": "deliberate",
+    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
     "name": "SkillsExtraRootsSetParams",
-    "status": "pending",
-    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
-  },
-  {
-    "name": "SkillsListParams",
-    "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+    "status": "deliberate",
+    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
     "name": "Thread",
@@ -52,32 +37,32 @@
   {
     "name": "ThreadForkParams",
     "status": "pending",
-    "reason": "14 upstream field(s) not surfaced (capability gap); 1 SDK-only field(s). Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "14 upstream field(s) not surfaced (capability gap): ApprovalPolicy, ApprovalsReviewer, BaseInstructions, CWD, Config, DeveloperInstructions .... Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "ThreadForkResponse",
     "status": "pending",
-    "reason": "10 upstream field(s) not surfaced (capability gap). Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "10 upstream field(s) not surfaced (capability gap): ApprovalPolicy, ApprovalsReviewer, CWD, DisabledPluginIDs, InstructionSources, Model .... Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "ThreadGoal",
-    "status": "pending",
-    "reason": "1 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+    "status": "deliberate",
+    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
     "name": "ThreadGoalClearParams",
     "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap). Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "1 upstream field(s) not surfaced (capability gap): Origin. Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "ThreadGoalSetParams",
     "status": "pending",
-    "reason": "1 upstream field(s) not surfaced (capability gap); 1 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "1 upstream field(s) not surfaced (capability gap): Origin. Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "ThreadListParams",
     "status": "pending",
-    "reason": "11 upstream field(s) not surfaced (capability gap); 1 field(s) differ in type or json tag. Needs a decision: surface the fields, or allow-list them for good."
+    "reason": "11 upstream field(s) not surfaced (capability gap): Archived, CWD, ExcludedThreadIDs, ModelProviders, Originators, SearchTerm .... Needs a decision: surface them, or accept the gap."
   },
   {
     "name": "ThreadListResponse",
@@ -87,12 +72,12 @@
   {
     "name": "ThreadResumeParams",
     "status": "deliberate",
-    "reason": "Input fields keep the SDK's ergonomic types (string) rather than the generated enum/union types, which live in an internal package and therefore cannot be constructed by an external caller. Documented at each field."
+    "reason": "Input fields keep the SDK's ergonomic types (string) rather than the generated enum/union types, which live in an internal package and so cannot be constructed by an external caller. Documented at each field."
   },
   {
     "name": "ThreadRevertResponse",
-    "status": "pending",
-    "reason": "2 field(s) differ in type or json tag. No upstream field is missing; likely a mechanical naming fix."
+    "status": "deliberate",
+    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
     "name": "ThreadStartParams",
@@ -107,7 +92,7 @@
   {
     "name": "TurnStartParams",
     "status": "deliberate",
-    "reason": "Input is a string encoded by the hand-written wireInput marshaller, which emits the required [{\"type\":\"text\",...}] array. The remaining extras are fields upstream does not reject but does not define either."
+    "reason": "Input is a string encoded by the hand-written wireInput marshaller, which emits the required [{\"type\":\"text\",...}] array."
   },
   {
     "name": "TurnSteerParams",

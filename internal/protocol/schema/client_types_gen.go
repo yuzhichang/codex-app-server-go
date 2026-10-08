@@ -217,7 +217,7 @@ type InitializeCapabilities struct {
 
 	// MCPServerOpenAIFormElicitation is the legacy opt-in for the `openai/form` MCP
 	// extension. New clients should declare it via Extensions instead.
-	MCPServerOpenAIFormElicitation bool `json:"mcpServerOpenaiFormElicitation,omitempty"`
+	McpServerOpenaiFormElicitation bool `json:"mcpServerOpenaiFormElicitation,omitempty"`
 
 	// OptOutNotificationMethods lists exact notification method names to suppress for this
 	// connection (for example "thread/started").
@@ -231,8 +231,8 @@ type InitializeCapabilities struct {
 }
 
 type InitializeParams struct {
-	ClientInfo             ClientInfo              `json:"clientInfo"`
-	InitializeCapabilities *InitializeCapabilities `json:"capabilities,omitempty"`
+	ClientInfo   ClientInfo              `json:"clientInfo"`
+	Capabilities *InitializeCapabilities `json:"capabilities,omitempty"`
 }
 
 type InitializeResponse struct {
@@ -703,7 +703,7 @@ type SkillsListEntry struct {
 
 // SkillsListParams is the request type for the skills/list RPC.
 type SkillsListParams struct {
-	CWDs        []string `json:"cwds,omitempty"`
+	Cwds        []string `json:"cwds,omitempty"`
 	ForceReload bool     `json:"forceReload,omitempty"`
 }
 

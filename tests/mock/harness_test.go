@@ -131,7 +131,7 @@ stream_max_retries = 0
 			Name:    "codex-go-sdk-test",
 			Version: "0.0.1",
 		},
-		InitializeCapabilities: &codexgo.InitializeCapabilities{
+		Capabilities: &codexgo.InitializeCapabilities{
 			ExperimentalAPI: true,
 		},
 	}); err != nil {

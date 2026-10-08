@@ -55,7 +55,7 @@ func TestSkillsListRPC(t *testing.T) {
 	defer cancel()
 
 	res, err := h.Client.SkillsList(ctx, codexgo.SkillsListRequest{
-		CWDs: []string{h.Workspace()},
+		Cwds: []string{h.Workspace()},
 	})
 	skipIfUnsupported(t, err)
 	if err != nil {

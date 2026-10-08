@@ -288,7 +288,7 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			return err
 		}},
 		{"ReviewStart", "review/start", func(ctx context.Context, c *codexgo.Client) error {
-			err := c.ReviewStart(ctx, *new(codexgo.ReviewStartParams))
+			_, err := c.ReviewStart(ctx, *new(codexgo.ReviewStartParams))
 			return err
 		}},
 		{"ModelList", "model/list", func(ctx context.Context, c *codexgo.Client) error {

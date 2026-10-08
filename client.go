@@ -399,8 +399,16 @@ func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) error {
 	return c.transport.Call(ctx, protocol.MethodTurnSteer, req, nil)
 }
 
-func (c *Client) ReviewStart(ctx context.Context, req ReviewStartParams) error {
-	return c.transport.Call(ctx, protocol.MethodReviewStart, req, nil)
+// ReviewStart starts a review and returns the review thread plus its first turn.
+//
+// The response used to be discarded. It matters: a detached review runs in its own thread,
+// and ReviewStartResponse.ReviewThreadID is the only way to know which one.
+func (c *Client) ReviewStart(ctx context.Context, req ReviewStartParams) (ReviewStartResponse, error) {
+	var resp ReviewStartResponse
+	if err := c.transport.Call(ctx, protocol.MethodReviewStart, req, &resp); err != nil {
+		return ReviewStartResponse{}, err
+	}
+	return resp, nil
 }
 
 func (c *Client) TurnStart(ctx context.Context, req TurnStartParams) (Turn, error) {

@@ -2536,3 +2536,101 @@ func TestServerRequestResolvedEvent(t *testing.T) {
 		t.Fatal("timeout waiting for serverRequest/resolved notification")
 	}
 }
+
+// ---- review/start: the target must actually reach the wire ----
+
+// `review/start` previously omitted `target`, which is REQUIRED upstream, so every call was
+// rejected. The generated smoke test could not catch it: it passes a zero-value params struct
+// and the mock server answers success for any payload. This test asserts the encoded payload.
+func TestReviewStartSendsTarget(t *testing.T) {
+	title := "Fix the flaky test"
+	cases := []struct {
+		name   string
+		target codexgo.ReviewTarget
+		want   map[string]any
+	}{
+		{
+			name:   "uncommittedChanges",
+			target: codexgo.UncommittedChangesTarget(),
+			want:   map[string]any{"type": "uncommittedChanges"},
+		},
+		{
+			name:   "baseBranch",
+			target: codexgo.BaseBranchTarget("main"),
+			want:   map[string]any{"type": "baseBranch", "branch": "main"},
+		},
+		{
+			name:   "commit",
+			target: codexgo.CommitTarget("abc123", &title),
+			want:   map[string]any{"type": "commit", "sha": "abc123", "title": "Fix the flaky test"},
+		},
+		{
+			name:   "custom",
+			target: codexgo.CustomTarget("look for off-by-one errors"),
+			want:   map[string]any{"type": "custom", "instructions": "look for off-by-one errors"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, mock := newClientFromMock(t)
+
+			got := make(chan map[string]json.RawMessage, 1)
+			mock.Handle("review/start", func(params json.RawMessage) (any, error) {
+				var raw map[string]json.RawMessage
+				if err := json.Unmarshal(params, &raw); err != nil {
+					return nil, err
+				}
+				got <- raw
+				return map[string]any{
+					"reviewThreadId": "review-thr-1",
+					"turn":           map[string]any{"id": "turn-r1", "status": "inProgress"},
+				}, nil
+			})
+
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			resp, err := client.ReviewStart(ctx, codexgo.ReviewStartParams{
+				ThreadID: "thr-1",
+				Target:   tc.target,
+			})
+			if err != nil {
+				t.Fatalf("ReviewStart: %v", err)
+			}
+
+			select {
+			case raw := <-got:
+				// `target` is required; its absence is the bug this pins.
+				targetRaw, present := raw["target"]
+				if !present {
+					t.Fatalf("target was not sent; payload = %v", raw)
+				}
+				var sent map[string]any
+				if err := json.Unmarshal(targetRaw, &sent); err != nil {
+					t.Fatalf("target is not an object: %s", targetRaw)
+				}
+				for k, want := range tc.want {
+					if sent[k] != want {
+						t.Errorf("target.%s = %v, want %v", k, sent[k], want)
+					}
+				}
+				// Invented fields must not reappear.
+				if _, ok := raw["turnId"]; ok {
+					t.Error("turnId is not an upstream field and must not be sent")
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("review/start was never called")
+			}
+
+			// The response used to be discarded; a detached review is only addressable
+			// through ReviewThreadID.
+			if resp.ReviewThreadID != "review-thr-1" {
+				t.Errorf("ReviewThreadID = %q, want review-thr-1", resp.ReviewThreadID)
+			}
+			if resp.Turn.ID != "turn-r1" {
+				t.Errorf("Turn.ID = %q, want turn-r1", resp.Turn.ID)
+			}
+		})
+	}
+}

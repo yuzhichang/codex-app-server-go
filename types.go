@@ -30,6 +30,9 @@ type (
 	ThreadRevertResponse   = schematypes.ThreadRevertResponse
 	TurnSteerParams        = schematypes.TurnSteerParams
 	ReviewStartParams      = schematypes.ReviewStartParams
+	ReviewStartResponse    = schematypes.ReviewStartResponse
+	ReviewTarget           = schematypes.ReviewTarget
+	ReviewDelivery         = schematypes.ReviewDelivery
 	Thread                 = protocol.Thread
 	Turn                   = protocol.Turn
 	Item                   = protocol.Item
@@ -202,6 +205,16 @@ const (
 	PluginShareUpdateDiscoverabilityUNLISTED = schematypes.PluginShareUpdateDiscoverabilityUNLISTED
 
 	// Config merge strategies (upstream enum values).
+	// Review target discriminators and delivery values. A type alias does not carry its
+	// constants, so the enum values have to be re-exported explicitly.
+	ReviewTargetTypeUncommittedChanges = schematypes.ReviewTargetTypeUncommittedChanges
+	ReviewTargetTypeBaseBranch         = schematypes.ReviewTargetTypeBaseBranch
+	ReviewTargetTypeCommit             = schematypes.ReviewTargetTypeCommit
+	ReviewTargetTypeCustom             = schematypes.ReviewTargetTypeCustom
+
+	ReviewDeliveryInline   = schematypes.ReviewDeliveryInline
+	ReviewDeliveryDetached = schematypes.ReviewDeliveryDetached
+
 	MergeStrategyReplace = schematypes.MergeStrategyReplace
 	MergeStrategyUpsert  = schematypes.MergeStrategyUpsert
 
@@ -343,3 +356,26 @@ func IsHttpConnectionFailed(err error) bool {
 }
 
 // Package codexgo provides a compact client for the Codex app-server.
+
+// ReviewTarget constructors.
+//
+// ReviewTarget is a `type`-tagged union upstream. A type alias carries no functions, so these
+// wrap the schema-package constructors to give callers a compile-time-complete way to build
+// the required `target` field. Building the struct literally also works, but the zero value is
+// not a valid target, which is how review/start came to omit it entirely.
+
+// UncommittedChangesTarget reviews the working tree: staged, unstaged and untracked files.
+func UncommittedChangesTarget() ReviewTarget { return schematypes.UncommittedChangesTarget() }
+
+// BaseBranchTarget reviews everything since the given base branch.
+func BaseBranchTarget(branch string) ReviewTarget { return schematypes.BaseBranchTarget(branch) }
+
+// CommitTarget reviews a single commit. title is optional context for the UI.
+func CommitTarget(sha string, title *string) ReviewTarget {
+	return schematypes.CommitTarget(sha, title)
+}
+
+// CustomTarget reviews according to free-form instructions.
+func CustomTarget(instructions string) ReviewTarget {
+	return schematypes.CustomTarget(instructions)
+}

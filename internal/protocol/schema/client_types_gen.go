@@ -346,9 +346,74 @@ type TurnSteerParams struct {
 
 // --- Review ---
 
+// ReviewStartParams starts a review of a thread.
+//
+// `target` is REQUIRED upstream and says what to review. It was previously absent, so the
+// SDK sent {threadId, turnId} and the server rejected every review/start; `turnId` was an
+// invented field with no upstream counterpart and is gone with it.
 type ReviewStartParams struct {
 	ThreadID string `json:"threadId"`
-	TurnID   string `json:"turnId,omitempty"`
+	// Target is required. Use one of the ReviewTarget constructors below.
+	Target ReviewTarget `json:"target"`
+	// Delivery defaults to inline upstream.
+	Delivery *ReviewDelivery `json:"delivery,omitempty"`
+}
+
+// ReviewDelivery is how a review is delivered.
+type ReviewDelivery string
+
+const (
+	// ReviewDeliveryInline runs the review inside the current thread.
+	ReviewDeliveryInline ReviewDelivery = "inline"
+	// ReviewDeliveryDetached runs it in its own thread (see ReviewStartResponse.ReviewThreadID).
+	ReviewDeliveryDetached ReviewDelivery = "detached"
+)
+
+// ReviewTarget selects what a review covers.
+//
+// Upstream declares a `type`-tagged union with four variants (uncommittedChanges, baseBranch,
+// commit, custom). It is modelled here as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields -- the same approach used for UserInput and the
+// elicitation payloads, and for the same reason: no field is dropped and no future variant is
+// rejected outright. Prefer the constructors.
+type ReviewTarget struct {
+	Type string `json:"type"`
+
+	// baseBranch
+	Branch string `json:"branch,omitempty"`
+	// commit
+	Sha   string  `json:"sha,omitempty"`
+	Title *string `json:"title,omitempty"`
+	// custom
+	Instructions string `json:"instructions,omitempty"`
+}
+
+// ReviewTargetType values, matching the upstream discriminator strings.
+const (
+	ReviewTargetTypeUncommittedChanges = "uncommittedChanges"
+	ReviewTargetTypeBaseBranch         = "baseBranch"
+	ReviewTargetTypeCommit             = "commit"
+	ReviewTargetTypeCustom             = "custom"
+)
+
+// UncommittedChangesTarget reviews the working tree: staged, unstaged and untracked files.
+func UncommittedChangesTarget() ReviewTarget {
+	return ReviewTarget{Type: ReviewTargetTypeUncommittedChanges}
+}
+
+// BaseBranchTarget reviews everything since the given base branch.
+func BaseBranchTarget(branch string) ReviewTarget {
+	return ReviewTarget{Type: ReviewTargetTypeBaseBranch, Branch: branch}
+}
+
+// CommitTarget reviews a single commit. title is optional context for the UI.
+func CommitTarget(sha string, title *string) ReviewTarget {
+	return ReviewTarget{Type: ReviewTargetTypeCommit, Sha: sha, Title: title}
+}
+
+// CustomTarget reviews according to free-form instructions.
+func CustomTarget(instructions string) ReviewTarget {
+	return ReviewTarget{Type: ReviewTargetTypeCustom, Instructions: instructions}
 }
 
 // --- Turn diff ---

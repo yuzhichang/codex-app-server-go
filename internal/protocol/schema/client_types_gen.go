@@ -28,21 +28,9 @@ const (
 	ThreadStatusActive      ThreadStatus = "active"
 )
 
-type ThreadActiveFlag string
+const ()
 
-const (
-	ThreadActiveFlagWaitingOnApproval  ThreadActiveFlag = "waitingOnApproval"
-	ThreadActiveFlagWaitingOnUserInput ThreadActiveFlag = "waitingOnUserInput"
-)
-
-type TurnStatus string
-
-const (
-	TurnStatusCompleted   TurnStatus = "completed"
-	TurnStatusInterrupted TurnStatus = "interrupted"
-	TurnStatusFailed      TurnStatus = "failed"
-	TurnStatusInProgress  TurnStatus = "inProgress"
-)
+const ()
 
 type TurnItemsView string
 
@@ -107,57 +95,12 @@ const (
 
 // --- Shared data types ---
 
-// GitInfo is the Git metadata stored on a thread.
-//
-// Upstream is {sha?, branch?, originUrl?}. This previously declared Root/Commit/Remote/
-// Dirty/Detached instead -- five invented fields, only `branch` matching -- so every real
-// value was dropped on decode and the read shape disagreed with the patch shape used by
-// thread/metadata/update.
-//
-// It is not generated because nothing reachable from a method's params/response references
-// it: its only parent is Thread, which is itself hand-written.
-//
-// Optional strings use plain `string` with omitempty, matching the generator's convention
-// for every other optional string in this package. That cannot distinguish "absent" from
-// "present but empty"; ThreadMetadataGitInfo uses pointers precisely because the *patch*
-// direction needs to tell those apart (nil leaves the field unchanged, "" clears it).
-type GitInfo struct {
-	Branch    string `json:"branch,omitempty"`
-	OriginURL string `json:"originUrl,omitempty"`
-	Sha       string `json:"sha,omitempty"`
-}
-
 // --- Skill metadata (hand-written: unreachable from any method's params/response) ---
 //
 // gen_go_types --from-surface only emits types reachable from a method's params or response.
 // These two are referenced only by other hand-written skill types, so the generator never
 // reaches them, and they must be maintained by hand. Their shapes are the generator's own
 // output, so type-shape-check compares clean.
-
-// SkillInterface mirrors the upstream `SkillInterface` definition.
-type SkillInterface struct {
-	BrandColor       string           `json:"brandColor,omitempty"`
-	DefaultPrompt    string           `json:"defaultPrompt,omitempty"`
-	DisplayName      string           `json:"displayName,omitempty"`
-	IconLarge        *AbsolutePathBuf `json:"iconLarge,omitempty"`
-	IconLargeURL     string           `json:"iconLargeUrl,omitempty"`
-	IconSmall        *AbsolutePathBuf `json:"iconSmall,omitempty"`
-	IconSmallURL     string           `json:"iconSmallUrl,omitempty"`
-	ShortDescription string           `json:"shortDescription,omitempty"`
-}
-
-// SkillMetadata mirrors the upstream `SkillMetadata` definition.
-type SkillMetadata struct {
-	Dependencies     *SkillDependencies  `json:"dependencies,omitempty"`
-	Description      string              `json:"description"`
-	Enabled          bool                `json:"enabled"`
-	Interface        *SkillInterface     `json:"interface,omitempty"`
-	Name             string              `json:"name"`
-	Path             LegacyAppPathString `json:"path"`
-	PluginID         string              `json:"pluginId,omitempty"`
-	Scope            SkillScope          `json:"scope"`
-	ShortDescription string              `json:"shortDescription,omitempty"`
-}
 
 // --- Core data models (schema-faithful; runtime types with custom decoders live in protocol) ---
 
@@ -467,24 +410,11 @@ type TurnStartParams struct {
 	Environments      []string        `json:"environments,omitempty"`
 }
 
-type TurnInterruptParams struct {
-	ThreadID string `json:"threadId"`
-	TurnID   string `json:"turnId"`
-}
-
 // --- Thread fork / list / archive / setName / rollback ---
 
 type ThreadListResponse struct {
 	Threads []Thread `json:"threads"`
 	Cursor  string   `json:"cursor,omitempty"`
-}
-
-type ThreadArchiveParams struct {
-	ThreadID string `json:"threadId"`
-}
-
-type ThreadUnarchiveParams struct {
-	ThreadID string `json:"threadId"`
 }
 
 type ThreadSetNameParams struct {
@@ -539,14 +469,9 @@ type ReviewStartParams struct {
 	Delivery *ReviewDelivery `json:"delivery,omitempty"`
 }
 
-// ReviewDelivery is how a review is delivered.
-type ReviewDelivery string
-
 const (
-	// ReviewDeliveryInline runs the review inside the current thread.
-	ReviewDeliveryInline ReviewDelivery = "inline"
-	// ReviewDeliveryDetached runs it in its own thread (see ReviewStartResponse.ReviewThreadID).
-	ReviewDeliveryDetached ReviewDelivery = "detached"
+// ReviewDeliveryInline runs the review inside the current thread.
+// ReviewDeliveryDetached runs it in its own thread (see ReviewStartResponse.ReviewThreadID).
 )
 
 // UncommittedChangesTarget reviews the working tree: staged, unstaged and untracked files.
@@ -586,21 +511,7 @@ func CustomTarget(instructions string) ReviewTarget {
 
 // --- Skills ---
 
-// SkillScope enumerates where a skill is sourced from.
-type SkillScope string
-
-const (
-	SkillScopeUser   SkillScope = "user"
-	SkillScopeRepo   SkillScope = "repo"
-	SkillScopeSystem SkillScope = "system"
-	SkillScopeAdmin  SkillScope = "admin"
-)
-
-// SkillErrorInfo describes a parse/load error for a skill file.
-type SkillErrorInfo struct {
-	Message string `json:"message"`
-	Path    string `json:"path"`
-}
+const ()
 
 // SkillInterface holds UI-facing metadata for a skill (display name, icon, etc.).
 // SkillToolDependency describes a tool dependency declared by a skill.
@@ -611,11 +522,6 @@ type SkillToolDependency struct {
 	Description string `json:"description,omitempty"`
 	Transport   string `json:"transport,omitempty"`
 	URL         string `json:"url,omitempty"`
-}
-
-// SkillDependencies lists tool dependencies for a skill.
-type SkillDependencies struct {
-	Tools []SkillToolDependency `json:"tools"`
 }
 
 // SkillMetadata is the full metadata for a skill (name, path, scope, etc.).
@@ -636,17 +542,6 @@ type SkillsListEntry struct {
 	Errors []SkillErrorInfo `json:"errors"`
 }
 
-// SkillsListParams is the request type for the skills/list RPC.
-type SkillsListParams struct {
-	Cwds        []string `json:"cwds,omitempty"`
-	ForceReload bool     `json:"forceReload,omitempty"`
-}
-
-// SkillsListResponse is the response type for the skills/list RPC.
-type SkillsListResponse struct {
-	Data []SkillsListEntry `json:"data"`
-}
-
 // SkillsChangedNotification is sent when watched skill files change on disk.
 type SkillsChangedNotification struct{}
 
@@ -657,11 +552,6 @@ type SkillsConfigWriteParams struct {
 	Path    string `json:"path,omitempty"`
 }
 
-// SkillsConfigWriteResponse reports the effective enabled state after a config write.
-type SkillsConfigWriteResponse struct {
-	EffectiveEnabled bool `json:"effectiveEnabled"`
-}
-
 // SkillsExtraRootsSetParams sets extra filesystem roots to scan for skills.
 type SkillsExtraRootsSetParams struct {
 	ExtraRoots []string `json:"extraRoots"`
@@ -670,31 +560,9 @@ type SkillsExtraRootsSetParams struct {
 // SkillsExtraRootsSetResponse is the empty response for skills/extraRoots/set.
 type SkillsExtraRootsSetResponse struct{}
 
-// PluginSkillReadParams reads the raw content of a remote plugin skill.
-type PluginSkillReadParams struct {
-	RemoteMarketplaceName string `json:"remoteMarketplaceName"`
-	RemotePluginID        string `json:"remotePluginId"`
-	SkillName             string `json:"skillName"`
-}
-
-// PluginSkillReadResponse returns the raw content of a remote plugin skill.
-type PluginSkillReadResponse struct {
-	Contents string `json:"contents,omitempty"`
-}
-
 // --- ThreadGoal ---
 
-// ThreadGoalStatus enumerates the lifecycle states of a thread goal.
-type ThreadGoalStatus string
-
-const (
-	ThreadGoalStatusActive        ThreadGoalStatus = "active"
-	ThreadGoalStatusPaused        ThreadGoalStatus = "paused"
-	ThreadGoalStatusBlocked       ThreadGoalStatus = "blocked"
-	ThreadGoalStatusUsageLimited  ThreadGoalStatus = "usageLimited"
-	ThreadGoalStatusBudgetLimited ThreadGoalStatus = "budgetLimited"
-	ThreadGoalStatusComplete      ThreadGoalStatus = "complete"
-)
+const ()
 
 // ThreadGoal tracks a goal/objective set for a thread, including usage budgets.
 type ThreadGoal struct {
@@ -708,36 +576,9 @@ type ThreadGoal struct {
 	TokenBudget     *int64           `json:"tokenBudget,omitempty"`
 }
 
-// ThreadGoalSetParams is the request type for threadGoal/set.
-// ThreadGoalSetResponse is the response type for threadGoal/set.
-type ThreadGoalSetResponse struct {
-	Goal ThreadGoal `json:"goal"`
-}
-
-// ThreadGoalGetParams is the request type for threadGoal/get.
-type ThreadGoalGetParams struct {
-	ThreadID string `json:"threadId"`
-}
-
-// ThreadGoalGetResponse is the response type for threadGoal/get.
-type ThreadGoalGetResponse struct {
-	Goal *ThreadGoal `json:"goal,omitempty"`
-}
-
-// ThreadGoalClearParams is the request type for threadGoal/clear.
-// ThreadGoalClearResponse is the response type for threadGoal/clear.
-type ThreadGoalClearResponse struct {
-	Cleared bool `json:"cleared"`
-}
-
 // ThreadGoalUpdatedNotification is emitted when a thread's goal is created or updated.
 type ThreadGoalUpdatedNotification struct {
 	ThreadID string     `json:"threadId"`
 	TurnID   string     `json:"turnId,omitempty"`
 	Goal     ThreadGoal `json:"goal"`
-}
-
-// ThreadGoalClearedNotification is emitted when a thread's goal is cleared.
-type ThreadGoalClearedNotification struct {
-	ThreadID string `json:"threadId"`
 }

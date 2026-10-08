@@ -1218,6 +1218,13 @@ type GetWorkspaceMessagesResponse struct {
 	Messages       []WorkspaceMessage `json:"messages"`
 }
 
+// GitInfo mirrors the upstream `GitInfo` definition.
+type GitInfo struct {
+	Branch    string `json:"branch,omitempty"`
+	OriginURL string `json:"originUrl,omitempty"`
+	Sha       string `json:"sha,omitempty"`
+}
+
 // GuardianApprovalReview mirrors the upstream `GuardianApprovalReview` definition.
 type GuardianApprovalReview struct {
 	Rationale         string                       `json:"rationale,omitempty"`
@@ -2271,6 +2278,14 @@ const (
 	ResponsesApiWebSearchActionTypeOther      = "other"
 )
 
+// ReviewDelivery mirrors the upstream `ReviewDelivery` enum.
+type ReviewDelivery string
+
+const (
+	ReviewDeliveryInline   ReviewDelivery = "inline"
+	ReviewDeliveryDetached ReviewDelivery = "detached"
+)
+
 // ReviewStartResponse mirrors the upstream `ReviewStartResponse` definition.
 type ReviewStartResponse struct {
 	ReviewThreadID string `json:"reviewThreadId"`
@@ -2375,9 +2390,59 @@ type Settings struct {
 	ReasoningEffort       *ReasoningEffort `json:"reasoning_effort,omitempty"`
 }
 
+// SkillDependencies mirrors the upstream `SkillDependencies` definition.
+type SkillDependencies struct {
+	Tools []SkillToolDependency `json:"tools"`
+}
+
+// SkillErrorInfo mirrors the upstream `SkillErrorInfo` definition.
+type SkillErrorInfo struct {
+	Message string `json:"message"`
+	Path    string `json:"path"`
+}
+
+// SkillMetadata mirrors the upstream `SkillMetadata` definition.
+type SkillMetadata struct {
+	Dependencies     *SkillDependencies  `json:"dependencies,omitempty"`
+	Description      string              `json:"description"`
+	Enabled          bool                `json:"enabled"`
+	Interface        *SkillInterface     `json:"interface,omitempty"`
+	Name             string              `json:"name"`
+	Path             LegacyAppPathString `json:"path"`
+	PluginID         string              `json:"pluginId,omitempty"`
+	Scope            SkillScope          `json:"scope"`
+	ShortDescription string              `json:"shortDescription,omitempty"`
+}
+
 // SkillMigration mirrors the upstream `SkillMigration` definition.
 type SkillMigration struct {
 	Name string `json:"name"`
+}
+
+// SkillScope mirrors the upstream `SkillScope` enum.
+type SkillScope string
+
+const (
+	SkillScopeUser   SkillScope = "user"
+	SkillScopeRepo   SkillScope = "repo"
+	SkillScopeSystem SkillScope = "system"
+	SkillScopeAdmin  SkillScope = "admin"
+)
+
+// SkillsConfigWriteResponse mirrors the upstream `SkillsConfigWriteResponse` definition.
+type SkillsConfigWriteResponse struct {
+	EffectiveEnabled bool `json:"effectiveEnabled"`
+}
+
+// SkillsListParams mirrors the upstream `SkillsListParams` definition.
+type SkillsListParams struct {
+	Cwds        []string `json:"cwds,omitempty"`
+	ForceReload bool     `json:"forceReload,omitempty"`
+}
+
+// SkillsListResponse mirrors the upstream `SkillsListResponse` definition.
+type SkillsListResponse struct {
+	Data []SkillsListEntry `json:"data"`
 }
 
 // SortDirection mirrors the upstream `SortDirection` enum.
@@ -2441,6 +2506,14 @@ type TextRange struct {
 	Start TextPosition `json:"start"`
 }
 
+// ThreadActiveFlag mirrors the upstream `ThreadActiveFlag` enum.
+type ThreadActiveFlag string
+
+const (
+	ThreadActiveFlagWaitingOnApproval  ThreadActiveFlag = "waitingOnApproval"
+	ThreadActiveFlagWaitingOnUserInput ThreadActiveFlag = "waitingOnUserInput"
+)
+
 // ThreadApproveGuardianDeniedActionParams mirrors the upstream `ThreadApproveGuardianDeniedActionParams` definition.
 type ThreadApproveGuardianDeniedActionParams struct {
 	Event    json.RawMessage `json:"event"`
@@ -2449,6 +2522,11 @@ type ThreadApproveGuardianDeniedActionParams struct {
 
 // ThreadApproveGuardianDeniedActionResponse mirrors the upstream `ThreadApproveGuardianDeniedActionResponse` definition.
 type ThreadApproveGuardianDeniedActionResponse = struct{}
+
+// ThreadArchiveParams mirrors the upstream `ThreadArchiveParams` definition.
+type ThreadArchiveParams struct {
+	ThreadID string `json:"threadId"`
+}
 
 // ThreadArchiveResponse mirrors the upstream `ThreadArchiveResponse` definition.
 type ThreadArchiveResponse = struct{}
@@ -2616,6 +2694,26 @@ type ThreadGoalClearParams struct {
 	ThreadID string                    `json:"threadId"`
 }
 
+// ThreadGoalClearResponse mirrors the upstream `ThreadGoalClearResponse` definition.
+type ThreadGoalClearResponse struct {
+	Cleared bool `json:"cleared"`
+}
+
+// ThreadGoalClearedNotification mirrors the upstream `ThreadGoalClearedNotification` definition.
+type ThreadGoalClearedNotification struct {
+	ThreadID string `json:"threadId"`
+}
+
+// ThreadGoalGetParams mirrors the upstream `ThreadGoalGetParams` definition.
+type ThreadGoalGetParams struct {
+	ThreadID string `json:"threadId"`
+}
+
+// ThreadGoalGetResponse mirrors the upstream `ThreadGoalGetResponse` definition.
+type ThreadGoalGetResponse struct {
+	Goal *ThreadGoal `json:"goal,omitempty"`
+}
+
 // ThreadGoalMutationOrigin mirrors the upstream `ThreadGoalMutationOrigin` enum.
 type ThreadGoalMutationOrigin string
 
@@ -2632,6 +2730,23 @@ type ThreadGoalSetParams struct {
 	ThreadID    string                    `json:"threadId"`
 	TokenBudget int64                     `json:"tokenBudget,omitempty"`
 }
+
+// ThreadGoalSetResponse mirrors the upstream `ThreadGoalSetResponse` definition.
+type ThreadGoalSetResponse struct {
+	Goal ThreadGoal `json:"goal"`
+}
+
+// ThreadGoalStatus mirrors the upstream `ThreadGoalStatus` enum.
+type ThreadGoalStatus string
+
+const (
+	ThreadGoalStatusActive        ThreadGoalStatus = "active"
+	ThreadGoalStatusPaused        ThreadGoalStatus = "paused"
+	ThreadGoalStatusBlocked       ThreadGoalStatus = "blocked"
+	ThreadGoalStatusUsageLimited  ThreadGoalStatus = "usageLimited"
+	ThreadGoalStatusBudgetLimited ThreadGoalStatus = "budgetLimited"
+	ThreadGoalStatusComplete      ThreadGoalStatus = "complete"
+)
 
 // ThreadHistoryMode mirrors the upstream `ThreadHistoryMode` enum.
 type ThreadHistoryMode string
@@ -2954,6 +3069,11 @@ type ThreadTurnsListResponse struct {
 	NextCursor      string `json:"nextCursor,omitempty"`
 }
 
+// ThreadUnarchiveParams mirrors the upstream `ThreadUnarchiveParams` definition.
+type ThreadUnarchiveParams struct {
+	ThreadID string `json:"threadId"`
+}
+
 // ThreadUnarchiveResponse mirrors the upstream `ThreadUnarchiveResponse` definition.
 type ThreadUnarchiveResponse struct {
 	Thread Thread `json:"thread"`
@@ -3053,6 +3173,12 @@ type TurnError struct {
 	Misalignment      *MisalignmentErrorDetails `json:"misalignment,omitempty"`
 }
 
+// TurnInterruptParams mirrors the upstream `TurnInterruptParams` definition.
+type TurnInterruptParams struct {
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+}
+
 // TurnInterruptResponse mirrors the upstream `TurnInterruptResponse` definition.
 type TurnInterruptResponse = struct{}
 
@@ -3089,6 +3215,16 @@ type TurnStartedNotification struct {
 	ThreadID string `json:"threadId"`
 	Turn     Turn   `json:"turn"`
 }
+
+// TurnStatus mirrors the upstream `TurnStatus` enum.
+type TurnStatus string
+
+const (
+	TurnStatusCompleted   TurnStatus = "completed"
+	TurnStatusInterrupted TurnStatus = "interrupted"
+	TurnStatusFailed      TurnStatus = "failed"
+	TurnStatusInProgress  TurnStatus = "inProgress"
+)
 
 // TurnSteerResponse mirrors the upstream `TurnSteerResponse` definition.
 type TurnSteerResponse struct {

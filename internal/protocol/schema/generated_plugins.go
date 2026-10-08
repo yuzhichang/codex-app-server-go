@@ -652,6 +652,18 @@ type PluginShareUpdateTargetsResponse struct {
 	Principals      []PluginSharePrincipal     `json:"principals"`
 }
 
+// PluginSkillReadParams mirrors the upstream `PluginSkillReadParams` definition.
+type PluginSkillReadParams struct {
+	RemoteMarketplaceName string `json:"remoteMarketplaceName"`
+	RemotePluginID        string `json:"remotePluginId"`
+	SkillName             string `json:"skillName"`
+}
+
+// PluginSkillReadResponse mirrors the upstream `PluginSkillReadResponse` definition.
+type PluginSkillReadResponse struct {
+	Contents string `json:"contents,omitempty"`
+}
+
 // PluginSource mirrors the upstream `PluginSource` definition.
 //
 // Upstream declares it as a `type`-tagged union of 4 variants (git, local, npm, remote).
@@ -759,6 +771,18 @@ const (
 	ScheduledTaskWeekdaySA ScheduledTaskWeekday = "SA"
 	ScheduledTaskWeekdaySU ScheduledTaskWeekday = "SU"
 )
+
+// SkillInterface mirrors the upstream `SkillInterface` definition.
+type SkillInterface struct {
+	BrandColor       string           `json:"brandColor,omitempty"`
+	DefaultPrompt    string           `json:"defaultPrompt,omitempty"`
+	DisplayName      string           `json:"displayName,omitempty"`
+	IconLarge        *AbsolutePathBuf `json:"iconLarge,omitempty"`
+	IconLargeURL     string           `json:"iconLargeUrl,omitempty"`
+	IconSmall        *AbsolutePathBuf `json:"iconSmall,omitempty"`
+	IconSmallURL     string           `json:"iconSmallUrl,omitempty"`
+	ShortDescription string           `json:"shortDescription,omitempty"`
+}
 
 // ToolExposureSurface mirrors the upstream `ToolExposureSurface` definition.
 type ToolExposureSurface = json.RawMessage

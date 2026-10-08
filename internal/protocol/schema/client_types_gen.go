@@ -213,7 +213,6 @@ type ThreadStartParams struct {
 	ApprovalPolicy        *AskForApproval    `json:"approvalPolicy,omitempty"`
 	ApprovalsReviewer     *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
 	RuntimeWorkspaceRoots []string           `json:"runtimeWorkspaceRoots,omitempty"`
-	Environments          []string           `json:"environments,omitempty"`
 	Personality           string             `json:"personality,omitempty"`
 	DynamicTools          []string           `json:"dynamicTools,omitempty"`
 	Ephemeral             bool               `json:"ephemeral,omitempty"`
@@ -409,7 +408,6 @@ type TurnStartParams struct {
 	OutputSchema      json.RawMessage `json:"outputSchema,omitempty"`
 	CollaborationMode string          `json:"collaborationMode,omitempty"`
 	MultiAgentMode    string          `json:"multiAgentMode,omitempty"`
-	Environments      []string        `json:"environments,omitempty"`
 }
 
 // --- Thread fork / list / archive / setName / rollback ---

@@ -17,7 +17,6 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		ApprovalPolicy        *AskForApproval    `json:"approvalPolicy,omitempty"`
 		ApprovalsReviewer     *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
 		RuntimeWorkspaceRoots []string           `json:"runtimeWorkspaceRoots,omitempty"`
-		Environments          []string           `json:"environments,omitempty"`
 		Personality           string             `json:"personality,omitempty"`
 		DynamicTools          []string           `json:"dynamicTools,omitempty"`
 		Metadata              json.RawMessage    `json:"metadata,omitempty"`
@@ -28,7 +27,6 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		ApprovalPolicy:        r.ApprovalPolicy,
 		ApprovalsReviewer:     r.ApprovalsReviewer,
 		RuntimeWorkspaceRoots: r.RuntimeWorkspaceRoots,
-		Environments:          r.Environments,
 		Personality:           r.Personality,
 		DynamicTools:          r.DynamicTools,
 		Metadata:              r.Metadata,

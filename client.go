@@ -141,6 +141,11 @@ func New(opts ...Option) (*Client, error) {
 					"(such as WithReconnectingWSTransport); %T cannot", cfg.transport)
 		}
 		client.supervisor = newSessionSupervisor(client)
+		if cfg.backfillTurns != nil {
+			// Set before the goroutine starts: the supervisor reads this field, so mutating
+			// it afterwards would be a data race.
+			client.supervisor.backfillLimit = int64(*cfg.backfillTurns)
+		}
 		supCtx, supCancel := context.WithCancel(context.Background())
 		client.supervisorCancel = supCancel
 		go client.supervisor.run(supCtx, reconnectSignals)

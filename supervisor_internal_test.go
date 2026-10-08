@@ -27,6 +27,7 @@ type supervisorTransport struct {
 	done        chan struct{}
 	closed      bool
 	initFailFor int // fail the next N `initialize` calls
+	turnsListed int // how many times thread/turns/list was called
 	seq         int // makes generated thread ids unique
 }
 
@@ -77,6 +78,16 @@ func (s *supervisorTransport) Call(_ context.Context, method string, _ any, resu
 		if fail {
 			return errors.New("initialize refused")
 		}
+	}
+
+	// Backfill listing. Must precede the generic thread/* branch below, which would
+	// otherwise write a thread object into the turns-list response.
+	if result != nil && method == protocol.MethodThreadTurnsList {
+		s.mu.Lock()
+		s.turnsListed++
+		s.mu.Unlock()
+		_ = json.Unmarshal([]byte(`{"data":[{"id":"turn-old","status":"completed"}],"nextCursor":"more"}`), result)
+		return nil
 	}
 
 	// Populate results through JSON rather than type-asserting anonymous structs: the SDK
@@ -319,4 +330,99 @@ func countString(hay []string, needle string) int {
 		}
 	}
 	return n
+}
+
+// A reconnect cannot replay what was missed -- upstream has no replay -- so the remedy is to
+// hand over authoritative history for the resumed threads.
+func TestReconnectBackfillsResumedThreads(t *testing.T) {
+	client, tr := newSupervisedClient(t)
+
+	ctx := context.Background()
+	if _, err := client.Initialize(ctx, InitializeParams{ClientInfo: ClientInfo{Name: "t"}}); err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+	thread, err := client.StartThread(ctx)
+	if err != nil {
+		t.Fatalf("StartThread: %v", err)
+	}
+
+	sub := client.Events()
+	defer sub.Close()
+	time.Sleep(20 * time.Millisecond)
+
+	tr.reset()
+	tr.fireReconnect()
+
+	var backfilled *SessionBackfilledEvent
+	deadline := time.After(3 * time.Second)
+	for backfilled == nil {
+		select {
+		case ev, ok := <-sub.C():
+			if !ok {
+				t.Fatal("event stream closed")
+			}
+			if ev.Method == EventMethodSessionBackfilled {
+				got, isBackfill := ev.Value.(SessionBackfilledEvent)
+				if !isBackfill {
+					t.Fatalf("value = %T", ev.Value)
+				}
+				backfilled = &got
+			}
+		case <-deadline:
+			t.Fatal("no sdk/sessionBackfilled event after the reconnect")
+		}
+	}
+
+	if backfilled.ThreadID != thread.ID() {
+		t.Errorf("ThreadID = %q, want %q", backfilled.ThreadID, thread.ID())
+	}
+	// The turns come across as the runtime Turn type, not the generated one.
+	if len(backfilled.Turns) != 1 || backfilled.Turns[0].ID != "turn-old" {
+		t.Fatalf("turns = %+v, want the one listed turn", backfilled.Turns)
+	}
+	// A non-empty next cursor means older turns exist and were not re-read.
+	if !backfilled.Truncated {
+		t.Error("Truncated = false despite a next cursor")
+	}
+	if tr.turnsListed == 0 {
+		t.Error("thread/turns/list was never called")
+	}
+}
+
+// Backfilling costs one listing call per resumed thread per reconnect, so it must be
+// possible to turn off.
+func TestSessionBackfillCanBeDisabled(t *testing.T) {
+	tr := newSupervisorTransport()
+	client, err := New(WithTransport(tr), WithAutoReconnect(), WithSessionBackfill(0))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = client.Close() })
+
+	ctx := context.Background()
+	if _, err := client.Initialize(ctx, InitializeParams{ClientInfo: ClientInfo{Name: "t"}}); err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+	if _, err := client.StartThread(ctx); err != nil {
+		t.Fatalf("StartThread: %v", err)
+	}
+
+	sub := client.Events()
+	defer sub.Close()
+	time.Sleep(20 * time.Millisecond)
+
+	tr.reset()
+	tr.fireReconnect()
+	collectUntil(sub, EventMethodReconnectSucceeded, 3*time.Second)
+
+	if tr.turnsListed != 0 {
+		t.Fatalf("thread/turns/list called %d times despite WithSessionBackfill(0)", tr.turnsListed)
+	}
+}
+
+// A negative limit is rejected rather than silently meaning something else.
+func TestSessionBackfillRejectsNegativeLimit(t *testing.T) {
+	if _, err := New(WithTransport(newSupervisorTransport()), WithAutoReconnect(), WithSessionBackfill(-1)); err == nil {
+		t.Fatal("expected an error for a negative backfill limit")
+	}
 }

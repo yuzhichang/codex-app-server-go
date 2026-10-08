@@ -99,9 +99,34 @@ Recovery is reported as events, so a caller can tell a routine blip from a lost 
 These are **synthesised by the SDK**, not wire notifications — upstream has no such methods —
 hence the `sdk/` prefix. They arrive on the same `Events()` subscription as real events.
 
-Dropped connections also do not replay notifications: upstream offers no replay, so anything
-sent while disconnected is gone. Thread history can be re-read with `thread/turns/list` and
-`thread/items/list`.
+### Notifications missed while disconnected are not replayed
+
+Upstream has no replay, so anything sent while the connection was down is simply gone. There
+is no way to re-deliver those notifications, and a client that assumes otherwise will silently
+miss turn completions.
+
+What the SDK does instead is hand you the **authoritative history** for each resumed thread, as
+`sdk/sessionBackfilled`:
+
+```go
+case codexgo.SessionBackfilledEvent:
+    // History, not a replay: merge by turn id rather than appending.
+    for _, turn := range e.Turns {
+        reconcile(e.ThreadID, turn)
+    }
+```
+
+A few properties worth relying on:
+
+- It is **history, not a replay of missed notifications**. Re-emitting wire-shaped events
+  would be indistinguishable from live ones, so a consumer that had already received part of a
+  turn before the drop would double-count it. Merge by turn id.
+- It is bounded to the most recent turns per thread (20 by default). `Truncated` tells you
+  older turns exist; fetch them with `thread/turns/list` if you need them.
+- It costs one `thread/turns/list` call per resumed thread per reconnect, so it is
+  configurable: `WithSessionBackfill(n)` changes the bound, `WithSessionBackfill(0)` disables it.
+- A thread that could not be *resumed* is not backfilled — `sdk/sessionRecovered` lists those
+  separately as `ThreadsFailed`.
 
 ### Event delivery never blocks the publisher — and it can refuse you
 

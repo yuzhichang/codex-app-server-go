@@ -75,6 +75,26 @@ type clientConfig struct {
 	// autoReconnect re-establishes protocol state (initialize handshake + thread
 	// resumption) each time the transport reconnects.
 	autoReconnect bool
+
+	// backfillTurns overrides how many turns are re-read per thread after a reconnect.
+	// nil means the default; 0 disables backfilling.
+	backfillTurns *int
+}
+
+// WithSessionBackfill sets how many turns are re-read per thread after a reconnect, so a
+// consumer can reconcile against notifications that were lost. 0 disables it.
+//
+// Backfilling exists because upstream has no replay: anything sent while the connection was
+// down is gone. The cost is one thread/turns/list call per resumed thread per reconnect,
+// which is why it is bounded and why it can be turned off.
+func WithSessionBackfill(limit int) Option {
+	return func(cfg *clientConfig) error {
+		if limit < 0 {
+			return fmt.Errorf("session backfill limit must not be negative, got %d", limit)
+		}
+		cfg.backfillTurns = &limit
+		return nil
+	}
 }
 
 // WithAutoReconnect re-establishes the protocol session after a transport-level reconnect.

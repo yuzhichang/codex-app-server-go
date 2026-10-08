@@ -2,10 +2,13 @@ package codexgo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
 	"time"
+
+	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
 )
 
 // Synthetic method names for supervisor-reported events.
@@ -29,7 +32,29 @@ const (
 	// EventMethodUnhandledServerRequest reports a server request the SDK answered on the
 	// caller's behalf, because no handler was configured for it.
 	EventMethodUnhandledServerRequest = "sdk/unhandledServerRequest"
+	// EventMethodSessionBackfilled reports authoritative history pulled after a reconnect.
+	EventMethodSessionBackfilled = "sdk/sessionBackfilled"
 )
+
+// SessionBackfilledEvent carries the history re-read for one thread after a reconnect.
+//
+// Notifications sent while the connection was down are gone: upstream has no replay, so
+// nothing can re-deliver them. This event is the remedy -- it hands over the authoritative
+// current state of the thread so a consumer can reconcile.
+//
+// It is deliberately *history*, not a replay of the missed notifications. Re-emitting
+// wire-shaped events would be indistinguishable from live ones, so a consumer that had
+// already received part of a turn before the drop would double-count it. Treat Turns as
+// "the server's word on what happened", and merge by turn id.
+type SessionBackfilledEvent struct {
+	ThreadID string
+	// Turns is the most recent page of turns, newest first (the server's default order).
+	Turns []Turn
+	// Truncated is true when the page limit was reached and older turns exist. Those are
+	// older than the drop, so they were not missed -- but they are one thread/turns/list
+	// call away if you need them.
+	Truncated bool
+}
 
 // UnhandledServerRequestEvent reports a server-initiated request that reached no configured
 // handler, and what the SDK replied instead.
@@ -125,7 +150,15 @@ type sessionSupervisor struct {
 	recoverTimeout time.Duration
 	baseBackoff    time.Duration
 	maxBackoff     time.Duration
+	// backfillLimit is how many turns to re-read per thread after a reconnect. 0 disables
+	// backfilling entirely.
+	backfillLimit int64
 }
+
+// defaultBackfillTurns bounds how much history a reconnect pulls per thread. The point is to
+// re-establish a recent, authoritative view -- not to mirror the whole thread, which is one
+// thread/turns/list call away if the caller wants it.
+const defaultBackfillTurns = 20
 
 func newSessionSupervisor(c *Client) *sessionSupervisor {
 	return &sessionSupervisor{
@@ -134,6 +167,7 @@ func newSessionSupervisor(c *Client) *sessionSupervisor {
 		recoverTimeout: 30 * time.Second,
 		baseBackoff:    500 * time.Millisecond,
 		maxBackoff:     30 * time.Second,
+		backfillLimit:  defaultBackfillTurns,
 	}
 }
 
@@ -242,8 +276,72 @@ func (s *sessionSupervisor) recoverOnce(ctx context.Context, attempt int) (resum
 			continue
 		}
 		resumed = append(resumed, id)
+		s.backfill(attemptCtx, id)
 	}
 	return resumed, failed, nil
+}
+
+// backfill pulls the thread's recent turns so a consumer can reconcile after the drop.
+//
+// Failures here are reported through the same reconnect-failure channel rather than being
+// swallowed: a recovered session whose history could not be re-read is not the same as one
+// that could, and the caller needs to know which they got.
+func (s *sessionSupervisor) backfill(ctx context.Context, threadID string) {
+	if s.backfillLimit <= 0 {
+		return
+	}
+	resp, err := s.client.ThreadTurnsList(ctx, ThreadTurnsListParams{
+		ThreadID: threadID,
+		Limit:    s.backfillLimit,
+	})
+	if err != nil {
+		s.emit(EventMethodReconnectFailed, ReconnectFailedEvent{
+			Attempt: s.currentAttempt(),
+			Err:     fmt.Errorf("backfill %s: %w", threadID, err),
+		})
+		return
+	}
+	turns, err := turnsFromSchema(resp.Data)
+	if err != nil {
+		s.emit(EventMethodReconnectFailed, ReconnectFailedEvent{
+			Attempt: s.currentAttempt(),
+			Err:     fmt.Errorf("backfill %s: converting turns: %w", threadID, err),
+		})
+		return
+	}
+	s.emit(EventMethodSessionBackfilled, SessionBackfilledEvent{
+		ThreadID:  threadID,
+		Turns:     turns,
+		Truncated: resp.NextCursor != "",
+	})
+}
+
+// turnsFromSchema converts the generated Turn type used by the paginated listing RPCs into
+// the runtime Turn the rest of the SDK exposes.
+//
+// The two are not interchangeable: protocol.Turn parses timestamps flexibly and keeps the raw
+// payload, which the generated struct does not. Conversion goes through JSON rather than
+// field-by-field so the two cannot silently drift apart -- a new field lands correctly on
+// both sides or fails loudly here.
+func turnsFromSchema(in []schematypes.Turn) ([]Turn, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+	raw, err := json.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+	var out []Turn
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *sessionSupervisor) currentAttempt() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.attempt
 }
 
 func (s *sessionSupervisor) emit(method string, v any) {

@@ -401,6 +401,21 @@
 > - 新增 `Ptr[T]`（可选指针字段在字面量里很常见）。
 > - 测试覆盖两个分支及其往返；载荷测试断言 `approvalPolicy` 是裸字符串、`auto_review` 落在 `approvalsReviewer`。**反向对照已实测**（把枚举分支包成对象 ⇒ 报 `got {"policy":"never"}, want "never"`）。
 
+### 形状差异第二轮分诊：16 个"自造字段"逐项定级（`30ea584` 发现第 6 个真 bug）
+
+方法：先看**每个自造字段**（SDK 有、上游无），而不是看结构体。16 个字段分布在 9 个结构体。
+
+| 判定 | 项 | 说明 |
+|---|---|---|
+| ✅ **真 bug（已修）** | `TurnSteerParams.TurnID` | 上游 `required: [expectedTurnId, input, threadId]`，SDK 发 `turnId`（上游**根本不定义**）且**完全没有 `expectedTurnId`** ⇒ **转向功能从未可用**；且该字段**无 `omitempty`**，错的字段**每次都在发**。已改为 `ExpectedTurnID`（wire `expectedTurnId`）、补 `clientUserMessageId`、`TurnSteer` 不再丢弃响应 |
+| ⚪ **无害：类型是死的** | `ThreadListResponse.Threads`/`Cursor` | 看起来是解码 bug，但 `Client.ThreadList` **自己解码进匿名 `{data}` 结构**（`client.go:348`），从未用这个类型 ⇒ 差异不可达。**先查可达性再改**，避免修一个没人用的类型 |
+| 🔤 **仅命名**（同 json tag，4 项） | `InitializeCapabilities.MCPServerOpenAIFormElicitation`、`InitializeParams.InitializeCapabilities`、`SkillsListParams.CWDs`、`schema.Turn.DurationMS` | 生成器产出 `McpServerOpenaiFormElicitation`/`Capabilities`/`Cwds`/`DurationMs`，**json tag 完全相同** ⇒ 改名即可，零行为风险。**未做** |
+| ⚪ **无害：上游忽略未知字段** | `TurnStartParams.Permissions`/`CollaborationMode`/`MultiAgentMode`/`Environments`、`ThreadStartParams.RuntimeWorkspaceRoots`/`DynamicTools`/`Metadata`/`Environments`、`ThreadForkParams.TurnID` | 会发到线上，但上游对它不认识的字段**不报错**（无 `deny_unknown_fields`）⇒ 死重，非错误。**未做**（其中 `environments` 上游标 experimental，按 R2 本不该暴露） |
+
+> ⚠️ **又一处"测试钉住 bug"**：既有的 `TestSessionThreadSteer` 断言 `req.TurnID` —— 它**照着同一个错误模型写的断言**，所以通过。这与 `sandboxPolicy` 那个测试是同一模式（`30ea584` 已一并改正）。**本轮共 3 次遇到"测试复制了错误的模型"**，值得记为模式而非巧合。
+
+**能力缺口（GAP）仍未分诊**：共 73 个缺失字段，最多为 `ThreadForkParams`(14)、`ThreadListParams`(11)、`ThreadForkResponse`(10)、`ThreadStartParams`(9)、`Thread`(8)、`TurnStartParams`(7)。性质是"**用户无法表达**"而非"发错值"。
+
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：

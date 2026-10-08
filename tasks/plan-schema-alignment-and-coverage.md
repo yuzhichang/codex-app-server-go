@@ -380,6 +380,23 @@
 
 > ⚠️ 结论：**「消除双轨」的真实价值不在整洁，而在于它已经掩盖了一个主入口的协议违规。** 必须先修 `TurnStartParams`（或至少让它显式报错），再谈类型整洁。
 
+### 决策（用户裁定）：**保留生成类型，废弃 SDK 自造的手写类型**
+
+用户裁定采用生成形状、废弃 SDK 自己的 `SandboxMode`/`ApprovalMode`。**执行该决策时发现两个"值级"bug**，其严重性远超类型整洁 —— 它们不是"形状不好看"，而是**发出服务端不接受的值**：
+
+| 字段 | SDK 发出 | 上游实际需要 |
+|---|---|---|
+| `TurnStartParams.SandboxPolicy` | 裸字符串 `"workspace-write"` | **对象** `{"type":"workspaceWrite"}` —— 判别值是 **camelCase**（`readOnly`/`workspaceWrite`/`dangerFullAccess`/`externalSandbox`），与 `SandboxMode` 的拼写（`read-only`/`workspace-write`/`danger-full-access`）**不同** |
+| `TurnStartParams.ApprovalPolicy`（经 `ApprovalMode`） | `deny_all` / `auto_review` / `on-request` / `never` | 上游 `AskForApproval` 枚举只有 **`untrusted`/`on-request`/`never`** ⇒ **`deny_all` 在任何枚举里都不存在**；**`auto_review` 属于 `ApprovalsReviewer`**（`user`/`auto_review`/`guardian_subagent`），被**张冠李戴** |
+
+即 `sandboxPolicy` 是**双重错**（JSON 类型错 + 值拼写错），`ApprovalMode` 则是**把两个上游枚举混成了一个**。
+
+> ✅ `fadc033` **sandboxPolicy 已修**：`SandboxPolicy` 建为 4 变体扁平判别结构体 + 构造器（与 `UserInput`/`ReviewTarget`/elicitation 一致）；`WithSandbox(string)` → **`WithSandboxPolicy(SandboxPolicy)`**（裸字符串**不可能**是合法 policy，故删除而非重新解释；且它无调用者）；`WithSandboxMode` **改转换而非类型转换**（`SandboxPolicyFromMode`）。
+> ⚠️ 原测试断言 `req.SandboxPolicy == "workspace-write"` —— **它把这个 bug 钉住了**，而不是抓住它。现改为断言判别值，并新增载荷断言。
+> ⚠️ **验证方法学**：我的第一次反向对照改的是 `SandboxPolicyFromMode`，而该测试**并不调用它** ⇒ 对照"通过"、什么也没证明。改到测试真正调用的构造器后，如期报 `type = "workspace-write", want "workspaceWrite"`。
+
+**⏳ 尚未修（同一发现）**：`ApprovalMode` 需同样处理 —— 建模 `AskForApproval`（枚举 `untrusted`/`on-request`/`never` **或** `{granular:{...}}`）与 `ApprovalsReviewer`（`user`/`auto_review`/`guardian_subagent`）为**两个**类型，废弃混用的 `ApprovalMode`。注意 `AskForApproval` 在生成器里退化为 `json.RawMessage`（枚举或对象的联合），需**手写判别类型**（字符串形态无法用带 `type` 字段的结构体表达，需自定义 `MarshalJSON`）。
+
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：

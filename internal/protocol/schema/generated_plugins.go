@@ -653,7 +653,31 @@ type PluginShareUpdateTargetsResponse struct {
 }
 
 // PluginSource mirrors the upstream `PluginSource` definition.
-type PluginSource = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (git, local, npm, remote).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type PluginSource struct {
+	Type     string          `json:"type"`
+	Path     json.RawMessage `json:"path,omitempty"`
+	RefName  string          `json:"refName,omitempty"`
+	Sha      string          `json:"sha,omitempty"`
+	URL      string          `json:"url,omitempty"`
+	Package  string          `json:"package,omitempty"`
+	Registry string          `json:"registry,omitempty"`
+	Version  string          `json:"version,omitempty"`
+}
+
+// PluginSource discriminator values, matching the upstream variant tags.
+const (
+	PluginSourceTypeLocal  = "local"
+	PluginSourceTypeGit    = "git"
+	PluginSourceTypeNpm    = "npm"
+	PluginSourceTypeRemote = "remote"
+)
 
 // PluginSummary mirrors the upstream `PluginSummary` definition.
 type PluginSummary struct {
@@ -693,7 +717,27 @@ type PluginsMigration struct {
 }
 
 // ScheduledTaskSchedule mirrors the upstream `ScheduledTaskSchedule` definition.
-type ScheduledTaskSchedule = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (daily, hourly, weekdays, weekly).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ScheduledTaskSchedule struct {
+	Type          string                 `json:"type"`
+	Days          []ScheduledTaskWeekday `json:"days,omitempty"`
+	IntervalHours int64                  `json:"intervalHours,omitempty"`
+	Time          string                 `json:"time,omitempty"`
+}
+
+// ScheduledTaskSchedule discriminator values, matching the upstream variant tags.
+const (
+	ScheduledTaskScheduleTypeHourly   = "hourly"
+	ScheduledTaskScheduleTypeDaily    = "daily"
+	ScheduledTaskScheduleTypeWeekdays = "weekdays"
+	ScheduledTaskScheduleTypeWeekly   = "weekly"
+)
 
 // ScheduledTaskSummary mirrors the upstream `ScheduledTaskSummary` definition.
 type ScheduledTaskSummary struct {

@@ -405,38 +405,6 @@ type AskForApprovalGranular struct {
 	SkillApproval      bool `json:"skill_approval,omitempty"`
 }
 
-// SandboxPolicy selects the sandbox for a turn or thread.
-//
-// Upstream declares it as a `type`-tagged union of four OBJECT variants
-// (dangerFullAccess, readOnly, externalSandbox, workspaceWrite). It is modelled here as one
-// flat struct with an explicit Type discriminator plus the union of every variant's fields,
-// consistent with UserInput and ReviewTarget. Prefer the constructors.
-//
-// This replaces a `string` field. The wire shape is an object and the discriminators are
-// camelCase (readOnly/workspaceWrite/dangerFullAccess) -- NOT the SandboxMode spellings
-// (read-only/workspace-write/danger-full-access). The old field sent a bare mode string, so
-// it was rejected twice over: wrong JSON type and wrong value.
-type SandboxPolicy struct {
-	Type string `json:"type"`
-
-	// NetworkAccess is a union upstream (boolean, or an object describing proxy/allow rules),
-	// so it is passed through. The common case is to omit it.
-	NetworkAccess json.RawMessage `json:"networkAccess,omitempty"`
-
-	// workspaceWrite only.
-	ExcludeSlashTmp     bool     `json:"excludeSlashTmp,omitempty"`
-	ExcludeTmpdirEnvVar bool     `json:"excludeTmpdirEnvVar,omitempty"`
-	WritableRoots       []string `json:"writableRoots,omitempty"`
-}
-
-// SandboxPolicyType values, matching the upstream discriminator strings.
-const (
-	SandboxPolicyTypeDangerFullAccess = "dangerFullAccess"
-	SandboxPolicyTypeReadOnly         = "readOnly"
-	SandboxPolicyTypeExternalSandbox  = "externalSandbox"
-	SandboxPolicyTypeWorkspaceWrite   = "workspaceWrite"
-)
-
 // DangerFullAccessPolicy runs without sandboxing.
 func DangerFullAccessPolicy() SandboxPolicy {
 	return SandboxPolicy{Type: SandboxPolicyTypeDangerFullAccess}
@@ -581,33 +549,6 @@ const (
 	ReviewDeliveryDetached ReviewDelivery = "detached"
 )
 
-// ReviewTarget selects what a review covers.
-//
-// Upstream declares a `type`-tagged union with four variants (uncommittedChanges, baseBranch,
-// commit, custom). It is modelled here as one flat struct with an explicit Type discriminator
-// plus the union of every variant's fields -- the same approach used for UserInput and the
-// elicitation payloads, and for the same reason: no field is dropped and no future variant is
-// rejected outright. Prefer the constructors.
-type ReviewTarget struct {
-	Type string `json:"type"`
-
-	// baseBranch
-	Branch string `json:"branch,omitempty"`
-	// commit
-	Sha   string  `json:"sha,omitempty"`
-	Title *string `json:"title,omitempty"`
-	// custom
-	Instructions string `json:"instructions,omitempty"`
-}
-
-// ReviewTargetType values, matching the upstream discriminator strings.
-const (
-	ReviewTargetTypeUncommittedChanges = "uncommittedChanges"
-	ReviewTargetTypeBaseBranch         = "baseBranch"
-	ReviewTargetTypeCommit             = "commit"
-	ReviewTargetTypeCustom             = "custom"
-)
-
 // UncommittedChangesTarget reviews the working tree: staged, unstaged and untracked files.
 func UncommittedChangesTarget() ReviewTarget {
 	return ReviewTarget{Type: ReviewTargetTypeUncommittedChanges}
@@ -619,8 +560,16 @@ func BaseBranchTarget(branch string) ReviewTarget {
 }
 
 // CommitTarget reviews a single commit. title is optional context for the UI.
+//
+// A nil title and an empty title are the same on the wire: the generated field is a plain
+// string with omitempty, so neither is sent. (Upstream declares `title` as string|null, which
+// a Go string cannot distinguish.)
 func CommitTarget(sha string, title *string) ReviewTarget {
-	return ReviewTarget{Type: ReviewTargetTypeCommit, Sha: sha, Title: title}
+	target := ReviewTarget{Type: ReviewTargetTypeCommit, Sha: sha}
+	if title != nil {
+		target.Title = *title
+	}
+	return target
 }
 
 // CustomTarget reviews according to free-form instructions.

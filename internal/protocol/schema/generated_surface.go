@@ -10,7 +10,26 @@ package schema
 import "encoding/json"
 
 // Account mirrors the upstream `Account` definition.
-type Account = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 3 variants (amazonBedrock, apiKey, chatgpt).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type Account struct {
+	Type                        string   `json:"type"`
+	Email                       string   `json:"email,omitempty"`
+	PlanType                    PlanType `json:"planType,omitempty"`
+	UsesCodexManagedCredentials bool     `json:"usesCodexManagedCredentials,omitempty"`
+}
+
+// Account discriminator values, matching the upstream variant tags.
+const (
+	AccountTypeAPIKey        = "apiKey"
+	AccountTypeChatgpt       = "chatgpt"
+	AccountTypeAmazonBedrock = "amazonBedrock"
+)
 
 // AccountLoginCompletedNotification mirrors the upstream `AccountLoginCompletedNotification` definition.
 type AccountLoginCompletedNotification struct {
@@ -75,6 +94,13 @@ type AdditionalNetworkPermissions struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
+// AgentMessageDelivery mirrors the upstream `AgentMessageDelivery` enum.
+type AgentMessageDelivery string
+
+const (
+	AgentMessageDeliveryAsync_ AgentMessageDelivery = "async"
+)
+
 // AgentMessageDeltaNotification mirrors the upstream `AgentMessageDeltaNotification` definition.
 type AgentMessageDeltaNotification struct {
 	Delta    string `json:"delta"`
@@ -84,7 +110,27 @@ type AgentMessageDeltaNotification struct {
 }
 
 // AgentMessageInputContent mirrors the upstream `AgentMessageInputContent` definition.
-type AgentMessageInputContent = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 2 variants (encrypted_content, input_text).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type AgentMessageInputContent struct {
+	Type             string `json:"type"`
+	Text             string `json:"text,omitempty"`
+	EncryptedContent string `json:"encrypted_content,omitempty"`
+}
+
+// AgentMessageInputContent discriminator values, matching the upstream variant tags.
+const (
+	AgentMessageInputContentTypeInputText        = "input_text"
+	AgentMessageInputContentTypeEncryptedContent = "encrypted_content"
+)
+
+// AgentPath mirrors the upstream `AgentPath` definition.
+type AgentPath = string
 
 // AllowDenyRequirement mirrors the upstream `AllowDenyRequirement` enum.
 type AllowDenyRequirement string
@@ -97,6 +143,12 @@ const (
 // AnalyticsConfig mirrors the upstream `AnalyticsConfig` definition.
 type AnalyticsConfig struct {
 	Enabled bool `json:"enabled,omitempty"`
+}
+
+// AsyncUserInputQuestion mirrors the upstream `AsyncUserInputQuestion` definition.
+type AsyncUserInputQuestion struct {
+	Options []string `json:"options,omitempty"`
+	Title   string   `json:"title"`
 }
 
 // AuthMode mirrors the upstream `AuthMode` definition.
@@ -176,6 +228,12 @@ type BrowserUseRequirements struct {
 	Origins                       map[string]BrowserUseOriginPolicy `json:"origins,omitempty"`
 }
 
+// ByteRange mirrors the upstream `ByteRange` definition.
+type ByteRange struct {
+	End   int64 `json:"end"`
+	Start int64 `json:"start"`
+}
+
 // CancelLoginAccountParams mirrors the upstream `CancelLoginAccountParams` definition.
 type CancelLoginAccountParams struct {
 	LoginID string `json:"loginId"`
@@ -207,11 +265,79 @@ const (
 // CodexErrorInfo mirrors the upstream `CodexErrorInfo` definition.
 type CodexErrorInfo = json.RawMessage
 
+// CollabAgentState mirrors the upstream `CollabAgentState` definition.
+type CollabAgentState struct {
+	Message string            `json:"message,omitempty"`
+	Status  CollabAgentStatus `json:"status"`
+}
+
+// CollabAgentStatus mirrors the upstream `CollabAgentStatus` enum.
+type CollabAgentStatus string
+
+const (
+	CollabAgentStatusPendingInit CollabAgentStatus = "pendingInit"
+	CollabAgentStatusRunning     CollabAgentStatus = "running"
+	CollabAgentStatusInterrupted CollabAgentStatus = "interrupted"
+	CollabAgentStatusCompleted   CollabAgentStatus = "completed"
+	CollabAgentStatusErrored     CollabAgentStatus = "errored"
+	CollabAgentStatusShutdown    CollabAgentStatus = "shutdown"
+	CollabAgentStatusNotFound    CollabAgentStatus = "notFound"
+)
+
+// CollabAgentTool mirrors the upstream `CollabAgentTool` enum.
+type CollabAgentTool string
+
+const (
+	CollabAgentToolSpawnAgent     CollabAgentTool = "spawnAgent"
+	CollabAgentToolSendInput      CollabAgentTool = "sendInput"
+	CollabAgentToolResumeAgent    CollabAgentTool = "resumeAgent"
+	CollabAgentToolWait           CollabAgentTool = "wait"
+	CollabAgentToolCloseAgent     CollabAgentTool = "closeAgent"
+	CollabAgentToolSendMessage    CollabAgentTool = "sendMessage"
+	CollabAgentToolFollowupTask   CollabAgentTool = "followupTask"
+	CollabAgentToolInterruptAgent CollabAgentTool = "interruptAgent"
+	CollabAgentToolListAgents     CollabAgentTool = "listAgents"
+)
+
+// CollabAgentToolCallStatus mirrors the upstream `CollabAgentToolCallStatus` enum.
+type CollabAgentToolCallStatus string
+
+const (
+	CollabAgentToolCallStatusInProgress  CollabAgentToolCallStatus = "inProgress"
+	CollabAgentToolCallStatusCompleted   CollabAgentToolCallStatus = "completed"
+	CollabAgentToolCallStatusFailed      CollabAgentToolCallStatus = "failed"
+	CollabAgentToolCallStatusInterrupted CollabAgentToolCallStatus = "interrupted"
+)
+
 // CollaborationMode mirrors the upstream `CollaborationMode` definition.
 type CollaborationMode struct {
 	Mode     ModeKind `json:"mode"`
 	Settings Settings `json:"settings"`
 }
+
+// CommandAction mirrors the upstream `CommandAction` definition.
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (listFiles, read, search, unknown).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type CommandAction struct {
+	Type    string          `json:"type"`
+	Command string          `json:"command,omitempty"`
+	Name    string          `json:"name,omitempty"`
+	Path    json.RawMessage `json:"path,omitempty"`
+	Query   string          `json:"query,omitempty"`
+}
+
+// CommandAction discriminator values, matching the upstream variant tags.
+const (
+	CommandActionTypeRead      = "read"
+	CommandActionTypeListFiles = "listFiles"
+	CommandActionTypeSearch    = "search"
+	CommandActionTypeUnknown   = "unknown"
+)
 
 // CommandExecOutputDeltaNotification mirrors the upstream `CommandExecOutputDeltaNotification` definition.
 type CommandExecOutputDeltaNotification struct {
@@ -288,6 +414,26 @@ type CommandExecutionOutputDeltaNotification struct {
 	ThreadID string `json:"threadId"`
 	TurnID   string `json:"turnId"`
 }
+
+// CommandExecutionSource mirrors the upstream `CommandExecutionSource` enum.
+type CommandExecutionSource string
+
+const (
+	CommandExecutionSourceAgent                  CommandExecutionSource = "agent"
+	CommandExecutionSourceUserShell              CommandExecutionSource = "userShell"
+	CommandExecutionSourceUnifiedExecStartup     CommandExecutionSource = "unifiedExecStartup"
+	CommandExecutionSourceUnifiedExecInteraction CommandExecutionSource = "unifiedExecInteraction"
+)
+
+// CommandExecutionStatus mirrors the upstream `CommandExecutionStatus` enum.
+type CommandExecutionStatus string
+
+const (
+	CommandExecutionStatusInProgress CommandExecutionStatus = "inProgress"
+	CommandExecutionStatusCompleted  CommandExecutionStatus = "completed"
+	CommandExecutionStatusFailed     CommandExecutionStatus = "failed"
+	CommandExecutionStatusDeclined   CommandExecutionStatus = "declined"
+)
 
 // CommandMigration mirrors the upstream `CommandMigration` definition.
 type CommandMigration struct {
@@ -407,7 +553,36 @@ type ConfigLayerMetadata struct {
 }
 
 // ConfigLayerSource mirrors the upstream `ConfigLayerSource` definition.
-type ConfigLayerSource = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 9 variants (enterpriseManaged, legacyManagedConfigTomlFromFile, legacyManagedConfigTomlFromMdm, mdm, packagedDefaults, project, sessionFlags, system, user).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ConfigLayerSource struct {
+	Type           string          `json:"type"`
+	File           AbsolutePathBuf `json:"file,omitempty"`
+	Domain         string          `json:"domain,omitempty"`
+	Key            string          `json:"key,omitempty"`
+	ID             string          `json:"id,omitempty"`
+	Name           string          `json:"name,omitempty"`
+	Profile        string          `json:"profile,omitempty"`
+	DotCodexFolder AbsolutePathBuf `json:"dotCodexFolder,omitempty"`
+}
+
+// ConfigLayerSource discriminator values, matching the upstream variant tags.
+const (
+	ConfigLayerSourceTypePackagedDefaults                = "packagedDefaults"
+	ConfigLayerSourceTypeMdm                             = "mdm"
+	ConfigLayerSourceTypeSystem                          = "system"
+	ConfigLayerSourceTypeEnterpriseManaged               = "enterpriseManaged"
+	ConfigLayerSourceTypeUser                            = "user"
+	ConfigLayerSourceTypeProject                         = "project"
+	ConfigLayerSourceTypeSessionFlags                    = "sessionFlags"
+	ConfigLayerSourceTypeLegacyManagedConfigTomlFromFile = "legacyManagedConfigTomlFromFile"
+	ConfigLayerSourceTypeLegacyManagedConfigTomlFromMdm  = "legacyManagedConfigTomlFromMdm"
+)
 
 // ConfigReadParams mirrors the upstream `ConfigReadParams` definition.
 type ConfigReadParams struct {
@@ -506,7 +681,29 @@ type ConsumeAccountRateLimitResetCreditResponse struct {
 }
 
 // ContentItem mirrors the upstream `ContentItem` definition.
-type ContentItem = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (input_audio, input_image, input_text, output_text).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ContentItem struct {
+	Type     string      `json:"type"`
+	Text     string      `json:"text,omitempty"`
+	ImageURL string      `json:"image_url,omitempty"`
+	FileID   string      `json:"file_id,omitempty"`
+	Detail   ImageDetail `json:"detail,omitempty"`
+	AudioURL string      `json:"audio_url,omitempty"`
+}
+
+// ContentItem discriminator values, matching the upstream variant tags.
+const (
+	ContentItemTypeInputText  = "input_text"
+	ContentItemTypeInputImage = "input_image"
+	ContentItemTypeInputAudio = "input_audio"
+	ContentItemTypeOutputText = "output_text"
+)
 
 // ContextCompactedNotification mirrors the upstream `ContextCompactedNotification` definition.
 type ContextCompactedNotification struct {
@@ -541,6 +738,37 @@ type DesktopOnboardingEntrypoint string
 
 const (
 	DesktopOnboardingEntrypointLifeSciences DesktopOnboardingEntrypoint = "life_sciences"
+)
+
+// DynamicToolCallOutputContentItem mirrors the upstream `DynamicToolCallOutputContentItem` definition.
+//
+// Upstream declares it as a `type`-tagged union of 3 variants (inputAudio, inputImage, inputText).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type DynamicToolCallOutputContentItem struct {
+	Type     string `json:"type"`
+	Text     string `json:"text,omitempty"`
+	ImageURL string `json:"imageUrl,omitempty"`
+	AudioURL string `json:"audioUrl,omitempty"`
+}
+
+// DynamicToolCallOutputContentItem discriminator values, matching the upstream variant tags.
+const (
+	DynamicToolCallOutputContentItemTypeInputText  = "inputText"
+	DynamicToolCallOutputContentItemTypeInputImage = "inputImage"
+	DynamicToolCallOutputContentItemTypeInputAudio = "inputAudio"
+)
+
+// DynamicToolCallStatus mirrors the upstream `DynamicToolCallStatus` enum.
+type DynamicToolCallStatus string
+
+const (
+	DynamicToolCallStatusInProgress DynamicToolCallStatus = "inProgress"
+	DynamicToolCallStatusCompleted  DynamicToolCallStatus = "completed"
+	DynamicToolCallStatusFailed     DynamicToolCallStatus = "failed"
 )
 
 // ErrorNotification mirrors the upstream `ErrorNotification` definition.
@@ -798,7 +1026,26 @@ const (
 )
 
 // FileSystemPath mirrors the upstream `FileSystemPath` definition.
-type FileSystemPath = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 3 variants (glob_pattern, path, special).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type FileSystemPath struct {
+	Type    string                `json:"type"`
+	Path    LegacyAppPathString   `json:"path,omitempty"`
+	Pattern string                `json:"pattern,omitempty"`
+	Value   FileSystemSpecialPath `json:"value,omitempty"`
+}
+
+// FileSystemPath discriminator values, matching the upstream variant tags.
+const (
+	FileSystemPathTypePath        = "path"
+	FileSystemPathTypeGlobPattern = "glob_pattern"
+	FileSystemPathTypeSpecial     = "special"
+)
 
 // FileSystemSandboxEntry mirrors the upstream `FileSystemSandboxEntry` definition.
 type FileSystemSandboxEntry struct {
@@ -831,7 +1078,30 @@ const (
 type FunctionCallOutputBody = json.RawMessage
 
 // FunctionCallOutputContentItem mirrors the upstream `FunctionCallOutputContentItem` definition.
-type FunctionCallOutputContentItem = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (encrypted_content, input_audio, input_image, input_text).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type FunctionCallOutputContentItem struct {
+	Type             string      `json:"type"`
+	Text             string      `json:"text,omitempty"`
+	ImageURL         string      `json:"image_url,omitempty"`
+	FileID           string      `json:"file_id,omitempty"`
+	Detail           ImageDetail `json:"detail,omitempty"`
+	AudioURL         string      `json:"audio_url,omitempty"`
+	EncryptedContent string      `json:"encrypted_content,omitempty"`
+}
+
+// FunctionCallOutputContentItem discriminator values, matching the upstream variant tags.
+const (
+	FunctionCallOutputContentItemTypeInputText        = "input_text"
+	FunctionCallOutputContentItemTypeInputImage       = "input_image"
+	FunctionCallOutputContentItemTypeInputAudio       = "input_audio"
+	FunctionCallOutputContentItemTypeEncryptedContent = "encrypted_content"
+)
 
 // FuzzyFileSearchMatchType mirrors the upstream `FuzzyFileSearchMatchType` enum.
 type FuzzyFileSearchMatchType string
@@ -957,7 +1227,47 @@ type GuardianApprovalReview struct {
 }
 
 // GuardianApprovalReviewAction mirrors the upstream `GuardianApprovalReviewAction` definition.
-type GuardianApprovalReviewAction = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 7 variants (applyPatch, command, execve, mcpToolCall, networkAccess, requestPermissions, writeStdin).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type GuardianApprovalReviewAction struct {
+	Type          string                   `json:"type"`
+	Command       string                   `json:"command,omitempty"`
+	CWD           json.RawMessage          `json:"cwd,omitempty"`
+	Source        GuardianCommandSource    `json:"source,omitempty"`
+	Argv          []string                 `json:"argv,omitempty"`
+	Program       string                   `json:"program,omitempty"`
+	ApprovalID    string                   `json:"approvalId,omitempty"`
+	ProcessID     string                   `json:"processId,omitempty"`
+	Stdin         string                   `json:"stdin,omitempty"`
+	Files         []LegacyAppPathString    `json:"files,omitempty"`
+	Host          string                   `json:"host,omitempty"`
+	Port          int64                    `json:"port,omitempty"`
+	Protocol      NetworkApprovalProtocol  `json:"protocol,omitempty"`
+	Target        string                   `json:"target,omitempty"`
+	ConnectorID   string                   `json:"connectorId,omitempty"`
+	ConnectorName string                   `json:"connectorName,omitempty"`
+	Server        string                   `json:"server,omitempty"`
+	ToolName      string                   `json:"toolName,omitempty"`
+	ToolTitle     string                   `json:"toolTitle,omitempty"`
+	Permissions   RequestPermissionProfile `json:"permissions,omitempty"`
+	Reason        string                   `json:"reason,omitempty"`
+}
+
+// GuardianApprovalReviewAction discriminator values, matching the upstream variant tags.
+const (
+	GuardianApprovalReviewActionTypeCommand            = "command"
+	GuardianApprovalReviewActionTypeExecve             = "execve"
+	GuardianApprovalReviewActionTypeWriteStdin         = "writeStdin"
+	GuardianApprovalReviewActionTypeApplyPatch         = "applyPatch"
+	GuardianApprovalReviewActionTypeNetworkAccess      = "networkAccess"
+	GuardianApprovalReviewActionTypeMcpToolCall        = "mcpToolCall"
+	GuardianApprovalReviewActionTypeRequestPermissions = "requestPermissions"
+)
 
 // GuardianApprovalReviewStatus mirrors the upstream `GuardianApprovalReviewStatus` enum.
 type GuardianApprovalReviewStatus string
@@ -1075,6 +1385,12 @@ const (
 	HookOutputEntryKindError    HookOutputEntryKind = "error"
 )
 
+// HookPromptFragment mirrors the upstream `HookPromptFragment` definition.
+type HookPromptFragment struct {
+	HookRunID string `json:"hookRunId"`
+	Text      string `json:"text"`
+}
+
 // HookRunStatus mirrors the upstream `HookRunStatus` enum.
 type HookRunStatus string
 
@@ -1174,6 +1490,25 @@ const (
 	ImageDetailOriginal ImageDetail = "original"
 )
 
+// ImageGenerationFailure mirrors the upstream `ImageGenerationFailure` definition.
+//
+// Upstream declares it as a `type`-tagged union of 1 variants (usageLimitExceeded).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ImageGenerationFailure struct {
+	Type     string `json:"type"`
+	LimitID  string `json:"limitId,omitempty"`
+	ResetsAt int64  `json:"resetsAt,omitempty"`
+}
+
+// ImageGenerationFailure discriminator values, matching the upstream variant tags.
+const (
+	ImageGenerationFailureTypeUsageLimitExceeded = "usageLimitExceeded"
+)
+
 // InAppBrowserRequirements mirrors the upstream `InAppBrowserRequirements` definition.
 type InAppBrowserRequirements struct {
 	AllowExternalBrowserSettingsImport bool `json:"allowExternalBrowserSettingsImport,omitempty"`
@@ -1231,7 +1566,26 @@ type ItemStartedNotification struct {
 type LegacyAppPathString = string
 
 // LocalShellAction mirrors the upstream `LocalShellAction` definition.
-type LocalShellAction = map[string]any
+//
+// Upstream declares it as a `type`-tagged union of 1 variants (exec).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type LocalShellAction struct {
+	Type             string            `json:"type"`
+	Command          []string          `json:"command,omitempty"`
+	Env              map[string]string `json:"env,omitempty"`
+	TimeoutMs        int64             `json:"timeout_ms,omitempty"`
+	User             string            `json:"user,omitempty"`
+	WorkingDirectory string            `json:"working_directory,omitempty"`
+}
+
+// LocalShellAction discriminator values, matching the upstream variant tags.
+const (
+	LocalShellActionTypeExec = "exec"
+)
 
 // LocalShellStatus mirrors the upstream `LocalShellStatus` enum.
 type LocalShellStatus string
@@ -1243,10 +1597,62 @@ const (
 )
 
 // LoginAccountParams mirrors the upstream `LoginAccountParams` definition.
-type LoginAccountParams = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 6 variants (amazonBedrock, amazonBedrockAccessKeys, apiKey, chatgpt, chatgptAuthTokens, chatgptDeviceCode).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type LoginAccountParams struct {
+	Type                      string        `json:"type"`
+	APIKey                    string        `json:"apiKey,omitempty"`
+	AppBrand                  LoginAppBrand `json:"appBrand,omitempty"`
+	CodexStreamlinedLogin     bool          `json:"codexStreamlinedLogin,omitempty"`
+	UseHostedLoginSuccessPage bool          `json:"useHostedLoginSuccessPage,omitempty"`
+	AccessToken               string        `json:"accessToken,omitempty"`
+	ChatgptAccountID          string        `json:"chatgptAccountId,omitempty"`
+	ChatgptPlanType           string        `json:"chatgptPlanType,omitempty"`
+	Region                    string        `json:"region,omitempty"`
+	AccessKeyID               string        `json:"accessKeyId,omitempty"`
+	SecretAccessKey           string        `json:"secretAccessKey,omitempty"`
+	SessionToken              string        `json:"sessionToken,omitempty"`
+}
+
+// LoginAccountParams discriminator values, matching the upstream variant tags.
+const (
+	LoginAccountParamsTypeAPIKey                  = "apiKey"
+	LoginAccountParamsTypeChatgpt                 = "chatgpt"
+	LoginAccountParamsTypeChatgptDeviceCode       = "chatgptDeviceCode"
+	LoginAccountParamsTypeChatgptAuthTokens       = "chatgptAuthTokens"
+	LoginAccountParamsTypeAmazonBedrock           = "amazonBedrock"
+	LoginAccountParamsTypeAmazonBedrockAccessKeys = "amazonBedrockAccessKeys"
+)
 
 // LoginAccountResponse mirrors the upstream `LoginAccountResponse` definition.
-type LoginAccountResponse = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 5 variants (amazonBedrock, apiKey, chatgpt, chatgptAuthTokens, chatgptDeviceCode).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type LoginAccountResponse struct {
+	Type            string `json:"type"`
+	AuthURL         string `json:"authUrl,omitempty"`
+	LoginID         string `json:"loginId,omitempty"`
+	UserCode        string `json:"userCode,omitempty"`
+	VerificationURL string `json:"verificationUrl,omitempty"`
+}
+
+// LoginAccountResponse discriminator values, matching the upstream variant tags.
+const (
+	LoginAccountResponseTypeAPIKey            = "apiKey"
+	LoginAccountResponseTypeChatgpt           = "chatgpt"
+	LoginAccountResponseTypeChatgptDeviceCode = "chatgptDeviceCode"
+	LoginAccountResponseTypeChatgptAuthTokens = "chatgptAuthTokens"
+	LoginAccountResponseTypeAmazonBedrock     = "amazonBedrock"
+)
 
 // LoginAppBrand mirrors the upstream `LoginAppBrand` enum.
 type LoginAppBrand string
@@ -1258,6 +1664,20 @@ const (
 
 // LogoutAccountResponse mirrors the upstream `LogoutAccountResponse` definition.
 type LogoutAccountResponse = struct{}
+
+// MemoryCitation mirrors the upstream `MemoryCitation` definition.
+type MemoryCitation struct {
+	Entries   []MemoryCitationEntry `json:"entries"`
+	ThreadIDs []string              `json:"threadIds"`
+}
+
+// MemoryCitationEntry mirrors the upstream `MemoryCitationEntry` definition.
+type MemoryCitationEntry struct {
+	LineEnd   int64  `json:"lineEnd"`
+	LineStart int64  `json:"lineStart"`
+	Note      string `json:"note"`
+	Path      string `json:"path"`
+}
 
 // MergeStrategy mirrors the upstream `MergeStrategy` enum.
 type MergeStrategy string
@@ -1429,6 +1849,14 @@ const (
 	MultiAgentVersionV2       MultiAgentVersion = "v2"
 )
 
+// NetworkAccess mirrors the upstream `NetworkAccess` enum.
+type NetworkAccess string
+
+const (
+	NetworkAccessRestricted NetworkAccess = "restricted"
+	NetworkAccessEnabled    NetworkAccess = "enabled"
+)
+
 // NetworkApprovalProtocol mirrors the upstream `NetworkApprovalProtocol` enum.
 type NetworkApprovalProtocol string
 
@@ -1467,8 +1895,35 @@ type OverriddenMetadata struct {
 	OverridingLayer ConfigLayerMetadata `json:"overridingLayer"`
 }
 
+// PatchApplyStatus mirrors the upstream `PatchApplyStatus` enum.
+type PatchApplyStatus string
+
+const (
+	PatchApplyStatusInProgress PatchApplyStatus = "inProgress"
+	PatchApplyStatusCompleted  PatchApplyStatus = "completed"
+	PatchApplyStatusFailed     PatchApplyStatus = "failed"
+	PatchApplyStatusDeclined   PatchApplyStatus = "declined"
+)
+
 // PatchChangeKind mirrors the upstream `PatchChangeKind` definition.
-type PatchChangeKind = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 3 variants (add, delete, update).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type PatchChangeKind struct {
+	Type     string `json:"type"`
+	MovePath string `json:"move_path,omitempty"`
+}
+
+// PatchChangeKind discriminator values, matching the upstream variant tags.
+const (
+	PatchChangeKindTypeAdd    = "add"
+	PatchChangeKindTypeDelete = "delete"
+	PatchChangeKindTypeUpdate = "update"
+)
 
 // PermissionProfileListParams mirrors the upstream `PermissionProfileListParams` definition.
 type PermissionProfileListParams struct {
@@ -1489,6 +1944,15 @@ type PermissionProfileSummary struct {
 	Description string `json:"description,omitempty"`
 	ID          string `json:"id"`
 }
+
+// Personality mirrors the upstream `Personality` enum.
+type Personality string
+
+const (
+	PersonalityNone      Personality = "none"
+	PersonalityFriendly  Personality = "friendly"
+	PersonalityPragmatic Personality = "pragmatic"
+)
 
 // PlanDeltaNotification mirrors the upstream `PlanDeltaNotification` definition.
 type PlanDeltaNotification struct {
@@ -1615,10 +2079,41 @@ type ReasoningEffortOption struct {
 }
 
 // ReasoningItemContent mirrors the upstream `ReasoningItemContent` definition.
-type ReasoningItemContent = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 2 variants (reasoning_text, text).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ReasoningItemContent struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+}
+
+// ReasoningItemContent discriminator values, matching the upstream variant tags.
+const (
+	ReasoningItemContentTypeReasoningText = "reasoning_text"
+	ReasoningItemContentTypeText          = "text"
+)
 
 // ReasoningItemReasoningSummary mirrors the upstream `ReasoningItemReasoningSummary` definition.
-type ReasoningItemReasoningSummary = map[string]any
+//
+// Upstream declares it as a `type`-tagged union of 1 variants (summary_text).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ReasoningItemReasoningSummary struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+}
+
+// ReasoningItemReasoningSummary discriminator values, matching the upstream variant tags.
+const (
+	ReasoningItemReasoningSummaryTypeSummaryText = "summary_text"
+)
 
 // ReasoningSummary mirrors the upstream `ReasoningSummary` definition.
 type ReasoningSummary = json.RawMessage
@@ -1690,7 +2185,61 @@ const (
 )
 
 // ResponseItem mirrors the upstream `ResponseItem` definition.
-type ResponseItem = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 18 variants (additional_tools, agent_message, compaction, compaction_trigger, configuration_update, context_compaction, custom_tool_call, custom_tool_call_output, function_call, function_call_output, image_generation_call, local_shell_call, message, other, reasoning, tool_search_call, tool_search_output, web_search_call).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ResponseItem struct {
+	Type                                   string                                 `json:"type"`
+	ID                                     string                                 `json:"id,omitempty"`
+	Role                                   string                                 `json:"role,omitempty"`
+	Tools                                  []json.RawMessage                      `json:"tools,omitempty"`
+	Content                                json.RawMessage                        `json:"content,omitempty"`
+	InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+	Phase                                  MessagePhase                           `json:"phase,omitempty"`
+	Author                                 string                                 `json:"author,omitempty"`
+	Recipient                              string                                 `json:"recipient,omitempty"`
+	EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
+	Summary                                []ReasoningItemReasoningSummary        `json:"summary,omitempty"`
+	Action                                 json.RawMessage                        `json:"action,omitempty"`
+	CallID                                 string                                 `json:"call_id,omitempty"`
+	Status                                 json.RawMessage                        `json:"status,omitempty"`
+	Arguments                              json.RawMessage                        `json:"arguments,omitempty"`
+	EncryptedFunctionArgs                  []string                               `json:"encrypted_function_args,omitempty"`
+	Name                                   string                                 `json:"name,omitempty"`
+	Namespace                              string                                 `json:"namespace,omitempty"`
+	Execution                              string                                 `json:"execution,omitempty"`
+	Output                                 FunctionCallOutputBody                 `json:"output,omitempty"`
+	Input                                  string                                 `json:"input,omitempty"`
+	Result                                 string                                 `json:"result,omitempty"`
+	RevisedPrompt                          string                                 `json:"revised_prompt,omitempty"`
+	Reasoning                              ConfigurationReasoning                 `json:"reasoning,omitempty"`
+}
+
+// ResponseItem discriminator values, matching the upstream variant tags.
+const (
+	ResponseItemTypeAdditionalTools      = "additional_tools"
+	ResponseItemTypeMessage              = "message"
+	ResponseItemTypeAgentMessage         = "agent_message"
+	ResponseItemTypeReasoning            = "reasoning"
+	ResponseItemTypeLocalShellCall       = "local_shell_call"
+	ResponseItemTypeFunctionCall         = "function_call"
+	ResponseItemTypeToolSearchCall       = "tool_search_call"
+	ResponseItemTypeFunctionCallOutput   = "function_call_output"
+	ResponseItemTypeCustomToolCall       = "custom_tool_call"
+	ResponseItemTypeCustomToolCallOutput = "custom_tool_call_output"
+	ResponseItemTypeToolSearchOutput     = "tool_search_output"
+	ResponseItemTypeWebSearchCall        = "web_search_call"
+	ResponseItemTypeImageGenerationCall  = "image_generation_call"
+	ResponseItemTypeCompaction           = "compaction"
+	ResponseItemTypeConfigurationUpdate  = "configuration_update"
+	ResponseItemTypeCompactionTrigger    = "compaction_trigger"
+	ResponseItemTypeContextCompaction    = "context_compaction"
+	ResponseItemTypeOther                = "other"
+)
 
 // ResponseUsageMetadata mirrors the upstream `ResponseUsageMetadata` definition.
 type ResponseUsageMetadata struct {
@@ -1699,13 +2248,58 @@ type ResponseUsageMetadata struct {
 }
 
 // ResponsesApiWebSearchAction mirrors the upstream `ResponsesApiWebSearchAction` definition.
-type ResponsesApiWebSearchAction = json.RawMessage
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (find_in_page, open_page, other, search).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ResponsesApiWebSearchAction struct {
+	Type    string   `json:"type"`
+	Queries []string `json:"queries,omitempty"`
+	Query   string   `json:"query,omitempty"`
+	URL     string   `json:"url,omitempty"`
+	Pattern string   `json:"pattern,omitempty"`
+}
+
+// ResponsesApiWebSearchAction discriminator values, matching the upstream variant tags.
+const (
+	ResponsesApiWebSearchActionTypeSearch     = "search"
+	ResponsesApiWebSearchActionTypeOpenPage   = "open_page"
+	ResponsesApiWebSearchActionTypeFindInPage = "find_in_page"
+	ResponsesApiWebSearchActionTypeOther      = "other"
+)
 
 // ReviewStartResponse mirrors the upstream `ReviewStartResponse` definition.
 type ReviewStartResponse struct {
 	ReviewThreadID string `json:"reviewThreadId"`
 	Turn           Turn   `json:"turn"`
 }
+
+// ReviewTarget mirrors the upstream `ReviewTarget` definition.
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (baseBranch, commit, custom, uncommittedChanges).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ReviewTarget struct {
+	Type         string `json:"type"`
+	Branch       string `json:"branch,omitempty"`
+	Sha          string `json:"sha,omitempty"`
+	Title        string `json:"title,omitempty"`
+	Instructions string `json:"instructions,omitempty"`
+}
+
+// ReviewTarget discriminator values, matching the upstream variant tags.
+const (
+	ReviewTargetTypeUncommittedChanges = "uncommittedChanges"
+	ReviewTargetTypeBaseBranch         = "baseBranch"
+	ReviewTargetTypeCommit             = "commit"
+	ReviewTargetTypeCustom             = "custom"
+)
 
 // SandboxMode mirrors the upstream `SandboxMode` enum.
 type SandboxMode string
@@ -1714,6 +2308,30 @@ const (
 	SandboxModeReadOnly         SandboxMode = "read-only"
 	SandboxModeWorkspaceWrite   SandboxMode = "workspace-write"
 	SandboxModeDangerFullAccess SandboxMode = "danger-full-access"
+)
+
+// SandboxPolicy mirrors the upstream `SandboxPolicy` definition.
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (dangerFullAccess, externalSandbox, readOnly, workspaceWrite).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type SandboxPolicy struct {
+	Type                string            `json:"type"`
+	NetworkAccess       json.RawMessage   `json:"networkAccess,omitempty"`
+	ExcludeSlashTmp     bool              `json:"excludeSlashTmp,omitempty"`
+	ExcludeTmpdirEnvVar bool              `json:"excludeTmpdirEnvVar,omitempty"`
+	WritableRoots       []AbsolutePathBuf `json:"writableRoots,omitempty"`
+}
+
+// SandboxPolicy discriminator values, matching the upstream variant tags.
+const (
+	SandboxPolicyTypeDangerFullAccess = "dangerFullAccess"
+	SandboxPolicyTypeReadOnly         = "readOnly"
+	SandboxPolicyTypeExternalSandbox  = "externalSandbox"
+	SandboxPolicyTypeWorkspaceWrite   = "workspaceWrite"
 )
 
 // SandboxWorkspaceWrite mirrors the upstream `SandboxWorkspaceWrite` definition.
@@ -1747,6 +2365,9 @@ type SessionMigration struct {
 	Title string `json:"title,omitempty"`
 }
 
+// SessionSource mirrors the upstream `SessionSource` definition.
+type SessionSource = json.RawMessage
+
 // Settings mirrors the upstream `Settings` definition.
 type Settings struct {
 	DeveloperInstructions string           `json:"developer_instructions,omitempty"`
@@ -1775,6 +2396,19 @@ type SpendControlLimitSnapshot struct {
 	Used             string `json:"used"`
 }
 
+// SubAgentActivityKind mirrors the upstream `SubAgentActivityKind` enum.
+type SubAgentActivityKind string
+
+const (
+	SubAgentActivityKindStarted     SubAgentActivityKind = "started"
+	SubAgentActivityKindInteracted  SubAgentActivityKind = "interacted"
+	SubAgentActivityKindInterrupted SubAgentActivityKind = "interrupted"
+	SubAgentActivityKindCompleted   SubAgentActivityKind = "completed"
+)
+
+// SubAgentSource mirrors the upstream `SubAgentSource` definition.
+type SubAgentSource = json.RawMessage
+
 // SubagentMigration mirrors the upstream `SubagentMigration` definition.
 type SubagentMigration struct {
 	Name string `json:"name"`
@@ -1787,6 +2421,12 @@ type TerminalInteractionNotification struct {
 	Stdin     string `json:"stdin"`
 	ThreadID  string `json:"threadId"`
 	TurnID    string `json:"turnId"`
+}
+
+// TextElement mirrors the upstream `TextElement` definition.
+type TextElement struct {
+	ByteRange   ByteRange `json:"byteRange"`
+	Placeholder string    `json:"placeholder,omitempty"`
 }
 
 // TextPosition mirrors the upstream `TextPosition` definition.
@@ -1993,6 +2633,17 @@ type ThreadGoalSetParams struct {
 	TokenBudget int64                     `json:"tokenBudget,omitempty"`
 }
 
+// ThreadHistoryMode mirrors the upstream `ThreadHistoryMode` enum.
+type ThreadHistoryMode string
+
+const (
+	ThreadHistoryModeLegacy    ThreadHistoryMode = "legacy"
+	ThreadHistoryModePaginated ThreadHistoryMode = "paginated"
+)
+
+// ThreadId mirrors the upstream `ThreadId` definition.
+type ThreadId = string
+
 // ThreadInjectItemsParams mirrors the upstream `ThreadInjectItemsParams` definition.
 type ThreadInjectItemsParams struct {
 	Items    []json.RawMessage `json:"items"`
@@ -2011,7 +2662,22 @@ type ThreadItemEntry struct {
 }
 
 // ThreadItemsListAnchor mirrors the upstream `ThreadItemsListAnchor` definition.
-type ThreadItemsListAnchor = map[string]any
+//
+// Upstream declares it as a `type`-tagged union of 1 variants (item).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ThreadItemsListAnchor struct {
+	Type   string `json:"type"`
+	ItemID string `json:"itemId,omitempty"`
+}
+
+// ThreadItemsListAnchor discriminator values, matching the upstream variant tags.
+const (
+	ThreadItemsListAnchorTypeItem = "item"
+)
 
 // ThreadItemsListCursor mirrors the upstream `ThreadItemsListCursor` definition.
 type ThreadItemsListCursor = json.RawMessage
@@ -2239,6 +2905,14 @@ type ThreadStartResponse struct {
 	Thread             Thread                `json:"thread"`
 }
 
+// ThreadStartSource mirrors the upstream `ThreadStartSource` enum.
+type ThreadStartSource string
+
+const (
+	ThreadStartSourceStartup ThreadStartSource = "startup"
+	ThreadStartSourceClear   ThreadStartSource = "clear"
+)
+
 // ThreadStartedNotification mirrors the upstream `ThreadStartedNotification` definition.
 type ThreadStartedNotification struct {
 	Thread Thread `json:"thread"`
@@ -2421,6 +3095,43 @@ type TurnSteerResponse struct {
 	TurnID string `json:"turnId"`
 }
 
+// TurnToolOutput mirrors the upstream `TurnToolOutput` definition.
+type TurnToolOutput struct {
+	Name      string                 `json:"name"`
+	Namespace string                 `json:"namespace,omitempty"`
+	Output    FunctionCallOutputBody `json:"output"`
+}
+
+// UserInput mirrors the upstream `UserInput` definition.
+//
+// Upstream declares it as a `type`-tagged union of 7 variants (audio, image, localAudio, localImage, mention, skill, text).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type UserInput struct {
+	Type         string        `json:"type"`
+	Text         string        `json:"text,omitempty"`
+	TextElements []TextElement `json:"text_elements,omitempty"`
+	URL          string        `json:"url,omitempty"`
+	FileID       string        `json:"fileId,omitempty"`
+	Detail       ImageDetail   `json:"detail,omitempty"`
+	Path         string        `json:"path,omitempty"`
+	Name         string        `json:"name,omitempty"`
+}
+
+// UserInput discriminator values, matching the upstream variant tags.
+const (
+	UserInputTypeText       = "text"
+	UserInputTypeImage      = "image"
+	UserInputTypeLocalImage = "localImage"
+	UserInputTypeAudio      = "audio"
+	UserInputTypeLocalAudio = "localAudio"
+	UserInputTypeSkill      = "skill"
+	UserInputTypeMention    = "mention"
+)
+
 // Verbosity mirrors the upstream `Verbosity` enum.
 type Verbosity string
 
@@ -2435,6 +3146,30 @@ type WarningNotification struct {
 	Message  string `json:"message"`
 	ThreadID string `json:"threadId,omitempty"`
 }
+
+// WebSearchAction mirrors the upstream `WebSearchAction` definition.
+//
+// Upstream declares it as a `type`-tagged union of 4 variants (findInPage, openPage, other, search).
+// It is modelled as one flat struct with an explicit Type discriminator plus the union
+// of every variant's fields, so no field is dropped and no variant is rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type WebSearchAction struct {
+	Type    string   `json:"type"`
+	Queries []string `json:"queries,omitempty"`
+	Query   string   `json:"query,omitempty"`
+	URL     string   `json:"url,omitempty"`
+	Pattern string   `json:"pattern,omitempty"`
+}
+
+// WebSearchAction discriminator values, matching the upstream variant tags.
+const (
+	WebSearchActionTypeSearch     = "search"
+	WebSearchActionTypeOpenPage   = "openPage"
+	WebSearchActionTypeFindInPage = "findInPage"
+	WebSearchActionTypeOther      = "other"
+)
 
 // WebSearchContextSize mirrors the upstream `WebSearchContextSize` enum.
 type WebSearchContextSize string

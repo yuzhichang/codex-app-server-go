@@ -340,9 +340,9 @@ func newConfigWriteMock(t *testing.T, mock *testutil.MockServer) <-chan configWr
 		return map[string]any{
 			"config": map[string]any{"model": "old-model"},
 			"origins": map[string]any{
-				"model":           map[string]any{"name": "user", "version": "v7"},
-				"approval_policy": map[string]any{"name": "user", "version": "v7"},
-				"sandbox_mode":    map[string]any{"name": "user", "version": "v7"},
+				"model":           map[string]any{"name": map[string]any{"type": "user", "file": "/tmp/config.toml"}, "version": "v7"},
+				"approval_policy": map[string]any{"name": map[string]any{"type": "user", "file": "/tmp/config.toml"}, "version": "v7"},
+				"sandbox_mode":    map[string]any{"name": map[string]any{"type": "user", "file": "/tmp/config.toml"}, "version": "v7"},
 			},
 		}, nil
 	})

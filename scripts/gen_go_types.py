@@ -171,6 +171,148 @@ def _enum_type_name(spec: dict) -> str:
     return spec.get("title") or ""
 
 
+def _tagged_union(spec: dict):
+    """Return the variants of a `type`-tagged object union, or None.
+
+    A tagged union is a oneOf/anyOf where EVERY variant is an object carrying a `type`
+    property with an enum. That shape has a faithful Go representation -- one flat struct with
+    a discriminator field plus the union of the variants' fields -- so it does not have to
+    degrade to json.RawMessage.
+
+    Unions with a bare-string arm (AskForApproval is `"never"` or `{"granular":{...}}`) do NOT
+    qualify: a struct always encodes as an object, so no struct can emit the string arm. Those
+    need hand-written marshalling and stay RawMessage.
+    """
+    variants = None
+    for key in ("oneOf", "anyOf"):
+        if isinstance(spec.get(key), list) and spec[key]:
+            variants = spec[key]
+            break
+    if variants is None:
+        return None
+
+    out = []
+    for variant in variants:
+        if not isinstance(variant, dict):
+            return None
+        props = variant.get("properties")
+        if not isinstance(props, dict):
+            return None
+        tag = props.get("type")
+        if not isinstance(tag, dict) or not isinstance(tag.get("enum"), list):
+            return None
+        values = [v for v in tag["enum"] if isinstance(v, str)]
+        if len(values) != 1:
+            return None
+        out.append((values[0], props, _flattened_props(variant)))
+    return out
+
+
+def _flattened_props(variant: dict) -> dict:
+    """Fields contributed by a variant's own `anyOf`/`oneOf`, not just its `properties`.
+
+    Upstream expresses `#[serde(flatten)]` as a sibling anyOf: `UserInput.image` is
+    `{"properties": {"type": "image", "detail": ...}, "anyOf": [{"url": ...}, {"fileId": ...}]}`.
+    Reading only `properties` loses `url`/`fileId` entirely, which is how the first version of
+    this emitter produced a UserInput that could not express an image-by-file-id at all.
+
+    Arms that are not object shapes (a bare string, a $ref to one) are ignored here: they have
+    no field names to contribute, and the variant's `properties` already carry its own.
+    """
+    out: dict = {}
+    for key in ("anyOf", "oneOf"):
+        for arm in variant.get(key) or []:
+            if not isinstance(arm, dict):
+                continue
+            arm_props = arm.get("properties")
+            if not isinstance(arm_props, dict):
+                continue
+            for field, sub in arm_props.items():
+                if field == "type":
+                    continue
+                # First writer wins; a later arm restating the field is the same shape by
+                # construction, and a genuine disagreement is caught by the merge below.
+                out.setdefault(field, sub)
+    return out
+
+
+def _field_signature(spec: dict, defs: dict) -> str | None:
+    """A stable signature for a variant field, or None when it must stay raw.
+
+    Two variants that disagree about a field's type cannot both be served by one Go field, and
+    a field that is itself a union has no single representation. Both cases fall back to
+    json.RawMessage: that keeps the bytes and never invents a merge semantics upstream does
+    not have. Only a field both variants agree on gets a typed Go field.
+    """
+    if not isinstance(spec, dict):
+        return None
+    for key in ("anyOf", "oneOf"):
+        if isinstance(spec.get(key), list):
+            arms = [a for a in spec[key] if not (isinstance(a, dict) and a.get("type") == "null")]
+            if len(arms) == 1:
+                # A nullable wrapper around one shape is not a union.
+                spec = arms[0]
+                break
+            return None
+    if spec.get("type") == "null":
+        return None
+    return go_type(spec, defs, False)
+
+
+def emit_tagged_union(name: str, variants: list, defs: dict) -> list[str]:
+    """Emit one flat discriminated struct for a tagged union.
+
+    Field order is first-appearance across the variants, which is what the hand-written
+    versions used and what the schema's own ordering implies. `required` is per-variant
+    upstream and cannot be expressed by a single flat struct, so every variant field is
+    omitempty; only the discriminator is always sent.
+    """
+    merged: dict[str, tuple[str, dict]] = {}
+    order: list[str] = []
+    for _tag, props, flattened in variants:
+        for field, sub in {**flattened, **props}.items():
+            if field == "type":
+                continue
+            signature = _field_signature(sub, defs)
+            if field not in merged:
+                order.append(field)
+                merged[field] = (signature, sub)
+            elif merged[field][0] != signature:
+                # Same name, different shape: keep the bytes, do not pick a winner.
+                merged[field] = (None, sub)
+
+    variant_tags = [tag for tag, _, _ in variants]
+    lines = [
+        f"// {name} mirrors the upstream `{name}` definition.",
+        "//",
+        f"// Upstream declares it as a `type`-tagged union of {len(variants)} variants "
+        f"({', '.join(sorted(variant_tags))}).",
+        "// It is modelled as one flat struct with an explicit Type discriminator plus the union",
+        "// of every variant's fields, so no field is dropped and no variant is rejected.",
+        "//",
+        "// Fields that disagree in type across variants, or that are themselves unions, are passed",
+        "// through as json.RawMessage rather than guessed at.",
+        f"type {name} struct {{",
+        '\tType string `json:"type"`',
+    ]
+    for field in order:
+        signature, _ = merged[field]
+        gofield = signature if signature is not None else "json.RawMessage"
+        # `Type` is the discriminator and is always sent; everything else is conditional on
+        # which variant is in play, which a flat struct cannot know.
+        lines.append(f'\t{go_name(field)} {gofield} `json:"{field},omitempty"`')
+    lines.append("}")
+    lines.append("")
+
+    lines.append(f"// {name} discriminator values, matching the upstream variant tags.")
+    lines.append("const (")
+    for tag in variant_tags:
+        lines.append(f'\t{name}Type{go_name(tag)} = "{tag}"')
+    lines.append(")")
+    lines.append("")
+    return lines
+
+
 def emit_definition(name: str, spec: dict, defs: dict) -> list[str]:
     out: list[str] = []
     if "enum" in spec and isinstance(spec["enum"], list):
@@ -185,6 +327,10 @@ def emit_definition(name: str, spec: dict, defs: dict) -> list[str]:
             out.append(")")
             out.append("")
             return out
+
+    variant_defs = _tagged_union(spec)
+    if variant_defs is not None:
+        return emit_tagged_union(name, variant_defs, defs)
 
     props = spec.get("properties")
     if not isinstance(props, dict):
@@ -229,21 +375,16 @@ def main() -> int:
     if not dest.is_absolute():
         dest = SDK_ROOT / dest
 
-    # Never emit a type the package already declares. `client_types_gen.go` still holds the
+    # Never EMIT a type the package already declares. `client_types_gen.go` still holds the
     # hand-written subset, and a handful of those (e.g. PluginSkillReadParams) already match
     # upstream -- re-emitting them would not compile.
     #
-    # An earlier version of this comment claimed skipped names are still traversed. They are
-    # NOT: the traversal below walks outward from `wanted`, which already excludes `existing`,
-    # so nothing behind a hand-written declaration is ever reached. This matters when
-    # migrating a type out of client_types_gen.go: a type referenced only by another
-    # hand-written type will NOT be regenerated, the reference chain has to be removed as a
-    # unit, and the failure is silent -- the generator just emits nothing and the package
-    # fails to compile on the now-undefined name.
-    #
-    # (Excluding existing types from traversal is deliberate: dragging them back in as
-    # transitive dependencies produced duplicate AbsolutePathBuf / SkillSummary declarations.
-    # The behaviour is right; only the comment was wrong.)
+    # Traversal and emission are deliberately separate. Traversal follows references through
+    # hand-written types as well, because a type whose only parent is hand-written would
+    # otherwise never be reached: that silently made migrating such a type out of
+    # client_types_gen.go impossible -- the generator emitted nothing and the package failed on
+    # the undefined name. Emission still excludes them, which is what keeps duplicate
+    # declarations from coming back.
     existing: set[str] = set()
     if dest.parent.is_dir():
         for path in dest.parent.glob("*.go"):
@@ -270,19 +411,23 @@ def main() -> int:
                     wanted_names.add(guessed)
                 elif m["variant"] in NOTIFICATION_TYPE_OVERRIDES:
                     wanted_names.add(NOTIFICATION_TYPE_OVERRIDES[m["variant"]])
-        wanted: set[str] = {n for n in wanted_names if n not in existing}
+        roots: set[str] = set(wanted_names)
     else:
-        wanted = {n for n in defs if rx.search(n) and n not in existing}
-    pending = list(wanted)
+        roots = {n for n in defs if rx.search(n)}
+
+    # Traverse through everything reached, hand-written types included, so a type whose only
+    # parent is hand-written is still discovered. Filtering by `existing` happens once, at the
+    # end, which is what keeps duplicates out without also making those types unreachable.
+    reached = set(roots)
+    pending = list(roots)
     while pending:
         n = pending.pop()
         for ref in re.findall(r'"#/definitions/([^"]+)"', json.dumps(defs.get(n, {}))):
-            # Respect `existing` here too: a type that was skipped because the package
-            # already declares it must not be dragged back in as a transitive dependency
-            # (that produced duplicate AbsolutePathBuf / SkillSummary declarations).
-            if ref in defs and ref not in wanted and ref not in existing:
-                wanted.add(ref)
+            if ref in defs and ref not in reached:
+                reached.add(ref)
                 pending.append(ref)
+
+    wanted: set[str] = {n for n in reached if n not in existing}
 
     header = [
         "// Code generated by scripts/gen_go_types.py from the vendored codex schema. DO NOT EDIT.",

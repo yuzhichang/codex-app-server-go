@@ -40,7 +40,7 @@ func TestParallelSessions(t *testing.T) {
 			defer cancel()
 
 			thread, err := h.client.ThreadStart(ctx, codexgo.ThreadStartParams{
-				ApprovalPolicy: "on-request",
+				ApprovalPolicy: codexgo.Ptr(codexgo.ApprovalOnRequest()),
 				Model:          e2eModel(),
 			})
 			if err != nil {

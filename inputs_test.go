@@ -154,10 +154,10 @@ func TestModelListAndModels(t *testing.T) {
 
 func TestTypedEnumOptions(t *testing.T) {
 	var req codexgo.TurnStartParams
-	codexgo.WithApprovalMode(codexgo.ApprovalModeNever)(&req)
+	codexgo.WithApprovalPolicy(codexgo.ApprovalNever())(&req)
 	codexgo.WithSandboxMode(codexgo.SandboxWorkspaceWrite)(&req)
-	if req.ApprovalPolicy != "never" {
-		t.Fatalf("approval policy: %q", req.ApprovalPolicy)
+	if req.ApprovalPolicy == nil || req.ApprovalPolicy.Policy() != codexgo.AskForApprovalNever {
+		t.Fatalf("approval policy: %+v", req.ApprovalPolicy)
 	}
 	// The mode is converted to the policy OBJECT the wire requires. The previous assertion
 	// pinned "workspace-write", which is the SandboxMode spelling, not the SandboxPolicy

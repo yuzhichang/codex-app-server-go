@@ -12,6 +12,7 @@
 package schema
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 )
@@ -244,15 +245,16 @@ type InitializeResponse struct {
 // --- Thread/Turn RPC requests ---
 
 type ThreadStartParams struct {
-	Model                 string          `json:"model,omitempty"`
-	CWD                   string          `json:"cwd,omitempty"`
-	ApprovalPolicy        string          `json:"approvalPolicy,omitempty"`
-	RuntimeWorkspaceRoots []string        `json:"runtimeWorkspaceRoots,omitempty"`
-	Environments          []string        `json:"environments,omitempty"`
-	Personality           string          `json:"personality,omitempty"`
-	DynamicTools          []string        `json:"dynamicTools,omitempty"`
-	Ephemeral             bool            `json:"ephemeral,omitempty"`
-	Metadata              json.RawMessage `json:"metadata,omitempty"`
+	Model                 string             `json:"model,omitempty"`
+	CWD                   string             `json:"cwd,omitempty"`
+	ApprovalPolicy        *AskForApproval    `json:"approvalPolicy,omitempty"`
+	ApprovalsReviewer     *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
+	RuntimeWorkspaceRoots []string           `json:"runtimeWorkspaceRoots,omitempty"`
+	Environments          []string           `json:"environments,omitempty"`
+	Personality           string             `json:"personality,omitempty"`
+	DynamicTools          []string           `json:"dynamicTools,omitempty"`
+	Ephemeral             bool               `json:"ephemeral,omitempty"`
+	Metadata              json.RawMessage    `json:"metadata,omitempty"`
 }
 
 // ThreadResumeParams resumes a thread.
@@ -270,10 +272,10 @@ type ThreadStartParams struct {
 type ThreadResumeParams struct {
 	ThreadID string `json:"threadId"`
 
-	// ApprovalPolicy accepts the wire values the app-server expects (see ApprovalMode).
-	ApprovalPolicy string `json:"approvalPolicy,omitempty"`
-	// ApprovalsReviewer selects who reviews approvals.
-	ApprovalsReviewer string `json:"approvalsReviewer,omitempty"`
+	// ApprovalPolicy overrides the approval policy.
+	ApprovalPolicy *AskForApproval `json:"approvalPolicy,omitempty"`
+	// ApprovalsReviewer routes approval requests to a reviewer.
+	ApprovalsReviewer *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
 	// BaseInstructions / DeveloperInstructions override the thread's instructions.
 	BaseInstructions      string `json:"baseInstructions,omitempty"`
 	DeveloperInstructions string `json:"developerInstructions,omitempty"`
@@ -296,6 +298,91 @@ type ThreadResumeParams struct {
 type ThreadReadParams struct {
 	ThreadID     string `json:"threadId"`
 	IncludeTurns bool   `json:"includeTurns,omitempty"`
+}
+
+// AskForApproval is the approval policy for a turn or thread.
+//
+// Upstream declares it as a union of a plain enum string (untrusted / on-request / never) and
+// an object {"granular": {...}}. Because one arm is a bare string, this cannot be a
+// type-tagged struct the way SandboxPolicy is -- a struct always encodes as an object. It
+// therefore carries its own JSON encoding. Prefer the constructors.
+//
+// This replaces the SDK's ApprovalMode, which mixed two upstream enums: it offered `deny_all`
+// (valid in neither) and `auto_review` (an ApprovalsReviewer value), so a caller could ask for
+// an approval policy the server does not define.
+type AskForApproval struct {
+	policy   string
+	granular *AskForApprovalGranular
+}
+
+// AskForApproval policy values.
+const (
+	AskForApprovalUntrusted = "untrusted"
+	AskForApprovalOnRequest = "on-request"
+	AskForApprovalNever     = "never"
+)
+
+// ApprovalUntrusted asks for approval before running anything not explicitly trusted.
+func ApprovalUntrusted() AskForApproval { return AskForApproval{policy: AskForApprovalUntrusted} }
+
+// ApprovalOnRequest asks for approval when the agent decides it needs it.
+func ApprovalOnRequest() AskForApproval { return AskForApproval{policy: AskForApprovalOnRequest} }
+
+// ApprovalNever never asks for approval.
+func ApprovalNever() AskForApproval { return AskForApproval{policy: AskForApprovalNever} }
+
+// ApprovalGranular asks for approval per category.
+func ApprovalGranular(g AskForApprovalGranular) AskForApproval {
+	return AskForApproval{granular: &g}
+}
+
+// Policy returns the enum arm, or "" when the granular arm is set.
+func (a AskForApproval) Policy() string { return a.policy }
+
+// Granular returns the granular arm, or nil for an enum policy.
+func (a AskForApproval) Granular() *AskForApprovalGranular { return a.granular }
+
+// MarshalJSON writes the string arm bare and the granular arm as an object, matching upstream.
+func (a AskForApproval) MarshalJSON() ([]byte, error) {
+	if a.granular != nil {
+		return json.Marshal(struct {
+			Granular *AskForApprovalGranular `json:"granular"`
+		}{a.granular})
+	}
+	return json.Marshal(a.policy)
+}
+
+// UnmarshalJSON accepts either arm.
+func (a *AskForApproval) UnmarshalJSON(data []byte) error {
+	if trimmed := bytes.TrimSpace(data); len(trimmed) > 0 && trimmed[0] == '{' {
+		var obj struct {
+			Granular *AskForApprovalGranular `json:"granular"`
+		}
+		if err := json.Unmarshal(data, &obj); err != nil {
+			return err
+		}
+		a.granular, a.policy = obj.Granular, ""
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	a.policy, a.granular = s, nil
+	return nil
+}
+
+// AskForApprovalGranular selects which approval categories apply.
+//
+// Field names are snake_case upstream, unlike the rest of the protocol, so the JSON tags are
+// deliberately not camelCase. The three required fields have no omitempty: upstream rejects a
+// granular object that omits them.
+type AskForApprovalGranular struct {
+	MCPElicitations    bool `json:"mcp_elicitations"`
+	Rules              bool `json:"rules"`
+	SandboxApproval    bool `json:"sandbox_approval"`
+	RequestPermissions bool `json:"request_permissions,omitempty"`
+	SkillApproval      bool `json:"skill_approval,omitempty"`
 }
 
 // SandboxPolicy selects the sandbox for a turn or thread.
@@ -371,8 +458,11 @@ type TurnStartParams struct {
 	Input               string `json:"input,omitempty"`
 	ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
 	CWD                 string `json:"cwd,omitempty"`
-	// ApprovalPolicy accepts the AskForApproval wire values (see ApprovalMode).
-	ApprovalPolicy string `json:"approvalPolicy,omitempty"`
+	// ApprovalPolicy overrides the approval policy for this turn and onwards.
+	ApprovalPolicy *AskForApproval `json:"approvalPolicy,omitempty"`
+	// ApprovalsReviewer routes approval requests to a reviewer. This is where `auto_review`
+	// belongs -- it is an ApprovalsReviewer value, not an approval policy.
+	ApprovalsReviewer *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
 	// SandboxPolicy must be a tagged OBJECT upstream, not a mode string: sending
 	// "workspace-write" is rejected, and the discriminators are the camelCase
 	// readOnly/workspaceWrite/dangerFullAccess -- not the SandboxMode spellings.

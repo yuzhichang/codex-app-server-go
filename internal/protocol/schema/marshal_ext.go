@@ -13,19 +13,21 @@ import (
 // calling json.Marshal on the same type.
 func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		Model                 string          `json:"model,omitempty"`
-		CWD                   string          `json:"cwd,omitempty"`
-		ApprovalPolicy        string          `json:"approvalPolicy,omitempty"`
-		RuntimeWorkspaceRoots []string        `json:"runtimeWorkspaceRoots,omitempty"`
-		Environments          []string        `json:"environments,omitempty"`
-		Personality           string          `json:"personality,omitempty"`
-		DynamicTools          []string        `json:"dynamicTools,omitempty"`
-		Metadata              json.RawMessage `json:"metadata,omitempty"`
+		Model                 string             `json:"model,omitempty"`
+		CWD                   string             `json:"cwd,omitempty"`
+		ApprovalPolicy        *AskForApproval    `json:"approvalPolicy,omitempty"`
+		ApprovalsReviewer     *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
+		RuntimeWorkspaceRoots []string           `json:"runtimeWorkspaceRoots,omitempty"`
+		Environments          []string           `json:"environments,omitempty"`
+		Personality           string             `json:"personality,omitempty"`
+		DynamicTools          []string           `json:"dynamicTools,omitempty"`
+		Metadata              json.RawMessage    `json:"metadata,omitempty"`
 	}
 	return json.Marshal(alias{
 		Model:                 r.Model,
 		CWD:                   r.CWD,
 		ApprovalPolicy:        r.ApprovalPolicy,
+		ApprovalsReviewer:     r.ApprovalsReviewer,
 		RuntimeWorkspaceRoots: r.RuntimeWorkspaceRoots,
 		Environments:          r.Environments,
 		Personality:           r.Personality,
@@ -67,21 +69,22 @@ func (r TurnSteerParams) MarshalJSON() ([]byte, error) {
 // server expects and passes all other fields through unchanged.
 func (r TurnStartParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		ThreadID            string         `json:"threadId"`
-		Input               any            `json:"input"`
-		ClientUserMessageID string         `json:"clientUserMessageId,omitempty"`
-		CWD                 string         `json:"cwd,omitempty"`
-		ApprovalPolicy      string         `json:"approvalPolicy,omitempty"`
-		SandboxPolicy       *SandboxPolicy `json:"sandboxPolicy,omitempty"`
-		Permissions         []string       `json:"permissions,omitempty"`
-		Model               string         `json:"model,omitempty"`
-		ServiceTier         string         `json:"serviceTier,omitempty"`
-		Effort              string         `json:"effort,omitempty"`
-		Summary             string         `json:"summary,omitempty"`
-		OutputSchema        any            `json:"outputSchema,omitempty"`
-		CollaborationMode   string         `json:"collaborationMode,omitempty"`
-		MultiAgentMode      string         `json:"multiAgentMode,omitempty"`
-		Environments        []string       `json:"environments,omitempty"`
+		ThreadID            string             `json:"threadId"`
+		Input               any                `json:"input"`
+		ClientUserMessageID string             `json:"clientUserMessageId,omitempty"`
+		CWD                 string             `json:"cwd,omitempty"`
+		ApprovalPolicy      *AskForApproval    `json:"approvalPolicy,omitempty"`
+		ApprovalsReviewer   *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
+		SandboxPolicy       *SandboxPolicy     `json:"sandboxPolicy,omitempty"`
+		Permissions         []string           `json:"permissions,omitempty"`
+		Model               string             `json:"model,omitempty"`
+		ServiceTier         string             `json:"serviceTier,omitempty"`
+		Effort              string             `json:"effort,omitempty"`
+		Summary             string             `json:"summary,omitempty"`
+		OutputSchema        any                `json:"outputSchema,omitempty"`
+		CollaborationMode   string             `json:"collaborationMode,omitempty"`
+		MultiAgentMode      string             `json:"multiAgentMode,omitempty"`
+		Environments        []string           `json:"environments,omitempty"`
 	}
 
 	return json.Marshal(alias{
@@ -90,6 +93,7 @@ func (r TurnStartParams) MarshalJSON() ([]byte, error) {
 		ClientUserMessageID: r.ClientUserMessageID,
 		CWD:                 r.CWD,
 		ApprovalPolicy:      r.ApprovalPolicy,
+		ApprovalsReviewer:   r.ApprovalsReviewer,
 		SandboxPolicy:       r.SandboxPolicy,
 		Permissions:         r.Permissions,
 		Model:               r.Model,

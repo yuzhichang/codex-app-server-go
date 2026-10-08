@@ -28,16 +28,18 @@ func WithThreadModel(model string) ThreadOption {
 }
 
 // WithThreadApprovalPolicy sets the approval policy when starting a thread.
-func WithThreadApprovalPolicy(policy string) ThreadOption {
+func WithThreadApprovalPolicy(policy AskForApproval) ThreadOption {
 	return func(c *threadConfig) {
-		c.req.ApprovalPolicy = policy
+		p := policy
+		c.req.ApprovalPolicy = &p
 	}
 }
 
-// WithThreadApprovalMode sets a typed approval policy when starting a thread.
-func WithThreadApprovalMode(mode ApprovalMode) ThreadOption {
+// WithThreadApprovalsReviewer routes approval requests to a reviewer.
+func WithThreadApprovalsReviewer(reviewer ApprovalsReviewer) ThreadOption {
 	return func(c *threadConfig) {
-		c.req.ApprovalPolicy = string(mode)
+		v := reviewer
+		c.req.ApprovalsReviewer = &v
 	}
 }
 

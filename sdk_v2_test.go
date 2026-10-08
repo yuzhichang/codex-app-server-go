@@ -159,7 +159,7 @@ func TestMockServerThreadStart(t *testing.T) {
 
 	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{
 		Model:          "gpt-5.1",
-		ApprovalPolicy: "on-request",
+		ApprovalPolicy: codexgo.Ptr(codexgo.ApprovalOnRequest()),
 	})
 	if err != nil {
 		t.Fatalf("ThreadStart(): %v", err)
@@ -2754,6 +2754,105 @@ func TestTurnStartSendsSandboxPolicyObject(t *testing.T) {
 		}
 		if len(policy.WritableRoots) != 1 || policy.WritableRoots[0] != "/tmp/w" {
 			t.Errorf("writableRoots = %v", policy.WritableRoots)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("turn/start was never called")
+	}
+}
+
+// ---- AskForApproval: a bare string, or the granular object ----
+
+// AskForApproval is a union of a plain enum string and an object, so it cannot be a
+// type-tagged struct -- a struct always encodes as an object. These pin both arms.
+func TestAskForApprovalJSON(t *testing.T) {
+	t.Run("enum arm is a bare string", func(t *testing.T) {
+		raw, err := json.Marshal(codexgo.ApprovalNever())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(raw) != `"never"` {
+			t.Fatalf("got %s, want %q", raw, "never")
+		}
+	})
+
+	t.Run("granular arm is an object", func(t *testing.T) {
+		raw, err := json.Marshal(codexgo.ApprovalGranular(codexgo.AskForApprovalGranular{
+			MCPElicitations: true,
+			Rules:           true,
+			SandboxApproval: true,
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var decoded struct {
+			Granular map[string]bool `json:"granular"`
+		}
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("not an object: %s", raw)
+		}
+		// Field names are snake_case upstream, unlike the rest of the protocol.
+		for _, k := range []string{"mcp_elicitations", "rules", "sandbox_approval"} {
+			if !decoded.Granular[k] {
+				t.Errorf("granular.%s missing or false in %s", k, raw)
+			}
+		}
+	})
+
+	t.Run("both arms round-trip", func(t *testing.T) {
+		for _, original := range []string{`"untrusted"`, `"on-request"`, `"never"`,
+			`{"granular":{"mcp_elicitations":true,"rules":false,"sandbox_approval":true}}`} {
+			var v codexgo.AskForApproval
+			if err := json.Unmarshal([]byte(original), &v); err != nil {
+				t.Fatalf("unmarshal %s: %v", original, err)
+			}
+			back, err := json.Marshal(v)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			if string(back) != original {
+				t.Errorf("round-trip: %s -> %s", original, back)
+			}
+		}
+	})
+}
+
+// The former ApprovalMode offered `auto_review` as an approval policy, but it is an
+// ApprovalsReviewer value -- upstream AskForApproval only defines untrusted/on-request/never.
+// This asserts it goes to the right field.
+func TestTurnStartSendsApprovalsReviewerSeparately(t *testing.T) {
+	client, mock := newClientFromMock(t)
+
+	got := make(chan map[string]json.RawMessage, 1)
+	mock.Handle("turn/start", func(params json.RawMessage) (any, error) {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(params, &raw); err != nil {
+			return nil, err
+		}
+		got <- raw
+		return map[string]any{"turn": map[string]any{"id": "turn-a"}}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if _, err := client.TurnStart(ctx, codexgo.TurnStartParams{
+		ThreadID:          "thr-a",
+		Input:             "hi",
+		ApprovalPolicy:    codexgo.Ptr(codexgo.ApprovalOnRequest()),
+		ApprovalsReviewer: codexgo.Ptr(codexgo.ApprovalsReviewerAutoReview),
+	}); err != nil {
+		t.Fatalf("TurnStart: %v", err)
+	}
+
+	select {
+	case raw := <-got:
+		// approvalPolicy is a bare string, and only ever one of the three defined values.
+		if v := string(raw["approvalPolicy"]); v != `"on-request"` {
+			t.Errorf("approvalPolicy = %s, want %q", v, "on-request")
+		}
+		// auto_review belongs here, not in approvalPolicy.
+		if v := string(raw["approvalsReviewer"]); v != `"auto_review"` {
+			t.Errorf("approvalsReviewer = %s, want %q", v, "auto_review")
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("turn/start was never called")

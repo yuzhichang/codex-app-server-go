@@ -200,7 +200,7 @@ func startThread(t *testing.T, client *codexgo.Client) string {
 	defer cancel()
 
 	thread, err := client.ThreadStart(ctx, codexgo.ThreadStartParams{
-		ApprovalPolicy: "on-request",
+		ApprovalPolicy: codexgo.Ptr(codexgo.ApprovalOnRequest()),
 		Model:          e2eModel(),
 	})
 	if err != nil {

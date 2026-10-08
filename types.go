@@ -277,15 +277,31 @@ const (
 	ItemKindContextCompaction   = protocol.ItemKindContextCompaction
 )
 
-// ApprovalMode is a typed approval policy for turns and threads. The string
-// values match the wire values the app-server expects for approvalPolicy.
-type ApprovalMode string
+// Approval policy and reviewer types, aliased from the schema package.
+//
+// These replace the former `ApprovalMode`, which mixed two upstream enums: it offered
+// `deny_all` (defined in neither) and `auto_review` (an ApprovalsReviewer value) alongside
+// `on-request` and `never`, so a caller could ask for an approval policy the server does not
+// have. AskForApproval and ApprovalsReviewer are separate types upstream and are kept
+// separate here.
+type (
+	AskForApproval         = schematypes.AskForApproval
+	AskForApprovalGranular = schematypes.AskForApprovalGranular
+	ApprovalsReviewer      = schematypes.ApprovalsReviewer
+)
 
+// AskForApproval policy values.
 const (
-	ApprovalModeDenyAll    ApprovalMode = "deny_all"
-	ApprovalModeAutoReview ApprovalMode = "auto_review"
-	ApprovalModeOnRequest  ApprovalMode = "on-request"
-	ApprovalModeNever      ApprovalMode = "never"
+	AskForApprovalUntrusted = schematypes.AskForApprovalUntrusted
+	AskForApprovalOnRequest = schematypes.AskForApprovalOnRequest
+	AskForApprovalNever     = schematypes.AskForApprovalNever
+)
+
+// ApprovalsReviewer values. This is where `auto_review` belongs.
+const (
+	ApprovalsReviewerUser             = schematypes.ApprovalsReviewerUser
+	ApprovalsReviewerAutoReview       = schematypes.ApprovalsReviewerAutoReview
+	ApprovalsReviewerGuardianSubagent = schematypes.ApprovalsReviewerGuardianSubagent
 )
 
 // SandboxMode is a typed sandbox policy. The string values match the wire values the
@@ -411,3 +427,27 @@ func WorkspaceWritePolicy() SandboxPolicy { return schematypes.WorkspaceWritePol
 
 // SandboxPolicyFromMode maps a SandboxMode onto the equivalent policy object.
 func SandboxPolicyFromMode(m SandboxMode) *SandboxPolicy { return schematypes.SandboxPolicyFromMode(m) }
+
+// AskForApproval constructors. A type alias carries no functions, so these wrap the
+// schema-package ones.
+func ApprovalUntrusted() AskForApproval { return schematypes.ApprovalUntrusted() }
+
+// ApprovalOnRequest asks for approval when the agent decides it needs it.
+func ApprovalOnRequest() AskForApproval { return schematypes.ApprovalOnRequest() }
+
+// ApprovalNever never asks for approval.
+func ApprovalNever() AskForApproval { return schematypes.ApprovalNever() }
+
+// ApprovalGranular asks for approval per category.
+func ApprovalGranular(g AskForApprovalGranular) AskForApproval {
+	return schematypes.ApprovalGranular(g)
+}
+
+// Ptr returns a pointer to v.
+//
+// The optional fields in the request params structs are pointers, because upstream
+// distinguishes "absent" from "present". That makes struct literals awkward for the common
+// case of just setting a value, so this keeps them readable:
+//
+//	codexgo.TurnStartParams{ApprovalPolicy: codexgo.Ptr(codexgo.ApprovalOnRequest())}
+func Ptr[T any](v T) *T { return &v }

@@ -99,9 +99,6 @@ type AnalyticsConfig struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
-// AskForApproval mirrors the upstream `AskForApproval` definition.
-type AskForApproval = json.RawMessage
-
 // AuthMode mirrors the upstream `AuthMode` definition.
 type AuthMode = json.RawMessage
 

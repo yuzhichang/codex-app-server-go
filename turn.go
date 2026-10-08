@@ -61,9 +61,22 @@ func WithModel(model string) TurnOption {
 }
 
 // WithApprovalPolicy sets the approval policy for the turn.
-func WithApprovalPolicy(policy string) TurnOption {
+//
+// This replaces WithApprovalPolicy(string) and WithApprovalMode(ApprovalMode): a bare string
+// could carry any value at all, and ApprovalMode offered two the server does not define
+// (deny_all, and auto_review which belongs to ApprovalsReviewer). Use the Approval* builders.
+func WithApprovalPolicy(policy AskForApproval) TurnOption {
 	return func(r *TurnStartParams) {
-		r.ApprovalPolicy = policy
+		p := policy
+		r.ApprovalPolicy = &p
+	}
+}
+
+// WithApprovalsReviewer routes approval requests to a reviewer.
+func WithApprovalsReviewer(reviewer ApprovalsReviewer) TurnOption {
+	return func(r *TurnStartParams) {
+		v := reviewer
+		r.ApprovalsReviewer = &v
 	}
 }
 
@@ -77,13 +90,6 @@ func WithSandboxPolicy(policy SandboxPolicy) TurnOption {
 	return func(r *TurnStartParams) {
 		p := policy
 		r.SandboxPolicy = &p
-	}
-}
-
-// WithApprovalMode sets a typed approval policy for the turn.
-func WithApprovalMode(mode ApprovalMode) TurnOption {
-	return func(r *TurnStartParams) {
-		r.ApprovalPolicy = string(mode)
 	}
 }
 

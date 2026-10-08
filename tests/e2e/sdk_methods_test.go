@@ -123,7 +123,7 @@ func TestThreadStartOptions(t *testing.T) {
 
 	thread, err := h.client.ThreadStart(ctx, codexgo.ThreadStartParams{
 		Ephemeral:      true,
-		ApprovalPolicy: "on-request",
+		ApprovalPolicy: codexgo.Ptr(codexgo.ApprovalOnRequest()),
 		CWD:            cwd,
 		Model:          "gpt-4.1-mini",
 	})

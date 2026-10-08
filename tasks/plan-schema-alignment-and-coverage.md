@@ -294,6 +294,43 @@
   3. **传递依赖绕过去重**：`existing` 跳过逻辑没有应用到传递引用遍历，导致重复声明（编译器报 `AbsolutePathBuf`/`SkillSummary` redeclared）。
 - ✅ **`generate-types` 幂等**（重跑 `git diff` 为空）。
 
+### T1.2 收尾（全量 codegen）—— **开工前的度量结果：这不是去重，是修协议违规**
+
+动手前先做了**逐字段对比**（`client_types_gen.go` 的 50 个手写结构体 vs 生成器对同名的产出）：
+
+| | 数 |
+|---|---|
+| 手写结构体 | 50 |
+| 其中在聚合 schema 中有同名定义 | **49**（唯一例外 `InitializeResponse`，已白名单） |
+| **字段形状不一致的** | **26**（`make type-shape-check` 可复现） |
+
+**关键发现：不一致不是命名风格问题，而是真实的线上形状错误**，其中一条影响 SDK 主入口：
+
+| 类型 | SDK 手写 | 上游实际 |
+|---|---|---|
+| **`TurnStartParams.Input`** | `string` | **`Vec<UserInput>`（required）** |
+| `TurnSteerParams.Input` | `string` | `Vec<UserInput>` |
+| `ReviewStartParams` | `turnId` | `target`（**required**）+ `delivery` |
+| `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached`（自造） | `originUrl`/`sha` |
+| `SkillInterface.IconLarge` | `string` | `*AbsolutePathBuf` |
+| `ClientInfo.Name`/`Version` | `omitempty` | required |
+
+**`TurnStartParams` 是要害**：`SessionThread.Run`（SDK 的**主入口**）在 `thread.go:125` 构造 `TurnStartParams{ThreadID: …, Input: input}`，而 `Input` 是 Go 字符串 ⇒ 实际发出 `{"input":"hello"}`，而上游要求 `{"input":[{"type":"text","text":"hello"}]}`。
+
+**为什么一直没被发现**（三个盲区叠加）：
+1. Go 类型系统不校验线上形状 —— 编译期无从发现；
+2. mock server 测试**断言的是同一个手写类型**，属**循环验证**；
+3. 真实 server 测试在没有 codex 二进制时被 skip。
+
+外加一个方法学问题：`type_check.py` **只比对类型名**。名字全对，形状全错，门禁绿灯。这正是 I7 当时指出但未闭合的层面。
+
+**新增 `scripts/type_shape_check.py`**（`make type-shape-check`，已并入 `make conformance` 的**报告**步骤）逐字段对比手写与生成结果，让这 26 项**可枚举、可复现**。
+- **刻意暂不纳入 `conformance-strict`**：这是 T1.2 的**待完成工作量**，且尚未分诊（哪些该改为生成、哪些该白名单），把它设成门禁只会得到一个"已知失败"，不如先把清单做实。迁移完成后必须加进 strict。
+
+**迁移工作量（未开工）**：① 让 `--from-surface` 的产出**取代** `client_types_gen.go`，而非并存；② `UserInput` 等 tagged union 目前退化为 `json.RawMessage`（`type UserInput = json.RawMessage`），需**建模为带判别字段的结构体**才能让 `Input` 可用（照 elicitation 那套做法）；③ 修 `Run`/`TurnStart`/`ReviewStart` 的调用方 —— **破坏性公开 API 变更**（`Run(ctx, string)` 的签名需要重新设计以接受结构化输入，或提供 `RunInputs(ctx, []UserInput)`）；④ 取消 `Init` 与 `initialize` 之间的命名不一致（`Capabilities` vs `InitializeCapabilities`）；⑤ 为 `GitInfo` 等确认上游是否真有替代。
+
+> ⚠️ 结论：**「消除双轨」的真实价值不在整洁，而在于它已经掩盖了一个主入口的协议违规。** 必须先修 `TurnStartParams`（或至少让它显式报错），再谈类型整洁。
+
 ### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
 
 `scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：

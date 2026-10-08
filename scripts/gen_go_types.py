@@ -291,7 +291,13 @@ def main() -> int:
         body.extend(emit_definition(name, defs[name], defs))
 
     dest.write_text("\n".join(header + body))
-    print(f"wrote {dest.relative_to(SDK_ROOT)}: {len(wanted)} definitions")
+    # relative_to raises when --out points outside the repo; fall back to the full path
+    # rather than crashing after having already written the file.
+    try:
+        shown = dest.relative_to(SDK_ROOT)
+    except ValueError:
+        shown = dest
+    print(f"wrote {shown}: {len(wanted)} definitions")
     return 0
 
 

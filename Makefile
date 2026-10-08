@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
+.PHONY: sync verify diff-cli coverage typecheck type-shape-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -29,10 +29,20 @@ diff-cli:
 coverage:
 	python3 $(SDK_DIR)/scripts/coverage_gate.py report
 
-# Type-level reconciliation: every SDK struct must match an upstream definition by name, or
+# Type-level reconciliation: every SDK type must match an upstream definition by name, or
 # be allow-listed with a reason (see gen/type-allowlist.json).
 typecheck:
 	python3 $(SDK_DIR)/scripts/type_check.py report
+
+# Field-level reconciliation. Names matching is not the same as shapes matching: 26 structs
+# still carry hand-written field shapes that differ from the schema, and name comparison is
+# blind to all of them (it hid SessionThread.Run sending the wrong `input` shape).
+#
+# Deliberately a *report*, not a gate: this is the outstanding work of the T1.2 migration,
+# and there is no allow-list yet because the divergence has not been triaged. Add it to
+# conformance-strict once the hand-written structs have been generated or allow-listed.
+type-shape-check:
+	python3 $(SDK_DIR)/scripts/type_shape_check.py report
 
 # Regenerate the schema-derived Go types. Deterministic: a no-op re-run leaves git clean.
 # (Currently scoped to the definitions the SDK was missing; see the script's header.)
@@ -62,6 +72,7 @@ generate: generate-types generate-client
 conformance: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py report
 	@python3 $(SDK_DIR)/scripts/type_check.py report
+	@python3 $(SDK_DIR)/scripts/type_shape_check.py report
 
 # Final gate: no gap, no untested wiring, no stale methods, no unlisted type drift.
 # This is the CI target once the work in tasks/plan-schema-alignment-and-coverage.md is done.

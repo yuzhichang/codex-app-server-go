@@ -74,7 +74,11 @@ func New(opts ...Option) (*Client, error) {
 
 	client := &Client{transport: cfg.transport, proc: proc}
 	if source, ok := cfg.transport.(notificationSource); ok {
-		client.events = newEventBroker()
+		brokerCfg := defaultEventBrokerConfig()
+		if cfg.eventStallTimeout > 0 {
+			brokerCfg.stallTimeout = cfg.eventStallTimeout
+		}
+		client.events = newEventBroker(brokerCfg)
 		go client.notificationLoop(source.Notifications())
 	}
 

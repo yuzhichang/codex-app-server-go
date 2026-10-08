@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"sync"
 
 	"github.com/zealbase/codex-app-server-go/internal/protocol"
 )
@@ -308,101 +307,6 @@ func cloneRawMessage(raw json.RawMessage) json.RawMessage {
 	out := make([]byte, len(raw))
 	copy(out, raw)
 	return out
-}
-
-type EventSubscription struct {
-	ch     <-chan Event
-	cancel func()
-}
-
-func (s *EventSubscription) C() <-chan Event {
-	if s == nil {
-		return nil
-	}
-	return s.ch
-}
-
-func (s *EventSubscription) Close() {
-	if s == nil || s.cancel == nil {
-		return
-	}
-	s.cancel()
-	s.cancel = nil
-}
-
-type eventBroker struct {
-	mu     sync.Mutex
-	nextID uint64
-	subs   map[uint64]chan Event
-	closed bool
-}
-
-func newEventBroker() *eventBroker {
-	return &eventBroker{subs: make(map[uint64]chan Event)}
-}
-
-func (b *eventBroker) Subscribe() *EventSubscription {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	ch := make(chan Event, 128)
-	if b.closed {
-		close(ch)
-		return &EventSubscription{ch: ch}
-	}
-	b.nextID++
-	id := b.nextID
-	b.subs[id] = ch
-
-	return &EventSubscription{
-		ch: ch,
-		cancel: func() {
-			b.unsubscribe(id)
-		},
-	}
-}
-
-func (b *eventBroker) publish(event Event) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if b.closed {
-		return
-	}
-	for id, ch := range b.subs {
-		select {
-		case ch <- event:
-		default:
-			close(ch)
-			delete(b.subs, id)
-		}
-	}
-}
-
-func (b *eventBroker) close() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if b.closed {
-		return
-	}
-	b.closed = true
-	for id, ch := range b.subs {
-		close(ch)
-		delete(b.subs, id)
-	}
-}
-
-func (b *eventBroker) unsubscribe(id uint64) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	ch, ok := b.subs[id]
-	if !ok {
-		return
-	}
-	close(ch)
-	delete(b.subs, id)
 }
 
 // StreamText reads ThreadEvents from ch and writes agent message text deltas

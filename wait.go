@@ -223,7 +223,5 @@ func isTerminalTurnStatus(status protocol.TurnStatus) bool {
 var errTurnNotFound = errors.New("turn not found")
 
 func closedEventSubscription() *EventSubscription {
-	ch := make(chan Event)
-	close(ch)
-	return &EventSubscription{ch: ch}
+	return &EventSubscription{sub: newClosedEventSubscriber()}
 }

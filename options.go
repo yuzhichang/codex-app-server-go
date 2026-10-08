@@ -2,9 +2,11 @@ package codexgo
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/zealbase/codex-app-server-go/internal/transport"
 )
@@ -64,6 +66,27 @@ type clientConfig struct {
 	// adaptation. New() applies the retry policy to it (if any) regardless of
 	// option ordering, then adapts it into cfg.transport.
 	innerTransport transport.Transport
+
+	// eventStallTimeout bounds how long a subscriber that has stopped reading may hold a
+	// full delivery buffer before its subscription is terminated. Zero means the default
+	// (5s).
+	eventStallTimeout time.Duration
+}
+
+// WithEventSubscriberTimeout sets how long a subscriber that has stopped reading may hold a
+// full delivery buffer before its subscription is terminated with reason "stall".
+//
+// There is deliberately no "drop the slowest and carry on" variant: termination is explicit
+// and observable through EventSubscription.Err (plan T2.6). A value <= 0 is rejected rather
+// than silently meaning something else.
+func WithEventSubscriberTimeout(d time.Duration) Option {
+	return func(cfg *clientConfig) error {
+		if d <= 0 {
+			return fmt.Errorf("event subscriber timeout must be positive, got %s", d)
+		}
+		cfg.eventStallTimeout = d
+		return nil
+	}
 }
 
 // WithClientInfo overrides the ClientInfo sent during the initialize handshake.

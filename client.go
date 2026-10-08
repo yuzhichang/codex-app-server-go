@@ -110,6 +110,17 @@ func New(opts ...Option) (*Client, error) {
 		go client.notificationLoop(source.Notifications())
 	}
 
+	if st, ok := cfg.transport.(*stdioTransport); ok {
+		// Report answers that never reached the server. The handler may have decided
+		// something important (an approval, an elicitation) and the decision was discarded;
+		// without this the caller has no way to know.
+		st.onRequestLost = func(ev PendingApprovalLostEvent) {
+			if client.events != nil {
+				client.events.publish(Event{Method: EventMethodPendingApprovalLost, Value: ev})
+			}
+		}
+	}
+
 	if dispatcher != nil && dispatcher.OnUnhandled == nil {
 		// Publishing through the broker rather than a log call so it rides the same
 		// subscription as everything else; a caller who wants logging can select on it.
@@ -631,6 +642,40 @@ type stdioTransport struct {
 	handler   RequestHandler
 	closed    chan struct{}
 	readyCh   chan struct{}
+
+	// onRequestLost is called when a server request could not be answered because the
+	// connection carrying it went away. Set by New().
+	onRequestLost func(PendingApprovalLostEvent)
+}
+
+// reportRequestLost records a server request whose reply never reached the server.
+//
+// This is the observable half of "the answer was written but nobody heard it": the handler
+// may well have decided something (perhaps even approved a command), and the caller would
+// otherwise have no idea the decision was discarded. Upstream has no replay, so there is
+// nothing to re-send -- the only useful action is to say so.
+//
+// Coverage caveat: this fires when the transport reports the send failed. The stdio
+// transport is backed by jrpc2, which hands replies to its own channel, so a reply lost
+// there may surface as a clean return and go unreported. Detection is therefore reliable on
+// the WebSocket and HTTP transports and best-effort on stdio.
+func (s *stdioTransport) reportRequestLost(method string, params json.RawMessage, err error) {
+	// A second reply to the same request is a programming error, not a lost answer.
+	if s.onRequestLost == nil || errors.Is(err, transport.ErrAlreadyReplied) {
+		return
+	}
+	ev := PendingApprovalLostEvent{Method: method}
+	// Thread/turn ids are best-effort: most payloads carry them, but not all do.
+	if len(params) > 0 {
+		var probe struct {
+			ThreadID string `json:"threadId"`
+			TurnID   string `json:"turnId"`
+		}
+		if err := json.Unmarshal(params, &probe); err == nil {
+			ev.ThreadID, ev.TurnID = probe.ThreadID, probe.TurnID
+		}
+	}
+	s.onRequestLost(ev)
 }
 
 // newChannelTransport adapts any channel-based internal transport.Transport to
@@ -687,7 +732,9 @@ func (s *stdioTransport) requestLoop() {
 			handler := s.handler
 			s.handlerMu.RUnlock()
 			if handler == nil {
-				_ = req.ReplyError(req.Context(), -32601, "request handler not configured", nil)
+				if err := req.ReplyError(req.Context(), -32601, "request handler not configured", nil); err != nil {
+					s.reportRequestLost(req.Method(), req.Params(), err)
+				}
 				continue
 			}
 			resp, err := handler.HandleServerRequest(req.Context(), ServerRequest{
@@ -703,10 +750,14 @@ func (s *stdioTransport) requestLoop() {
 				if errors.As(err, &notFound) {
 					code = -32601
 				}
-				_ = req.ReplyError(req.Context(), code, err.Error(), nil)
+				if replyErr := req.ReplyError(req.Context(), code, err.Error(), nil); replyErr != nil {
+					s.reportRequestLost(req.Method(), req.Params(), err)
+				}
 				continue
 			}
-			_ = req.Reply(req.Context(), json.RawMessage(resp.Result))
+			if err := req.Reply(req.Context(), json.RawMessage(resp.Result)); err != nil {
+				s.reportRequestLost(req.Method(), req.Params(), err)
+			}
 		case <-s.closed:
 			return
 		}

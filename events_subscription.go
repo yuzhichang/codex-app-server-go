@@ -46,6 +46,14 @@ const (
 type EventsLostEvent struct {
 	Reason    EventsLostReason
 	LostCount int64
+	// GapFrom and GapTo bound the window the lost events were offered in. Zero when
+	// nothing was actually dropped.
+	//
+	// These are *time*, not sequence numbers: upstream notifications carry no sequence, so
+	// there is no way to name a gap by position. A time window is what is derivable, and it
+	// is enough to correlate the loss against what else was happening.
+	GapFrom time.Time
+	GapTo   time.Time
 }
 
 // EventsLostError is returned by EventSubscription.Err once the subscription has stopped,
@@ -53,10 +61,18 @@ type EventsLostEvent struct {
 type EventsLostError struct {
 	Reason    EventsLostReason
 	LostCount int64
+	// GapFrom and GapTo bound the window the lost events were offered in; see EventsLostEvent.
+	GapFrom time.Time
+	GapTo   time.Time
 }
 
 func (e *EventsLostError) Error() string {
-	return fmt.Sprintf("event subscription stopped: reason=%s lost=%d", e.Reason, e.LostCount)
+	if e.GapFrom.IsZero() {
+		return fmt.Sprintf("event subscription stopped: reason=%s lost=%d", e.Reason, e.LostCount)
+	}
+	return fmt.Sprintf("event subscription stopped: reason=%s lost=%d window=%s..%s",
+		e.Reason, e.LostCount,
+		e.GapFrom.Format(time.RFC3339Nano), e.GapTo.Format(time.RFC3339Nano))
 }
 
 const (
@@ -90,6 +106,13 @@ func defaultEventBrokerConfig() eventBrokerConfig {
 	}
 }
 
+// queuedEvent is a pending event plus the moment it was offered, so a loss can be reported
+// as a time window rather than just a count.
+type queuedEvent struct {
+	event Event
+	at    time.Time
+}
+
 // eventSubscriber owns one subscription's buffers and its forwarding goroutine.
 type eventSubscriber struct {
 	broker *eventBroker
@@ -105,7 +128,7 @@ type eventSubscriber struct {
 	doneOnce sync.Once
 
 	mu        sync.Mutex // guards backlog / reason / terminal / lostCount
-	backlog   []Event
+	backlog   []queuedEvent
 	reason    EventsLostReason
 	terminal  bool
 	lostCount int64
@@ -125,7 +148,7 @@ func (s *eventSubscriber) offer(ev Event) {
 		s.mu.Unlock()
 		return
 	}
-	s.backlog = append(s.backlog, ev)
+	s.backlog = append(s.backlog, queuedEvent{event: ev, at: time.Now()})
 	s.mu.Unlock()
 	s.wake()
 }
@@ -157,14 +180,21 @@ func (s *eventSubscriber) setTerminal(reason EventsLostReason) {
 }
 
 // terminalState reports whether the subscription stopped, and how much was lost.
-func (s *eventSubscriber) terminalState() (EventsLostReason, int64, bool) {
+func (s *eventSubscriber) terminalState() (EventsLostReason, int64, time.Time, time.Time, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.terminal {
-		return "", 0, false
+		return "", 0, time.Time{}, time.Time{}, false
 	}
 	// Everything still queued is lost too, not just what overflow already counted.
-	return s.reason, s.lostCount + int64(len(s.backlog)), true
+	lost := s.lostCount + int64(len(s.backlog))
+	// The undelivered entries span a real window: from when the oldest was offered to when
+	// the newest was. A pure overflow with an empty backlog has no window to report.
+	var from, to time.Time
+	if len(s.backlog) > 0 {
+		from, to = s.backlog[0].at, s.backlog[len(s.backlog)-1].at
+	}
+	return s.reason, lost, from, to, true
 }
 
 func (s *eventSubscriber) stopped() bool {
@@ -179,9 +209,11 @@ func (s *eventSubscriber) forward() {
 	defer func() {
 		// In-band termination. A plain send would be a hazard if the reserve ever broke, so
 		// it is a non-blocking send: the out-of-band Err()/Done() pair is authoritative.
-		if reason, lost, ok := s.terminalState(); ok {
+		if reason, lost, from, to, ok := s.terminalState(); ok {
 			select {
-			case s.out <- Event{Value: EventsLostEvent{Reason: reason, LostCount: lost}}:
+			case s.out <- Event{Value: EventsLostEvent{
+				Reason: reason, LostCount: lost, GapFrom: from, GapTo: to,
+			}}:
 			default:
 			}
 		}
@@ -210,7 +242,7 @@ loop:
 			}
 			continue
 		}
-		head := s.backlog[0]
+		head := s.backlog[0].event
 
 		// Slot reservation: ordinary events may occupy at most outCap-1 slots, leaving the
 		// last one for the terminal event. This goroutine is the only writer of s.out and
@@ -297,11 +329,11 @@ func (s *EventSubscription) Err() error {
 	if s == nil || s.sub == nil {
 		return nil
 	}
-	reason, lost, ok := s.sub.terminalState()
+	reason, lost, from, to, ok := s.sub.terminalState()
 	if !ok {
 		return nil
 	}
-	return &EventsLostError{Reason: reason, LostCount: lost}
+	return &EventsLostError{Reason: reason, LostCount: lost, GapFrom: from, GapTo: to}
 }
 
 // Close stops the subscription and returns immediately. It is idempotent and does not wait

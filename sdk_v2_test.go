@@ -2698,3 +2698,64 @@ func TestThreadResumeSendsUpstreamFieldSet(t *testing.T) {
 		t.Fatal("thread/resume was never called")
 	}
 }
+
+// ---- turn/start sandboxPolicy: an object, not a mode string ----
+
+// `sandboxPolicy` is a tagged OBJECT upstream, with camelCase discriminators. The SDK used to
+// send the bare SandboxMode string ("workspace-write"), which is rejected twice over: wrong
+// JSON type and wrong value. This asserts the encoded payload.
+func TestTurnStartSendsSandboxPolicyObject(t *testing.T) {
+	client, mock := newClientFromMock(t)
+
+	got := make(chan map[string]json.RawMessage, 1)
+	mock.Handle("turn/start", func(params json.RawMessage) (any, error) {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(params, &raw); err != nil {
+			return nil, err
+		}
+		got <- raw
+		return map[string]any{"turn": map[string]any{"id": "turn-s"}}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if _, err := client.TurnStart(ctx, codexgo.TurnStartParams{
+		ThreadID: "thr-s",
+		Input:    "hi",
+		SandboxPolicy: func() *codexgo.SandboxPolicy {
+			p := codexgo.WorkspaceWritePolicy()
+			p.WritableRoots = []string{"/tmp/w"}
+			return &p
+		}(),
+	}); err != nil {
+		t.Fatalf("TurnStart: %v", err)
+	}
+
+	select {
+	case raw := <-got:
+		sent, ok := raw["sandboxPolicy"]
+		if !ok {
+			t.Fatal("sandboxPolicy was not sent")
+		}
+		if len(sent) == 0 || sent[0] != '{' {
+			t.Fatalf("sandboxPolicy must be an object, got %s", sent)
+		}
+		var policy struct {
+			Type          string   `json:"type"`
+			WritableRoots []string `json:"writableRoots"`
+		}
+		if err := json.Unmarshal(sent, &policy); err != nil {
+			t.Fatalf("unmarshal sandboxPolicy: %v", err)
+		}
+		// The discriminator, not the SandboxMode spelling.
+		if policy.Type != codexgo.SandboxPolicyTypeWorkspaceWrite {
+			t.Errorf("type = %q, want %q", policy.Type, codexgo.SandboxPolicyTypeWorkspaceWrite)
+		}
+		if len(policy.WritableRoots) != 1 || policy.WritableRoots[0] != "/tmp/w" {
+			t.Errorf("writableRoots = %v", policy.WritableRoots)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("turn/start was never called")
+	}
+}

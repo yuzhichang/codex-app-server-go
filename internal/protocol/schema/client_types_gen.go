@@ -298,22 +298,95 @@ type ThreadReadParams struct {
 	IncludeTurns bool   `json:"includeTurns,omitempty"`
 }
 
+// SandboxPolicy selects the sandbox for a turn or thread.
+//
+// Upstream declares it as a `type`-tagged union of four OBJECT variants
+// (dangerFullAccess, readOnly, externalSandbox, workspaceWrite). It is modelled here as one
+// flat struct with an explicit Type discriminator plus the union of every variant's fields,
+// consistent with UserInput and ReviewTarget. Prefer the constructors.
+//
+// This replaces a `string` field. The wire shape is an object and the discriminators are
+// camelCase (readOnly/workspaceWrite/dangerFullAccess) -- NOT the SandboxMode spellings
+// (read-only/workspace-write/danger-full-access). The old field sent a bare mode string, so
+// it was rejected twice over: wrong JSON type and wrong value.
+type SandboxPolicy struct {
+	Type string `json:"type"`
+
+	// NetworkAccess is a union upstream (boolean, or an object describing proxy/allow rules),
+	// so it is passed through. The common case is to omit it.
+	NetworkAccess json.RawMessage `json:"networkAccess,omitempty"`
+
+	// workspaceWrite only.
+	ExcludeSlashTmp     bool     `json:"excludeSlashTmp,omitempty"`
+	ExcludeTmpdirEnvVar bool     `json:"excludeTmpdirEnvVar,omitempty"`
+	WritableRoots       []string `json:"writableRoots,omitempty"`
+}
+
+// SandboxPolicyType values, matching the upstream discriminator strings.
+const (
+	SandboxPolicyTypeDangerFullAccess = "dangerFullAccess"
+	SandboxPolicyTypeReadOnly         = "readOnly"
+	SandboxPolicyTypeExternalSandbox  = "externalSandbox"
+	SandboxPolicyTypeWorkspaceWrite   = "workspaceWrite"
+)
+
+// DangerFullAccessPolicy runs without sandboxing.
+func DangerFullAccessPolicy() SandboxPolicy {
+	return SandboxPolicy{Type: SandboxPolicyTypeDangerFullAccess}
+}
+
+// ReadOnlyPolicy allows reads only.
+func ReadOnlyPolicy() SandboxPolicy {
+	return SandboxPolicy{Type: SandboxPolicyTypeReadOnly}
+}
+
+// ExternalSandboxPolicy uses an externally managed sandbox.
+func ExternalSandboxPolicy() SandboxPolicy {
+	return SandboxPolicy{Type: SandboxPolicyTypeExternalSandbox}
+}
+
+// WorkspaceWritePolicy writes only inside the workspace. Set WritableRoots and the Exclude*
+// fields on the returned value to widen or narrow it.
+func WorkspaceWritePolicy() SandboxPolicy {
+	return SandboxPolicy{Type: SandboxPolicyTypeWorkspaceWrite}
+}
+
+// SandboxPolicyFromMode maps a SandboxMode onto the equivalent policy object.
+//
+// The two are different types upstream with different value spellings, so this conversion is
+// not cosmetic: it is what stops a mode from being sent where a policy object is required.
+func SandboxPolicyFromMode(m SandboxMode) *SandboxPolicy {
+	policy := DangerFullAccessPolicy()
+	switch m {
+	case SandboxModeReadOnly:
+		policy = ReadOnlyPolicy()
+	case SandboxModeWorkspaceWrite:
+		policy = WorkspaceWritePolicy()
+	}
+	return &policy
+}
+
 type TurnStartParams struct {
-	ThreadID            string          `json:"threadId"`
-	Input               string          `json:"input,omitempty"`
-	ClientUserMessageID string          `json:"clientUserMessageId,omitempty"`
-	CWD                 string          `json:"cwd,omitempty"`
-	ApprovalPolicy      string          `json:"approvalPolicy,omitempty"`
-	SandboxPolicy       string          `json:"sandboxPolicy,omitempty"`
-	Permissions         []string        `json:"permissions,omitempty"`
-	Model               string          `json:"model,omitempty"`
-	ServiceTier         string          `json:"serviceTier,omitempty"`
-	Effort              string          `json:"effort,omitempty"`
-	Summary             string          `json:"summary,omitempty"`
-	OutputSchema        json.RawMessage `json:"outputSchema,omitempty"`
-	CollaborationMode   string          `json:"collaborationMode,omitempty"`
-	MultiAgentMode      string          `json:"multiAgentMode,omitempty"`
-	Environments        []string        `json:"environments,omitempty"`
+	ThreadID            string `json:"threadId"`
+	Input               string `json:"input,omitempty"`
+	ClientUserMessageID string `json:"clientUserMessageId,omitempty"`
+	CWD                 string `json:"cwd,omitempty"`
+	// ApprovalPolicy accepts the AskForApproval wire values (see ApprovalMode).
+	ApprovalPolicy string `json:"approvalPolicy,omitempty"`
+	// SandboxPolicy must be a tagged OBJECT upstream, not a mode string: sending
+	// "workspace-write" is rejected, and the discriminators are the camelCase
+	// readOnly/workspaceWrite/dangerFullAccess -- not the SandboxMode spellings.
+	// Use the SandboxPolicy constructors.
+	SandboxPolicy     *SandboxPolicy  `json:"sandboxPolicy,omitempty"`
+	Permissions       []string        `json:"permissions,omitempty"`
+	Model             string          `json:"model,omitempty"`
+	ServiceTier       string          `json:"serviceTier,omitempty"`
+	Effort            string          `json:"effort,omitempty"`
+	Summary           string          `json:"summary,omitempty"`
+	OutputSchema      json.RawMessage `json:"outputSchema,omitempty"`
+	CollaborationMode string          `json:"collaborationMode,omitempty"`
+	MultiAgentMode    string          `json:"multiAgentMode,omitempty"`
+	Environments      []string        `json:"environments,omitempty"`
 }
 
 type TurnInterruptParams struct {

@@ -67,10 +67,16 @@ func WithApprovalPolicy(policy string) TurnOption {
 	}
 }
 
-// WithSandbox sets the sandbox policy for the turn.
-func WithSandbox(sandbox string) TurnOption {
+// WithSandboxPolicy sets the sandbox policy for the turn.
+//
+// This replaces WithSandbox(string). That took a bare mode string and assigned it straight to
+// the wire field, which upstream types as a tagged OBJECT -- so the payload was rejected on
+// two counts, wrong JSON type and the wrong value spelling. A string cannot be a valid policy,
+// which is why the string-taking option is gone rather than reinterpreted.
+func WithSandboxPolicy(policy SandboxPolicy) TurnOption {
 	return func(r *TurnStartParams) {
-		r.SandboxPolicy = sandbox
+		p := policy
+		r.SandboxPolicy = &p
 	}
 }
 
@@ -81,10 +87,13 @@ func WithApprovalMode(mode ApprovalMode) TurnOption {
 	}
 }
 
-// WithSandboxMode sets a typed sandbox policy for the turn.
+// WithSandboxMode sets the sandbox policy from a SandboxMode.
+//
+// The mode and the policy are different upstream types with different value spellings, so this
+// converts rather than casts. Assigning the mode string directly is the bug it replaces.
 func WithSandboxMode(mode SandboxMode) TurnOption {
 	return func(r *TurnStartParams) {
-		r.SandboxPolicy = string(mode)
+		r.SandboxPolicy = SandboxPolicyFromMode(mode)
 	}
 }
 

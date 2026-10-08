@@ -159,7 +159,13 @@ func TestTypedEnumOptions(t *testing.T) {
 	if req.ApprovalPolicy != "never" {
 		t.Fatalf("approval policy: %q", req.ApprovalPolicy)
 	}
-	if req.SandboxPolicy != "workspace-write" {
-		t.Fatalf("sandbox policy: %q", req.SandboxPolicy)
+	// The mode is converted to the policy OBJECT the wire requires. The previous assertion
+	// pinned "workspace-write", which is the SandboxMode spelling, not the SandboxPolicy
+	// discriminator -- the payload was rejected on both the JSON type and the value.
+	if req.SandboxPolicy == nil {
+		t.Fatal("sandbox policy was not set")
+	}
+	if req.SandboxPolicy.Type != codexgo.SandboxPolicyTypeWorkspaceWrite {
+		t.Fatalf("sandbox policy type: %q, want %q", req.SandboxPolicy.Type, codexgo.SandboxPolicyTypeWorkspaceWrite)
 	}
 }

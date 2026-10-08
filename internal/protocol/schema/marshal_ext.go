@@ -67,21 +67,21 @@ func (r TurnSteerParams) MarshalJSON() ([]byte, error) {
 // server expects and passes all other fields through unchanged.
 func (r TurnStartParams) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		ThreadID            string   `json:"threadId"`
-		Input               any      `json:"input"`
-		ClientUserMessageID string   `json:"clientUserMessageId,omitempty"`
-		CWD                 string   `json:"cwd,omitempty"`
-		ApprovalPolicy      string   `json:"approvalPolicy,omitempty"`
-		SandboxPolicy       string   `json:"sandboxPolicy,omitempty"`
-		Permissions         []string `json:"permissions,omitempty"`
-		Model               string   `json:"model,omitempty"`
-		ServiceTier         string   `json:"serviceTier,omitempty"`
-		Effort              string   `json:"effort,omitempty"`
-		Summary             string   `json:"summary,omitempty"`
-		OutputSchema        any      `json:"outputSchema,omitempty"`
-		CollaborationMode   string   `json:"collaborationMode,omitempty"`
-		MultiAgentMode      string   `json:"multiAgentMode,omitempty"`
-		Environments        []string `json:"environments,omitempty"`
+		ThreadID            string         `json:"threadId"`
+		Input               any            `json:"input"`
+		ClientUserMessageID string         `json:"clientUserMessageId,omitempty"`
+		CWD                 string         `json:"cwd,omitempty"`
+		ApprovalPolicy      string         `json:"approvalPolicy,omitempty"`
+		SandboxPolicy       *SandboxPolicy `json:"sandboxPolicy,omitempty"`
+		Permissions         []string       `json:"permissions,omitempty"`
+		Model               string         `json:"model,omitempty"`
+		ServiceTier         string         `json:"serviceTier,omitempty"`
+		Effort              string         `json:"effort,omitempty"`
+		Summary             string         `json:"summary,omitempty"`
+		OutputSchema        any            `json:"outputSchema,omitempty"`
+		CollaborationMode   string         `json:"collaborationMode,omitempty"`
+		MultiAgentMode      string         `json:"multiAgentMode,omitempty"`
+		Environments        []string       `json:"environments,omitempty"`
 	}
 
 	return json.Marshal(alias{

@@ -30,6 +30,7 @@ type (
 	ThreadRevertResponse   = schematypes.ThreadRevertResponse
 	TurnSteerParams        = schematypes.TurnSteerParams
 	ReviewStartParams      = schematypes.ReviewStartParams
+	SandboxPolicy          = schematypes.SandboxPolicy
 	ReviewStartResponse    = schematypes.ReviewStartResponse
 	ReviewTarget           = schematypes.ReviewTarget
 	ReviewDelivery         = schematypes.ReviewDelivery
@@ -212,8 +213,15 @@ const (
 	ReviewTargetTypeCommit             = schematypes.ReviewTargetTypeCommit
 	ReviewTargetTypeCustom             = schematypes.ReviewTargetTypeCustom
 
-	ReviewDeliveryInline   = schematypes.ReviewDeliveryInline
-	ReviewDeliveryDetached = schematypes.ReviewDeliveryDetached
+	ReviewDeliveryInline = schematypes.ReviewDeliveryInline
+
+	// SandboxPolicy discriminators (note the camelCase spellings, which differ from the
+	// SandboxMode values they correspond to).
+	SandboxPolicyTypeDangerFullAccess = schematypes.SandboxPolicyTypeDangerFullAccess
+	SandboxPolicyTypeReadOnly         = schematypes.SandboxPolicyTypeReadOnly
+	SandboxPolicyTypeExternalSandbox  = schematypes.SandboxPolicyTypeExternalSandbox
+	SandboxPolicyTypeWorkspaceWrite   = schematypes.SandboxPolicyTypeWorkspaceWrite
+	ReviewDeliveryDetached            = schematypes.ReviewDeliveryDetached
 
 	MergeStrategyReplace = schematypes.MergeStrategyReplace
 	MergeStrategyUpsert  = schematypes.MergeStrategyUpsert
@@ -386,3 +394,20 @@ func CommitTarget(sha string, title *string) ReviewTarget {
 func CustomTarget(instructions string) ReviewTarget {
 	return schematypes.CustomTarget(instructions)
 }
+
+// SandboxPolicy constructors. A type alias carries no functions, so these wrap the
+// schema-package ones to give callers a way to build the tagged object the wire requires.
+func DangerFullAccessPolicy() SandboxPolicy { return schematypes.DangerFullAccessPolicy() }
+
+// ReadOnlyPolicy allows reads only.
+func ReadOnlyPolicy() SandboxPolicy { return schematypes.ReadOnlyPolicy() }
+
+// ExternalSandboxPolicy uses an externally managed sandbox.
+func ExternalSandboxPolicy() SandboxPolicy { return schematypes.ExternalSandboxPolicy() }
+
+// WorkspaceWritePolicy writes only inside the workspace. Set WritableRoots and the Exclude*
+// fields on the returned value to widen or narrow it.
+func WorkspaceWritePolicy() SandboxPolicy { return schematypes.WorkspaceWritePolicy() }
+
+// SandboxPolicyFromMode maps a SandboxMode onto the equivalent policy object.
+func SandboxPolicyFromMode(m SandboxMode) *SandboxPolicy { return schematypes.SandboxPolicyFromMode(m) }

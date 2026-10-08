@@ -1432,14 +1432,6 @@ const (
 	MultiAgentVersionV2       MultiAgentVersion = "v2"
 )
 
-// NetworkAccess mirrors the upstream `NetworkAccess` enum.
-type NetworkAccess string
-
-const (
-	NetworkAccessRestricted NetworkAccess = "restricted"
-	NetworkAccessEnabled    NetworkAccess = "enabled"
-)
-
 // NetworkApprovalProtocol mirrors the upstream `NetworkApprovalProtocol` enum.
 type NetworkApprovalProtocol string
 
@@ -1726,9 +1718,6 @@ const (
 	SandboxModeWorkspaceWrite   SandboxMode = "workspace-write"
 	SandboxModeDangerFullAccess SandboxMode = "danger-full-access"
 )
-
-// SandboxPolicy mirrors the upstream `SandboxPolicy` definition.
-type SandboxPolicy = json.RawMessage
 
 // SandboxWorkspaceWrite mirrors the upstream `SandboxWorkspaceWrite` definition.
 type SandboxWorkspaceWrite struct {

@@ -1594,6 +1594,15 @@
     "test": "approval_adapter_test.go"
   },
   {
+    "method": "item/permissions/requestApproval",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go"
+    ],
+    "test": "approval_adapter_test.go"
+  },
+  {
     "method": "item/tool/call",
     "face": "server_request",
     "kind": "server_request_handler",
@@ -1601,6 +1610,15 @@
       "interaction.go"
     ],
     "test": "sdk_v2_test.go"
+  },
+  {
+    "method": "item/tool/requestUserInput",
+    "face": "server_request",
+    "kind": "server_request_handler",
+    "wiring": [
+      "interaction.go"
+    ],
+    "test": "client_stdio_test.go"
   },
   {
     "method": "mcpServer/elicitation/request",

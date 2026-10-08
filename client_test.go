@@ -110,11 +110,11 @@ func (testApprovals) HandleFileChangeApproval(context.Context, FileChangeApprova
 }
 
 func (testApprovals) HandlePermissionsApproval(context.Context, PermissionsApprovalRequest) (PermissionsApprovalResult, error) {
-	return PermissionsApprovalResult{Permissions: []string{"read"}}, nil
+	return PermissionsApprovalResult{Permissions: GrantedPermissionProfile{FileSystem: json.RawMessage(`{"read":["/tmp/x"]}`)}}, nil
 }
 
 func (testApprovals) HandleUserInputRequest(context.Context, UserInputRequest) (UserInputResult, error) {
-	return UserInputResult{Answers: map[string]string{"a": "b"}}, nil
+	return UserInputResult{Answers: map[string]UserInputAnswer{"a": {Answers: []string{"b"}}}}, nil
 }
 
 func mustJSON(t *testing.T, v any) []byte {

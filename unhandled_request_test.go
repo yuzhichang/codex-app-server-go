@@ -144,3 +144,97 @@ func TestUnknownServerRequestIsMethodNotFound(t *testing.T) {
 		t.Fatalf("used -32603 where -32601 is meant: %s", result)
 	}
 }
+
+// With no PermissionsApprovalHandler the SDK must grant nothing. Escalating permissions on
+// the caller's behalf would be far worse than refusing, and an empty GrantedPermissionProfile
+// is a valid reply (upstream's own test deserializes `{"permissions":{}}`).
+func TestUnconfiguredPermissionsApprovalGrantsNothing(t *testing.T) {
+	client, mock := newClientFromMock(t, codexgo.WithRequestHandler(&codexgo.Dispatcher{}))
+	sub := client.Events()
+	defer sub.Close()
+	time.Sleep(20 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := mock.RequestAndWait(ctx, 301, "item/permissions/requestApproval", map[string]any{
+		"threadId": "t-p", "turnId": "turn-p", "itemId": "i-p",
+		"permissions": map[string]any{"fileSystem": map[string]any{"write": []string{"/etc"}}},
+		"cwd":         "/tmp",
+		"startedAtMs": 1,
+	})
+	if err != nil {
+		t.Fatalf("a JSON-RPC error was returned, which can end the turn: %v", err)
+	}
+
+	var resp struct {
+		Permissions map[string]json.RawMessage `json:"permissions"`
+	}
+	if err := json.Unmarshal(result, &resp); err != nil {
+		t.Fatalf("unmarshal: %v (raw: %s)", err, result)
+	}
+	if resp.Permissions == nil {
+		t.Fatalf("`permissions` is required upstream and must be present: %s", result)
+	}
+	if len(resp.Permissions) != 0 {
+		t.Fatalf("granted something without a handler: %s", result)
+	}
+	// The request asked for write access to /etc; nothing of it may leak into the answer.
+	if strings.Contains(string(result), "/etc") {
+		t.Fatalf("the requested escalation was echoed back: %s", result)
+	}
+	_ = collectUntilEvent(sub, codexgo.EventMethodUnhandledServerRequest, 2*time.Second)
+}
+
+// With no UserInputHandler the SDK answers with an empty map: `answers` is required
+// upstream, so an absent field would be a malformed reply.
+func TestUnconfiguredUserInputAnswersNothing(t *testing.T) {
+	client, mock := newClientFromMock(t, codexgo.WithRequestHandler(&codexgo.Dispatcher{}))
+	sub := client.Events()
+	defer sub.Close()
+	time.Sleep(20 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := mock.RequestAndWait(ctx, 302, "item/tool/requestUserInput", map[string]any{
+		"threadId": "t-u", "turnId": "turn-u",
+		"questions": []map[string]any{{"id": "q1", "header": "H", "question": "?"}},
+	})
+	if err != nil {
+		t.Fatalf("a JSON-RPC error was returned, which can end the turn: %v", err)
+	}
+
+	var resp struct {
+		Answers map[string]json.RawMessage `json:"answers"`
+	}
+	if err := json.Unmarshal(result, &resp); err != nil {
+		t.Fatalf("unmarshal: %v (raw: %s)", err, result)
+	}
+	if resp.Answers == nil {
+		t.Fatalf("`answers` is required upstream and must be present: %s", result)
+	}
+	if len(resp.Answers) != 0 {
+		t.Fatalf("answered something without a handler: %s", result)
+	}
+	_ = collectUntilEvent(sub, codexgo.EventMethodUnhandledServerRequest, 2*time.Second)
+}
+
+// collectUntilEvent waits for a specific synthetic event, returning it or nil.
+func collectUntilEvent(sub *codexgo.EventSubscription, method string, deadline time.Duration) *codexgo.Event {
+	timeout := time.After(deadline)
+	for {
+		select {
+		case ev, ok := <-sub.C():
+			if !ok {
+				return nil
+			}
+			if ev.Method == method {
+				got := ev
+				return &got
+			}
+		case <-timeout:
+			return nil
+		}
+	}
+}

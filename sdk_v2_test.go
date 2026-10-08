@@ -1555,25 +1555,27 @@ func TestApprovalCancelVsDecline(t *testing.T) {
 
 // ---- Test #8 — TestPermissionsApprovalHandler ----
 
+type permissionsHandlerFunc func(context.Context, codexgo.PermissionsApprovalRequest) (codexgo.PermissionsApprovalResponse, error)
+
+func (f permissionsHandlerFunc) HandlePermissionsApproval(ctx context.Context, req codexgo.PermissionsApprovalRequest) (codexgo.PermissionsApprovalResponse, error) {
+	return f(ctx, req)
+}
+
+// The SDK answers `item/permissions/requestApproval` itself now, so a Fallback handler no
+// longer intercepts it -- Dispatcher.Permissions is the supported way. This test previously
+// installed a Fallback precisely because nothing handled the method.
 func TestPermissionsApprovalHandler(t *testing.T) {
-	// permissions/requestApproval method is "item/permissions/requestApproval"
 	const permissionsMethod = "item/permissions/requestApproval"
 
-	permissionHandler := codexgo.RequestHandlerFunc(func(_ context.Context, req codexgo.ServerRequest) (codexgo.ServerResponse, error) {
-		if req.Method != permissionsMethod {
-			return codexgo.ServerResponse{}, nil
-		}
-		// Accept the permissions request.
-		resp := map[string]any{"decision": "accept"}
-		data, _ := json.Marshal(resp)
-		return codexgo.ServerResponse{Result: data}, nil
+	var got codexgo.PermissionsApprovalRequest
+	handler := permissionsHandlerFunc(func(_ context.Context, req codexgo.PermissionsApprovalRequest) (codexgo.PermissionsApprovalResponse, error) {
+		got = req
+		return codexgo.PermissionsApprovalResponse{
+			Permissions: codexgo.GrantedPermissionProfile{Network: json.RawMessage(`{"enabled":true}`)},
+		}, nil
 	})
 
-	dispatcher := &codexgo.Dispatcher{
-		Fallback: permissionHandler,
-	}
-
-	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(dispatcher))
+	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(&codexgo.Dispatcher{Permissions: handler}))
 
 	time.Sleep(20 * time.Millisecond)
 
@@ -1581,24 +1583,33 @@ func TestPermissionsApprovalHandler(t *testing.T) {
 	defer cancel()
 
 	result, err := mock.RequestAndWait(ctx, 200, permissionsMethod, map[string]any{
-		"itemId":      "item-perm",
-		"threadId":    "t-perm",
-		"turnId":      "turn-perm",
-		"permissions": []string{"network"},
-		"scope":       "session",
+		"itemId":   "item-perm",
+		"threadId": "t-perm",
+		"turnId":   "turn-perm",
+		// Upstream sends an OBJECT here. The old SDK typed it as []string, which meant a
+		// real request could not be decoded at all.
+		"permissions": map[string]any{"fileSystem": map[string]any{"read": []string{"/tmp/x"}}},
+		"cwd":         "/tmp",
+		"startedAtMs": 1,
 	})
 	if err != nil {
 		t.Fatalf("RequestAndWait: %v", err)
 	}
 
-	var resp struct {
-		Decision string `json:"decision"`
+	// The handler must receive the request with its structured profile intact.
+	if got.ThreadID != "t-perm" || got.TurnID != "turn-perm" {
+		t.Fatalf("handler got unexpected ids: %+v", got)
 	}
+	if len(got.Permissions) == 0 || got.Permissions[0] != '{' {
+		t.Fatalf("permissions profile not preserved: %s", got.Permissions)
+	}
+
+	var resp codexgo.PermissionsApprovalResponse
 	if err := json.Unmarshal(result, &resp); err != nil {
 		t.Fatalf("unmarshal response: %v (raw: %s)", err, string(result))
 	}
-	if resp.Decision != "accept" {
-		t.Fatalf("expected decision=accept, got %q", resp.Decision)
+	if len(resp.Permissions.Network) == 0 {
+		t.Fatalf("handler's grant was not relayed: %+v", resp.Permissions)
 	}
 }
 

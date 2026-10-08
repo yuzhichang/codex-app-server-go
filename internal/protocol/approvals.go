@@ -66,18 +66,58 @@ type FileChangeApprovalResponse struct {
 	Decision FileChangeApprovalDecision `json:"decision"`
 }
 
+// PermissionsApprovalRequest is the payload of `item/permissions/requestApproval`.
+//
+// Declared upstream as `PermissionsRequestApprovalParams`
+// (protocol/v2/permissions.rs:771-786) and absent from the v2 aggregate.
+//
+// The previous SDK shape typed `permissions` as `[]string`. That was not merely imprecise:
+// upstream sends an OBJECT (`RequestPermissionProfile`), so decoding a real request into a
+// []string fails outright. The field is now passed through as raw JSON rather than
+// modelled, because the profile is a family of nested types (network + fileSystem with
+// per-path read/write lists) that the SDK has no other use for; a handler can decode it if
+// it needs the detail.
+//
+// `startedAtMs` and `cwd` are required upstream and were missing entirely.
 type PermissionsApprovalRequest struct {
-	ItemID      string           `json:"itemId,omitempty"`
-	ThreadID    string           `json:"threadId,omitempty"`
-	TurnID      string           `json:"turnId,omitempty"`
-	Reason      string           `json:"reason,omitempty"`
-	Permissions []string         `json:"permissions,omitempty"`
-	Scope       PermissionsScope `json:"scope,omitempty"`
+	ThreadID      string          `json:"threadId"`
+	TurnID        string          `json:"turnId"`
+	ItemID        string          `json:"itemId"`
+	EnvironmentID string          `json:"environmentId,omitempty"`
+	StartedAtMs   int64           `json:"startedAtMs"`
+	CWD           string          `json:"cwd"`
+	Reason        string          `json:"reason,omitempty"`
+	Permissions   json.RawMessage `json:"permissions"`
 }
 
+// GrantedPermissionProfile is the *additional* permission being granted on top of the
+// sandbox (protocol/v2/permissions.rs:505-512). Both fields are optional upstream, so the
+// zero value grants nothing.
+type GrantedPermissionProfile struct {
+	// Network and FileSystem are pass-through for the same reason as above: the SDK never
+	// needs to inspect them, only to relay what a handler decided.
+	Network    json.RawMessage `json:"network,omitempty"`
+	FileSystem json.RawMessage `json:"fileSystem,omitempty"`
+}
+
+// PermissionsApprovalResponse answers `item/permissions/requestApproval`.
+//
+// Upstream `PermissionsRequestApprovalResponse` (permissions.rs:796-807): `permissions` is
+// required, while `scope` defaults to `turn` and `strictAutoReview` is optional -- both are
+// omitted by the SDK's default answer, which sidesteps the scope enum's wire casing.
 type PermissionsApprovalResponse struct {
-	Permissions []string         `json:"permissions,omitempty"`
-	Scope       PermissionsScope `json:"scope,omitempty"`
+	Permissions      GrantedPermissionProfile `json:"permissions"`
+	Scope            string                   `json:"scope,omitempty"`
+	StrictAutoReview *bool                    `json:"strictAutoReview,omitempty"`
+}
+
+// DenyPermissions is the answer when no handler is configured: grant nothing.
+//
+// Upstream's own test `permissions_request_approval_response_defaults_scope_to_turn`
+// deserializes exactly `{"permissions": {}}`, so an empty profile is a valid -- and
+// non-escalating -- reply.
+func DenyPermissions() PermissionsApprovalResponse {
+	return PermissionsApprovalResponse{Permissions: GrantedPermissionProfile{}}
 }
 
 type UserInputOption struct {
@@ -99,11 +139,29 @@ type UserInputRequest struct {
 	Questions []UserInputQuestion `json:"questions,omitempty"`
 }
 
+// UserInputAnswer is one question's answer.
+//
+// Upstream `ToolRequestUserInputAnswer` (protocol/v2/item.rs:1798-1801) holds a LIST of
+// strings, so `UserInputResponse.Answers` used to be typed `map[string]string` and could not
+// represent a real answer -- nor produce one.
+type UserInputAnswer struct {
+	Answers []string `json:"answers"`
+}
+
+// UserInputResponse answers `item/tool/requestUserInput`.
+//
+// Upstream `ToolRequestUserInputResponse` (item.rs:1803-1809): `answers` is required, so the
+// SDK's refusal is an empty map rather than an absent field.
 type UserInputResponse struct {
-	Answers map[string]string `json:"answers,omitempty"`
+	Answers map[string]UserInputAnswer `json:"answers"`
 }
 
 type UserInputResult = UserInputResponse
+
+// DeclineUserInput is the answer when no handler is configured: answer nothing.
+func DeclineUserInput() UserInputResponse {
+	return UserInputResponse{Answers: map[string]UserInputAnswer{}}
+}
 
 type MCPServerElicitationRequest struct {
 	ItemID   string          `json:"itemId,omitempty"`

@@ -20,10 +20,14 @@ type (
 	FileChangeApprovalRequest           = protocol.FileChangeApprovalRequest
 	FileChangeApprovalResult            = protocol.FileChangeApprovalResponse
 	PermissionsApprovalRequest          = protocol.PermissionsApprovalRequest
+	PermissionsApprovalResponse         = protocol.PermissionsApprovalResponse
+	GrantedPermissionProfile            = protocol.GrantedPermissionProfile
 	PermissionsApprovalResult           = protocol.PermissionsApprovalResponse
 	UserInputQuestion                   = protocol.UserInputQuestion
 	UserInputOption                     = protocol.UserInputOption
 	UserInputRequest                    = protocol.UserInputRequest
+	UserInputResponse                   = protocol.UserInputResponse
+	UserInputAnswer                     = protocol.UserInputAnswer
 	UserInputResult                     = protocol.UserInputResult
 	ServerRequest                       = protocol.ServerRequest
 	ServerResponse                      = protocol.ServerResponse
@@ -133,6 +137,18 @@ type AuthTokensHandler interface {
 	HandleAuthTokensRefresh(ctx context.Context, req ChatgptAuthTokensRefreshParams) (ChatgptAuthTokensRefreshResponse, error)
 }
 
+// PermissionsApprovalHandler handles `item/permissions/requestApproval`: the server asking
+// to widen the sandbox for a specific request.
+type PermissionsApprovalHandler interface {
+	HandlePermissionsApproval(ctx context.Context, req PermissionsApprovalRequest) (PermissionsApprovalResponse, error)
+}
+
+// UserInputHandler handles `item/tool/requestUserInput`: the server asking the user a set of
+// questions on a tool's behalf.
+type UserInputHandler interface {
+	HandleUserInput(ctx context.Context, req UserInputRequest) (UserInputResponse, error)
+}
+
 // ExecApprovalHandler handles command-execution approval requests.
 type ExecApprovalHandler interface {
 	HandleCommandExecutionApproval(context.Context, CommandExecutionApprovalRequest) (CommandExecutionApprovalResult, error)
@@ -179,6 +195,14 @@ type Dispatcher struct {
 	// If nil, dynamic tool calls are answered with an empty content array.
 	DynamicTool DynamicToolHandler
 
+	// Permissions handles "item/permissions/requestApproval" requests.
+	// If nil, the SDK grants nothing (the session continues; decision R9).
+	Permissions PermissionsApprovalHandler
+
+	// UserInput handles "item/tool/requestUserInput" requests.
+	// If nil, the SDK answers with no answers (the session continues; decision R9).
+	UserInput UserInputHandler
+
 	// Elicitation handles "mcpServer/elicitation/request" requests.
 	// If nil, such requests are declined (the session continues; decision R9).
 	Elicitation ElicitationHandler
@@ -222,6 +246,42 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 	case protocol.MethodExecCommandApproval:
 		d.notifyUnhandled(req, "declined", "execCommandApproval is not implemented (decision R4)")
 		return serverResponseFrom(protocol.ExecCommandApprovalResponse{Decision: protocol.DenyReview()})
+
+	case protocol.MethodItemPermissionsRequestApproval:
+		if d.Permissions == nil {
+			// Grant nothing rather than erroring: an empty GrantedPermissionProfile is a
+			// valid reply (upstream's own test deserializes `{"permissions":{}}`), and
+			// escalating permissions on the caller's behalf would be far worse than
+			// refusing.
+			d.notifyUnhandled(req, "declined", "no PermissionsApprovalHandler configured")
+			return serverResponseFrom(protocol.DenyPermissions())
+		}
+		var r PermissionsApprovalRequest
+		if err := json.Unmarshal(req.Params, &r); err != nil {
+			return ServerResponse{}, err
+		}
+		result, err := d.Permissions.HandlePermissionsApproval(ctx, r)
+		if err != nil {
+			return ServerResponse{}, err
+		}
+		return serverResponseFrom(result)
+
+	case protocol.MethodItemToolRequestUserInput:
+		if d.UserInput == nil {
+			// `answers` is required upstream, so refusal is an empty map rather than an
+			// absent field.
+			d.notifyUnhandled(req, "declined", "no UserInputHandler configured")
+			return serverResponseFrom(protocol.DeclineUserInput())
+		}
+		var r UserInputRequest
+		if err := json.Unmarshal(req.Params, &r); err != nil {
+			return ServerResponse{}, err
+		}
+		result, err := d.UserInput.HandleUserInput(ctx, r)
+		if err != nil {
+			return ServerResponse{}, err
+		}
+		return serverResponseFrom(result)
 
 	case protocol.MethodItemCommandExecutionRequestApproval:
 		if d.Exec == nil {

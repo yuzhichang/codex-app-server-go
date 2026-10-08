@@ -55,8 +55,8 @@ func TestDecodeFileChangeApprovalRequest(t *testing.T) {
 func TestDecodePermissionsApprovalRequest(t *testing.T) {
 	params, _ := json.Marshal(PermissionsApprovalRequest{
 		ThreadID:    "t3",
-		Permissions: []string{"read", "write", "exec"},
-		Scope:       PermissionsScopeSession,
+		CWD:         "/tmp/w",
+		Permissions: json.RawMessage(`{"fileSystem":{"read":["/tmp/x"]}}`),
 	})
 	v, err := DecodeServerRequest(MethodItemPermissionsRequestApproval, params)
 	if err != nil {
@@ -66,8 +66,13 @@ func TestDecodePermissionsApprovalRequest(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected PermissionsApprovalRequest, got %T", v)
 	}
-	if req.ThreadID != "t3" || len(req.Permissions) != 3 || req.Scope != PermissionsScopeSession {
+	// `permissions` is an object upstream, not a list; it is passed through as raw JSON so
+	// the shape survives without the SDK modelling the whole profile family.
+	if req.ThreadID != "t3" || req.CWD != "/tmp/w" {
 		t.Fatalf("unexpected fields: %+v", req)
+	}
+	if len(req.Permissions) == 0 || req.Permissions[0] != '{' {
+		t.Fatalf("permissions profile was not preserved: %s", req.Permissions)
 	}
 }
 

@@ -86,17 +86,21 @@ func TestApprovalAdapterPermissions(t *testing.T) {
 	}
 	resp, err := ft.handler.HandleServerRequest(context.Background(), ServerRequest{
 		Method: "item/permissions/requestApproval",
-		Params: mustJSON(t, PermissionsApprovalRequest{ThreadID: "t3", Permissions: []string{"read", "write"}}),
+		Params: mustJSON(t, PermissionsApprovalRequest{
+			ThreadID:    "t3",
+			Permissions: json.RawMessage(`{"fileSystem":{"read":["/tmp/x"]}}`),
+		}),
 	})
 	if err != nil {
 		t.Fatalf("HandleServerRequest() error = %v", err)
 	}
-	var result PermissionsApprovalResult
+	var result PermissionsApprovalResponse
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		t.Fatalf("unmarshal result: %v", err)
 	}
-	if len(result.Permissions) == 0 || result.Permissions[0] != "read" {
-		t.Fatalf("unexpected permissions: %v", result.Permissions)
+	// The granted profile is an object, so relaying it is the assertion.
+	if len(result.Permissions.FileSystem) == 0 {
+		t.Fatalf("handler's grant was not relayed: %+v", result.Permissions)
 	}
 }
 

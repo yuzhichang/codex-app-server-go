@@ -59,13 +59,14 @@ func (a *autoApprover) HandlePermissionsApproval(_ context.Context, _ codexgo.Pe
 }
 
 func (a *autoApprover) HandleUserInputRequest(_ context.Context, req codexgo.UserInputRequest) (codexgo.UserInputResult, error) {
-	answers := make(map[string]string, len(req.Questions))
+	answers := make(map[string]codexgo.UserInputAnswer, len(req.Questions))
 	for _, q := range req.Questions {
+		text := "yes"
 		if len(q.Options) > 0 {
-			answers[q.ID] = q.Options[0].Label
-		} else {
-			answers[q.ID] = "yes"
+			text = q.Options[0].Label
 		}
+		// Each answer is a *list* of choices upstream, not a bare string.
+		answers[q.ID] = codexgo.UserInputAnswer{Answers: []string{text}}
 	}
 	return codexgo.UserInputResult{Answers: answers}, nil
 }

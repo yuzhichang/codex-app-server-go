@@ -199,6 +199,226 @@ def _string_enum_union(spec: dict):
     return values or None
 
 
+def _scalar_arm(spec: dict):
+    """Representation for a non-object arm, or None if the arm is not a plain scalar.
+
+    Returns (kind, go_type) where kind is string/integer/array.
+    """
+    if not isinstance(spec, dict):
+        return None
+    t = spec.get("type")
+    if t == "string":
+        return ("string", "string")
+    if t == "integer":
+        return ("integer", "int64")
+    if t == "array":
+        items = spec.get("items") or {}
+        elem = items.get("$ref", "").split("/")[-1] or items.get("type")
+        if not elem or not isinstance(elem, str):
+            return None
+        builtin = {"string": "string", "integer": "int64", "number": "float64", "boolean": "bool"}
+        return ("array", "[]" + builtin.get(elem, go_name(elem)))
+    return None
+
+
+def _string_arm_union(spec: dict):
+    """Arms of a union that CANNOT be a flat struct, because at least one arm is not an object.
+
+    A struct always encodes as an object, so a union whose arms include a bare string, integer
+    or array has no struct representation and needs its own JSON encoding. Returns the arms, or
+    None when every arm is an object (the flat-struct strategies handle those).
+
+    Also returns None when any arm is a shape this emitter cannot represent faithfully, so a
+    working RawMessage is never replaced by a half-modelled type.
+    """
+    variants = None
+    for key in ("oneOf", "anyOf"):
+        if isinstance(spec.get(key), list) and spec[key]:
+            variants = spec[key]
+            break
+    if variants is None:
+        return None
+    if all(_scalar_arm(v) is None and isinstance(v, dict) and "properties" in v for v in variants):
+        return None
+    # Two arms cannot share a JSON token: the decoder dispatches on the token alone, so a
+    # second object arm (SessionSource has two) would produce a duplicate `case '{'` and
+    # nothing could tell them apart. Refuse rather than guess.
+    tokens: set[str] = set()
+    for v in variants:
+        scalar = _scalar_arm(v)
+        tok = ("string" if scalar and scalar[0] == "string"
+               else "number" if scalar and scalar[0] == "integer"
+               else "array" if scalar else "object")
+        if tok in tokens:
+            return None
+        tokens.add(tok)
+
+    for v in variants:
+        if _scalar_arm(v) is not None:
+            continue
+        if isinstance(v, dict) and v.get("$ref"):
+            continue
+        if isinstance(v, dict) and v.get("title") and isinstance(v.get("properties"), dict):
+            # Refuse when a property is itself an INLINE object. The type mapper renders an
+            # inline object as map[string]any (it has no name to refer to), which would throw
+            # away named fields. AskForApproval's `granular` is exactly that, and the
+            # hand-written form types its three required booleans -- so generating it would be
+            # a regression. A working RawMessage beats a half-modelled type.
+            for sub in (v.get("properties") or {}).values():
+                if isinstance(sub, dict) and isinstance(sub.get("properties"), dict):
+                    return None
+            continue
+        return None
+    return variants
+
+
+def _emit_object_arm(title: str, arm: dict, defs: dict) -> list[str]:
+    """Emit the nested struct for one titled object arm of a string-arm union."""
+    required = set(arm.get("required") or [])
+    out = [f"// {title} is the object arm of its union.", f"type {title} struct {{"]
+    for raw, sub in (arm.get("properties") or {}).items():
+        optional = raw not in required
+        tag = raw + (",omitempty" if optional else "")
+        out.append(f'\t{go_name(raw)} {go_type(sub, defs, optional)} `json:"{tag}"`')
+    out.append("}")
+    out.append("")
+    return out
+
+
+# Imports the emitters below need beyond encoding/json. Populated as definitions are emitted,
+# because an unused import does not compile and goimports is not run on the output.
+EXTRA_IMPORTS: set[str] = set()
+
+
+def emit_string_arm_union(name: str, variants: list, defs: dict) -> list[str]:
+    """Emit a union that carries its own JSON encoding.
+
+    Scalar arms are typed; a titled object arm becomes a nested struct; a $ref becomes a pointer
+    to the referenced type. Exactly one arm may be set -- enforced by the constructors and
+    checked by the encoder, because a union that silently drops extra arms is worse than an
+    untyped blob. Unmarshalling an arm that is not modelled is an error for the same reason.
+    """
+    EXTRA_IMPORTS.update({"bytes", "errors", "fmt"})
+    fields: list[tuple[str, str]] = []
+    kinds: list[str] = []
+    nested: list[str] = []
+
+    def add(field: str, gotype: str, described: str) -> None:
+        if not any(f[0] == field for f in fields):
+            fields.append((field, gotype))
+            kinds.append(described)
+
+    for v in variants:
+        scalar = _scalar_arm(v)
+        if scalar is not None:
+            kind, gotype = scalar
+            if kind == "string":
+                add("String", "*string", "a string")
+            elif kind == "integer":
+                add("Number", "*int64", "an integer")
+            else:
+                add("List", gotype, "an array")
+            continue
+        if v.get("$ref"):
+            ref = go_name(v["$ref"].split("/")[-1])
+            add(ref, "*" + ref, "a " + ref)
+            continue
+        title = go_name(v["title"])
+        nested.extend(_emit_object_arm(title, v, defs))
+        add(title, "*" + title, "a " + title)
+
+    out = list(nested)
+    out += [
+        f"// {name} is a union of {', '.join(kinds)}.",
+        "//",
+        "// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a",
+        "// struct with a discriminator the way the tagged unions are: a struct always encodes as",
+        "// an object, which would lose the scalar form entirely. It therefore carries its own JSON",
+        "// encoding. Exactly one arm is set; use the From... constructors.",
+        f"type {name} struct {{",
+    ]
+    for field, gotype in fields:
+        out.append(f"\t{field} {gotype}")
+    out.append("}")
+    out.append("")
+
+    for field, gotype in fields:
+        arg = gotype[1:] if gotype.startswith("*") else gotype
+        out.append(f"// {name}From{field} builds the {field} arm.")
+        if gotype.startswith("*"):
+            out.append(f"func {name}From{field}(v {arg}) {name} {{ return {name}{{{field}: &v}} }}")
+        else:
+            out.append(f"func {name}From{field}(v {arg}) {name} {{ return {name}{{{field}: v}} }}")
+        out.append("")
+
+    def is_set(field: str, gotype: str) -> str:
+        # Pointers for the scalars, so "set to zero" stays distinguishable from "not set".
+        if gotype.startswith("*"):
+            return f"u.{field} != nil"
+        return f"len(u.{field}) > 0"
+
+    out.append("// MarshalJSON encodes whichever arm is set, matching the upstream wire form.")
+    out.append(f"func (u {name}) MarshalJSON() ([]byte, error) {{")
+    out.append("\tset := 0")
+    for field, gotype in fields:
+        out.append(f"\tif {is_set(field, gotype)} {{")
+        out.append("\t\tset++")
+        out.append("\t}")
+    out.append("\tif set != 1 {")
+    out.append(f'\t\treturn nil, fmt.Errorf("{name}: exactly one arm must be set, got %d", set)')
+    out.append("\t}")
+    for field, gotype in fields:
+        out.append(f"\tif {is_set(field, gotype)} {{")
+        out.append(f"\t\treturn json.Marshal(u.{field})")
+        out.append("\t}")
+    out.append('\treturn nil, errors.New("unreachable")')
+    out.append("}")
+    out.append("")
+
+    out.append("// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or")
+    out.append("// an object.")
+    out.append(f"func (u *{name}) UnmarshalJSON(data []byte) error {{")
+    out.append("\ttrimmed := bytes.TrimSpace(data)")
+    out.append("\tif len(trimmed) == 0 {")
+    out.append(f'\t\treturn fmt.Errorf("{name}: empty payload")')
+    out.append("\t}")
+    out.append("\tswitch trimmed[0] {")
+
+    branches: list[tuple[str, str, str]] = []  # (token, field, body)
+    for field, gotype in fields:
+        if gotype == "*string":
+            branches.append(('"', field, f"\t\tvar v string\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = &v"))
+        elif gotype == "*int64":
+            branches.append(("0-9", field, f"\t\tvar v int64\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = &v"))
+        elif gotype.startswith("[]"):
+            branches.append(("[", field, f"\t\tvar v {gotype}\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = v"))
+        else:
+            inner = gotype[1:]
+            branches.append(("{", field, f"\t\tvar v {inner}\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = &v"))
+
+    modelled = set()
+    for token, field, body in branches:
+        if token == "0-9":
+            out.append("\tcase '-', '+':")
+            out.append("\t\tfallthrough")
+            out.append("\tcase '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':")
+        else:
+            out.append(f"\tcase {token!r}:")
+        for line in body.splitlines():
+            out.append(line)
+        out.append("\t\treturn nil")
+        modelled.add(token)
+
+    out.append("\tdefault:")
+    out.append("\t\t// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a")
+    out.append("\t\t// value the caller believes it received.")
+    out.append(f'\t\treturn fmt.Errorf("{name}: unsupported arm %s", trimmed)')
+    out.append("\t}")
+    out.append("}")
+    out.append("")
+    return out
+
+
 def _tagged_union(spec: dict):
     """Return the variants of a `type`-tagged object union, or None.
 
@@ -366,6 +586,10 @@ def emit_definition(name: str, spec: dict, defs: dict) -> list[str]:
             out.append("")
             return out
 
+    arm_defs = _string_arm_union(spec)
+    if arm_defs is not None:
+        return emit_string_arm_union(name, arm_defs, defs)
+
     enum_values = _string_enum_union(spec)
     if enum_values is not None:
         out.append(f"// {name} mirrors the upstream `{name}` enum.")
@@ -479,24 +703,31 @@ def main() -> int:
 
     wanted: set[str] = {n for n in reached if n not in existing}
 
-    header = [
-        "// Code generated by scripts/gen_go_types.py from the vendored codex schema. DO NOT EDIT.",
-        "//",
-        "// Source: internal/protocol/schema/codex_app_server_protocol.v2.schemas.json",
-        f"// Filter: {args.match}",
-        "//",
-        "// Regenerate: make generate-types",
-        "",
-        "package schema",
-        "",
-        "import \"encoding/json\"",
-        "",
-    ]
+    def build_header() -> list[str]:
+        needed = sorted({"encoding/json"} | EXTRA_IMPORTS)
+        if len(needed) == 1:
+            import_block = [f'import "{needed[0]}"']
+        else:
+            import_block = ["import ("] + [f'\t"{n}"' for n in needed] + [")"]
+        return [
+            "// Code generated by scripts/gen_go_types.py from the vendored codex schema. DO NOT EDIT.",
+            "//",
+            "// Source: internal/protocol/schema/codex_app_server_protocol.v2.schemas.json",
+            f"// Filter: {args.match}",
+            "//",
+            "// Regenerate: make generate-types",
+            "",
+            "package schema",
+            "",
+            *import_block,
+            "",
+        ]
     body: list[str] = []
     for name in sorted(wanted):
         body.extend(emit_definition(name, defs[name], defs))
 
-    dest.write_text("\n".join(header + body))
+    # Header last: EXTRA_IMPORTS is only complete once every definition has been emitted.
+    dest.write_text("\n".join(build_header() + body))
     # relative_to raises when --out points outside the repo; fall back to the full path
     # rather than crashing after having already written the file.
     try:

@@ -7,7 +7,12 @@
 
 package schema
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+)
 
 // Account mirrors the upstream `Account` definition.
 //
@@ -1128,8 +1133,76 @@ type FileUpdateChange struct {
 	Path string          `json:"path"`
 }
 
-// ForcedChatgptWorkspaceIds mirrors the upstream `ForcedChatgptWorkspaceIds` definition.
-type ForcedChatgptWorkspaceIds = json.RawMessage
+// ForcedChatgptWorkspaceIds is a union of a string, an array.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type ForcedChatgptWorkspaceIds struct {
+	String *string
+	List   []string
+}
+
+// ForcedChatgptWorkspaceIdsFromString builds the String arm.
+func ForcedChatgptWorkspaceIdsFromString(v string) ForcedChatgptWorkspaceIds {
+	return ForcedChatgptWorkspaceIds{String: &v}
+}
+
+// ForcedChatgptWorkspaceIdsFromList builds the List arm.
+func ForcedChatgptWorkspaceIdsFromList(v []string) ForcedChatgptWorkspaceIds {
+	return ForcedChatgptWorkspaceIds{List: v}
+}
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u ForcedChatgptWorkspaceIds) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if len(u.List) > 0 {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("ForcedChatgptWorkspaceIds: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if len(u.List) > 0 {
+		return json.Marshal(u.List)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *ForcedChatgptWorkspaceIds) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("ForcedChatgptWorkspaceIds: empty payload")
+	}
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '[':
+		var v []string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.List = v
+		return nil
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("ForcedChatgptWorkspaceIds: unsupported arm %s", trimmed)
+	}
+}
 
 // ForcedLoginMethod mirrors the upstream `ForcedLoginMethod` enum.
 type ForcedLoginMethod string
@@ -1139,8 +1212,76 @@ const (
 	ForcedLoginMethodAPI     ForcedLoginMethod = "api"
 )
 
-// FunctionCallOutputBody mirrors the upstream `FunctionCallOutputBody` definition.
-type FunctionCallOutputBody = json.RawMessage
+// FunctionCallOutputBody is a union of a string, an array.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type FunctionCallOutputBody struct {
+	String *string
+	List   []FunctionCallOutputContentItem
+}
+
+// FunctionCallOutputBodyFromString builds the String arm.
+func FunctionCallOutputBodyFromString(v string) FunctionCallOutputBody {
+	return FunctionCallOutputBody{String: &v}
+}
+
+// FunctionCallOutputBodyFromList builds the List arm.
+func FunctionCallOutputBodyFromList(v []FunctionCallOutputContentItem) FunctionCallOutputBody {
+	return FunctionCallOutputBody{List: v}
+}
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u FunctionCallOutputBody) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if len(u.List) > 0 {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("FunctionCallOutputBody: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if len(u.List) > 0 {
+		return json.Marshal(u.List)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *FunctionCallOutputBody) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("FunctionCallOutputBody: empty payload")
+	}
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '[':
+		var v []FunctionCallOutputContentItem
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.List = v
+		return nil
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("FunctionCallOutputBody: unsupported arm %s", trimmed)
+	}
+}
 
 // FunctionCallOutputContentItem mirrors the upstream `FunctionCallOutputContentItem` definition.
 //
@@ -2268,8 +2409,74 @@ type RequestHeader struct {
 	Value string `json:"value"`
 }
 
-// RequestId mirrors the upstream `RequestId` definition.
-type RequestId = json.RawMessage
+// RequestId is a union of a string, an integer.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type RequestId struct {
+	String *string
+	Number *int64
+}
+
+// RequestIdFromString builds the String arm.
+func RequestIdFromString(v string) RequestId { return RequestId{String: &v} }
+
+// RequestIdFromNumber builds the Number arm.
+func RequestIdFromNumber(v int64) RequestId { return RequestId{Number: &v} }
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u RequestId) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if u.Number != nil {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("RequestId: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if u.Number != nil {
+		return json.Marshal(u.Number)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *RequestId) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("RequestId: empty payload")
+	}
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '-', '+':
+		fallthrough
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		var v int64
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.Number = &v
+		return nil
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("RequestId: unsupported arm %s", trimmed)
+	}
+}
 
 // RequestPermissionProfile mirrors the upstream `RequestPermissionProfile` definition.
 type RequestPermissionProfile struct {
@@ -2892,8 +3099,76 @@ const (
 	ThreadItemsListAnchorTypeItem = "item"
 )
 
-// ThreadItemsListCursor mirrors the upstream `ThreadItemsListCursor` definition.
-type ThreadItemsListCursor = json.RawMessage
+// ThreadItemsListCursor is a union of a string, a ThreadItemsListAnchor.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type ThreadItemsListCursor struct {
+	String                *string
+	ThreadItemsListAnchor *ThreadItemsListAnchor
+}
+
+// ThreadItemsListCursorFromString builds the String arm.
+func ThreadItemsListCursorFromString(v string) ThreadItemsListCursor {
+	return ThreadItemsListCursor{String: &v}
+}
+
+// ThreadItemsListCursorFromThreadItemsListAnchor builds the ThreadItemsListAnchor arm.
+func ThreadItemsListCursorFromThreadItemsListAnchor(v ThreadItemsListAnchor) ThreadItemsListCursor {
+	return ThreadItemsListCursor{ThreadItemsListAnchor: &v}
+}
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u ThreadItemsListCursor) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if u.ThreadItemsListAnchor != nil {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("ThreadItemsListCursor: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if u.ThreadItemsListAnchor != nil {
+		return json.Marshal(u.ThreadItemsListAnchor)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *ThreadItemsListCursor) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("ThreadItemsListCursor: empty payload")
+	}
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '{':
+		var v ThreadItemsListAnchor
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.ThreadItemsListAnchor = &v
+		return nil
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("ThreadItemsListCursor: unsupported arm %s", trimmed)
+	}
+}
 
 // ThreadItemsListParams mirrors the upstream `ThreadItemsListParams` definition.
 type ThreadItemsListParams struct {
@@ -2911,8 +3186,74 @@ type ThreadItemsListResponse struct {
 	NextCursor      string            `json:"nextCursor,omitempty"`
 }
 
-// ThreadListCwdFilter mirrors the upstream `ThreadListCwdFilter` definition.
-type ThreadListCwdFilter = json.RawMessage
+// ThreadListCwdFilter is a union of a string, an array.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type ThreadListCwdFilter struct {
+	String *string
+	List   []string
+}
+
+// ThreadListCwdFilterFromString builds the String arm.
+func ThreadListCwdFilterFromString(v string) ThreadListCwdFilter {
+	return ThreadListCwdFilter{String: &v}
+}
+
+// ThreadListCwdFilterFromList builds the List arm.
+func ThreadListCwdFilterFromList(v []string) ThreadListCwdFilter { return ThreadListCwdFilter{List: v} }
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u ThreadListCwdFilter) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if len(u.List) > 0 {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("ThreadListCwdFilter: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if len(u.List) > 0 {
+		return json.Marshal(u.List)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *ThreadListCwdFilter) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("ThreadListCwdFilter: empty payload")
+	}
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '[':
+		var v []string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.List = v
+		return nil
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("ThreadListCwdFilter: unsupported arm %s", trimmed)
+	}
+}
 
 // ThreadListParams mirrors the upstream `ThreadListParams` definition.
 type ThreadListParams struct {

@@ -9,7 +9,10 @@ package codexgo_test
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	codexgo "github.com/zealbase/codex-app-server-go"
 )
@@ -456,6 +459,100 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			// reach the handler with a body.
 			if len(got) == 0 && tc.wire != "" {
 				t.Logf("%s: handler received no params (method may take none)", tc.wire)
+			}
+		})
+	}
+}
+
+// Notification decoders: a stable notification must decode into its modelled event
+// type, not silently fall through to RawNotificationEvent.
+func TestGeneratedNotificationDecoders(t *testing.T) {
+	cases := []struct {
+		wire      string
+		eventType string
+	}{
+		{"account/login/completed", "LoginCompleted"},
+		{"account/rateLimits/updated", "AccountRateLimitsUpdatedEvent"},
+		{"account/updated", "AccountUpdatedEvent"},
+		{"app/list/updated", "AppListUpdatedEvent"},
+		{"command/exec/outputDelta", "CommandExecOutputDeltaEvent"},
+		{"configWarning", "ConfigWarningEvent"},
+		{"deprecationNotice", "DeprecationNoticeEvent"},
+		{"error", "ErrorEvent"},
+		{"externalAgentConfig/import/completed", "ExternalAgentConfigImportCompletedEvent"},
+		{"externalAgentConfig/import/progress", "ExternalAgentConfigImportProgressEvent"},
+		{"fs/changed", "FsChangedEvent"},
+		{"guardianWarning", "GuardianWarningEvent"},
+		{"hook/completed", "HookCompletedEvent"},
+		{"hook/started", "HookStartedEvent"},
+		{"item/agentMessage/delta", "ItemAgentMessageDeltaEvent"},
+		{"item/autoApprovalReview/completed", "ItemAutoApprovalReviewCompletedEvent"},
+		{"item/autoApprovalReview/started", "ItemAutoApprovalReviewStartedEvent"},
+		{"item/commandExecution/outputDelta", "ItemCommandExecutionOutputDeltaEvent"},
+		{"item/commandExecution/terminalInteraction", "TerminalInteractionEvent"},
+		{"item/completed", "ItemCompletedEvent"},
+		{"item/fileChange/outputDelta", "ItemFileChangeOutputDeltaEvent"},
+		{"item/fileChange/patchUpdated", "ItemFileChangePatchUpdatedEvent"},
+		{"item/mcpToolCall/progress", "McpToolCallProgressEvent"},
+		{"item/plan/delta", "ItemPlanDeltaEvent"},
+		{"item/reasoning/summaryPartAdded", "ItemReasoningSummaryPartAddedEvent"},
+		{"item/reasoning/summaryTextDelta", "ItemReasoningSummaryTextDeltaEvent"},
+		{"item/reasoning/textDelta", "ItemReasoningTextDeltaEvent"},
+		{"item/started", "ItemStartedEvent"},
+		{"mcpServer/oauthLogin/completed", "McpServerOauthLoginCompletedEvent"},
+		{"mcpServer/startupStatus/updated", "McpServerStatusUpdatedEvent"},
+		{"model/rerouted", "ModelReroutedEvent"},
+		{"model/verification", "ModelVerificationEvent"},
+		{"rawResponseItem/completed", "RawResponseItemCompletedEvent"},
+		{"remoteControl/status/changed", "RemoteControlStatusChangedEvent"},
+		{"serverRequest/resolved", "ServerRequestResolvedEvent"},
+		{"skills/changed", "SkillsChangedEvent"},
+		{"thread/archived", "ThreadArchivedEvent"},
+		{"thread/closed", "ThreadClosedEvent"},
+		{"thread/compacted", "ThreadCompactedEvent"},
+		{"thread/deleted", "ThreadDeletedEvent"},
+		{"thread/goal/cleared", "ThreadGoalClearedEvent"},
+		{"thread/goal/updated", "ThreadGoalUpdatedEvent"},
+		{"thread/name/updated", "ThreadNameUpdatedEvent"},
+		{"thread/started", "ThreadStartedEvent"},
+		{"thread/status/changed", "ThreadStatusChangedEvent"},
+		{"thread/tokenUsage/updated", "ThreadTokenUsageUpdatedEvent"},
+		{"thread/unarchived", "ThreadUnarchivedEvent"},
+		{"turn/completed", "TurnCompletedEvent"},
+		{"turn/diff/updated", "TurnDiffUpdatedEvent"},
+		{"turn/plan/updated", "TurnPlanUpdatedEvent"},
+		{"turn/started", "TurnStartedEvent"},
+		{"warning", "WarningEvent"},
+		{"windows/worldWritableWarning", "WindowsWorldWritableWarningEvent"},
+		{"windowsSandbox/setupCompleted", "WindowsSandboxSetupCompletedEvent"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.wire, func(t *testing.T) {
+			client, mock := newClientFromMock(t)
+			defer client.Close()
+
+			sub := client.Events()
+			defer sub.Close()
+			time.Sleep(20 * time.Millisecond)
+
+			if err := mock.Notify(tc.wire, map[string]any{"threadId": "thr-1", "turnId": "turn-1"}); err != nil {
+				t.Fatalf("Notify: %v", err)
+			}
+
+			select {
+			case ev := <-sub.C():
+				// reflect prints a package-qualified name (codexgo.Foo, protocol.Bar);
+				// strip the qualifier so the assertion is about the type itself.
+				got := reflect.TypeOf(ev.Value).String()
+				if i := strings.LastIndex(got, "."); i >= 0 {
+					got = got[i+1:]
+				}
+				if got != tc.eventType {
+					t.Fatalf("decoded to %s, want %s", got, tc.eventType)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatalf("timeout waiting for %s", tc.wire)
 			}
 		})
 	}

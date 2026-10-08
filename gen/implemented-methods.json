@@ -1017,6 +1017,15 @@
     "test": "events_extra_test.go"
   },
   {
+    "method": "command/exec/outputDelta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "configWarning",
     "face": "server_notification",
     "kind": "notification_decoder",
@@ -1104,7 +1113,25 @@
     "wiring": [
       "events.go"
     ],
-    "test": "internal/protocol/schema/client_types_wire_test.go"
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "item/autoApprovalReview/completed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "item/autoApprovalReview/started",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "item/commandExecution/outputDelta",
@@ -1113,7 +1140,7 @@
     "wiring": [
       "events.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "item/commandExecution/terminalInteraction",
@@ -1134,6 +1161,24 @@
     "test": "events_wait_test.go"
   },
   {
+    "method": "item/fileChange/outputDelta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "item/fileChange/patchUpdated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "item/mcpToolCall/progress",
     "face": "server_notification",
     "kind": "notification_decoder",
@@ -1143,13 +1188,49 @@
     "test": "events_extra_test.go"
   },
   {
+    "method": "item/plan/delta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "item/reasoning/summaryPartAdded",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "item/reasoning/summaryTextDelta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "item/reasoning/textDelta",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "item/started",
     "face": "server_notification",
     "kind": "notification_decoder",
     "wiring": [
       "events.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "mcpServer/oauthLogin/completed",
@@ -1212,7 +1293,7 @@
     "wiring": [
       "events.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "skills/changed",
@@ -1222,6 +1303,24 @@
       "events_extra.go"
     ],
     "test": "events_extra_test.go"
+  },
+  {
+    "method": "thread/archived",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/closed",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/compacted",
@@ -1242,6 +1341,24 @@
     "test": "events_extra_test.go"
   },
   {
+    "method": "thread/goal/cleared",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/goal/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "thread/name/updated",
     "face": "server_notification",
     "kind": "notification_decoder",
@@ -1257,7 +1374,7 @@
     "wiring": [
       "events.go"
     ],
-    "test": "internal/protocol/schema/client_types_wire_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/status/changed",
@@ -1266,7 +1383,7 @@
     "wiring": [
       "events.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "thread/tokenUsage/updated",
@@ -1275,7 +1392,16 @@
     "wiring": [
       "events.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "thread/unarchived",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "turn/completed",
@@ -1287,13 +1413,31 @@
     "test": "events_wait_test.go"
   },
   {
+    "method": "turn/diff/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
+    "method": "turn/plan/updated",
+    "face": "server_notification",
+    "kind": "notification_decoder",
+    "wiring": [
+      "events.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "turn/started",
     "face": "server_notification",
     "kind": "notification_decoder",
     "wiring": [
       "events.go"
     ],
-    "test": "sdk_v2_test.go"
+    "test": "generated_client_methods_test.go"
   },
   {
     "method": "warning",

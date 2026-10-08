@@ -240,18 +240,42 @@ def _string_arm_union(spec: dict):
         return None
     if all(_scalar_arm(v) is None and isinstance(v, dict) and "properties" in v for v in variants):
         return None
-    # Two arms cannot share a JSON token: the decoder dispatches on the token alone, so a
-    # second object arm (SessionSource has two) would produce a duplicate `case '{'` and
-    # nothing could tell them apart. Refuse rather than guess.
-    tokens: set[str] = set()
+    # Arms are dispatched on their JSON token. Two arms can share a token only if they can be
+    # told apart by content -- which is the case for serde's default "externally tagged"
+    # representation: every object arm is a single required property whose NAME is the variant
+    # tag ({"custom": ...} vs {"subAgent": ...}), so the keys identify the arm. Anything else
+    # sharing a token is genuinely ambiguous and stays refused.
+    groups: dict[str, list] = {}
     for v in variants:
         scalar = _scalar_arm(v)
-        tok = ("string" if scalar and scalar[0] == "string"
-               else "number" if scalar and scalar[0] == "integer"
-               else "array" if scalar else "object")
-        if tok in tokens:
+        token = ("string" if scalar and scalar[0] == "string"
+                 else "number" if scalar and scalar[0] == "integer"
+                 else "array" if scalar else "object")
+        groups.setdefault(token, []).append(v)
+
+    for token, arms in groups.items():
+        if len(arms) < 2:
+            continue
+        if token != "object":
+            # Two arms sharing a scalar token cannot be told apart. The one case this affects,
+            # CodexErrorInfo, is refused for a stronger reason as well: its trailing
+            # `{"type": ["string","object"]}` arm is the Rust `Other` variant, which is
+            # #[serde(untagged)] with a custom deserializer that accepts ANY string or object
+            # and serializes back to the string "other". That behaviour lives in Rust code and
+            # is not expressible in the schema, so a generated type would reject payloads
+            # upstream accepts -- worse than the RawMessage it would replace.
             return None
-        tokens.add(tok)
+        tags = []
+        for arm in arms:
+            required = arm.get("required") or []
+            if not required:
+                # Without a required property there is nothing to match on.
+                return None
+            tags.append(set(required))
+        for i, left in enumerate(tags):
+            for right in tags[i + 1:]:
+                if left & right:
+                    return None
 
     for v in variants:
         if _scalar_arm(v) is not None:
@@ -259,27 +283,51 @@ def _string_arm_union(spec: dict):
         if isinstance(v, dict) and v.get("$ref"):
             continue
         if isinstance(v, dict) and v.get("title") and isinstance(v.get("properties"), dict):
-            # Refuse when a property is itself an INLINE object. The type mapper renders an
-            # inline object as map[string]any (it has no name to refer to), which would throw
-            # away named fields. AskForApproval's `granular` is exactly that, and the
-            # hand-written form types its three required booleans -- so generating it would be
-            # a regression. A working RawMessage beats a half-modelled type.
-            for sub in (v.get("properties") or {}).values():
-                if isinstance(sub, dict) and isinstance(sub.get("properties"), dict):
-                    return None
             continue
         return None
     return variants
 
 
-def _emit_object_arm(title: str, arm: dict, defs: dict) -> list[str]:
-    """Emit the nested struct for one titled object arm of a string-arm union."""
-    required = set(arm.get("required") or [])
-    out = [f"// {title} is the object arm of its union.", f"type {title} struct {{"]
-    for raw, sub in (arm.get("properties") or {}).items():
+def _emit_inline_struct(name: str, spec: dict, defs: dict, note: str) -> list[str]:
+    """Emit an inline object schema as a named struct.
+
+    An inline object has no name upstream, so the type mapper renders it as map[string]any --
+    which throws away named fields. Naming it here keeps them: the name is derived
+    deterministically from where it appears (parent type + property), so it is stable across
+    regenerations.
+    """
+    required = set(spec.get("required") or [])
+    out = [f"// {name} is the inline object {note}, named so its fields stay typed.", f"type {name} struct {{"]
+    for raw, sub in (spec.get("properties") or {}).items():
         optional = raw not in required
         tag = raw + (",omitempty" if optional else "")
         out.append(f'\t{go_name(raw)} {go_type(sub, defs, optional)} `json:"{tag}"`')
+    out.append("}")
+    out.append("")
+    return out
+
+
+def _emit_object_arm(title: str, arm: dict, defs: dict) -> list[str]:
+    """Emit the nested struct for one titled object arm of a string-arm union.
+
+    A property that is itself an inline object gets a named struct too, rather than
+    map[string]any: refusing those outright left several unions unmodelled.
+    """
+    required = set(arm.get("required") or [])
+    out: list[str] = []
+    fields: list[tuple[str, str, bool]] = []
+    for raw, sub in (arm.get("properties") or {}).items():
+        optional = raw not in required
+        if isinstance(sub, dict) and isinstance(sub.get("properties"), dict):
+            nested = title + go_name(raw)
+            out.extend(_emit_inline_struct(nested, sub, defs, f"on {title}.{raw}"))
+            fields.append((raw, "*" + nested, optional))
+        else:
+            fields.append((raw, go_type(sub, defs, optional), optional))
+    out += [f"// {title} is the object arm of its union.", f"type {title} struct {{"]
+    for raw, ftype, optional in fields:
+        tag = raw + (",omitempty" if optional else "")
+        out.append(f'\t{go_name(raw)} {ftype} `json:"{tag}"`')
     out.append("}")
     out.append("")
     return out
@@ -382,6 +430,21 @@ def emit_string_arm_union(name: str, variants: list, defs: dict) -> list[str]:
     out.append("\tif len(trimmed) == 0 {")
     out.append(f'\t\treturn fmt.Errorf("{name}: empty payload")')
     out.append("\t}")
+    # Object arms and the required property that tags each one, for content-based dispatch.
+    # Collected before the decoder is written, since the decoder branches on whether several
+    # arms share the object token.
+    objects = [v for v in variants if _scalar_arm(v) is None and not v.get("$ref")]
+    object_tags: dict[str, str] = {}
+    for v in objects:
+        required = list(v.get("required") or [])
+        if required:
+            object_tags[go_name(v["title"])] = required[0]
+
+    multi_object = len(objects) > 1
+    if multi_object:
+        out.append("\t// Several arms are JSON objects; each is identified by its own required")
+        out.append("\t// property, so probe for those keys rather than guessing by token alone.")
+        out.append("\tvar probe map[string]json.RawMessage")
     out.append("\tswitch trimmed[0] {")
 
     branches: list[tuple[str, str, str]] = []  # (token, field, body)
@@ -394,10 +457,34 @@ def emit_string_arm_union(name: str, variants: list, defs: dict) -> list[str]:
             branches.append(("[", field, f"\t\tvar v {gotype}\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = v"))
         else:
             inner = gotype[1:]
-            branches.append(("{", field, f"\t\tvar v {inner}\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = &v"))
+            # Several object arms share the `{` token; each is identified by its own required
+            # property, so the decoder probes for that key before choosing one.
+            tag = object_tags.get(field)
+            if tag is not None and len(objects) > 1:
+                branches.append(("{", field, f"\t\tif _, ok := probe[\"{tag}\"]; ok {{\n\t\t\tvar v {inner}\n\t\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\t\treturn err\n\t\t\t}}\n\t\t\tu.{field} = &v\n\t\t\treturn nil\n\t\t}}"))
+            else:
+                branches.append(("{", field, f"\t\tvar v {inner}\n\t\tif err := json.Unmarshal(data, &v); err != nil {{\n\t\t\treturn err\n\t\t}}\n\t\tu.{field} = &v"))
 
     modelled = set()
+    object_group_emitted = False
     for token, field, body in branches:
+        if token == "{" and multi_object:
+            if object_group_emitted:
+                continue
+            object_group_emitted = True
+            out.append("\tcase '{':")
+            out.append("\t\tif err := json.Unmarshal(data, &probe); err != nil {")
+            out.append("\t\t\treturn err")
+            out.append("\t\t}")
+            for _t, _f, b in [x for x in branches if x[0] == "{"]:
+                out.append(f"\t\t// {_f} arm")
+                for line in b.splitlines():
+                    out.append(line)
+            out.append("\t\t// No required key matched. Refusing is deliberate: guessing an arm")
+            out.append("\t\t// would attribute the value to the wrong variant.")
+            out.append(f'\t\treturn fmt.Errorf("{name}: no object arm matches %s", trimmed)')
+            modelled.add(token)
+            continue
         if token == "0-9":
             out.append("\tcase '-', '+':")
             out.append("\t\tfallthrough")

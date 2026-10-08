@@ -2684,8 +2684,117 @@ type SessionMigration struct {
 	Title string `json:"title,omitempty"`
 }
 
-// SessionSource mirrors the upstream `SessionSource` definition.
-type SessionSource = json.RawMessage
+// CustomSessionSource is the object arm of its union.
+type CustomSessionSource struct {
+	Custom string `json:"custom"`
+}
+
+// SubAgentSessionSource is the object arm of its union.
+type SubAgentSessionSource struct {
+	SubAgent SubAgentSource `json:"subAgent"`
+}
+
+// SessionSource is a union of a string, a CustomSessionSource, a SubAgentSessionSource.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type SessionSource struct {
+	String                *string
+	CustomSessionSource   *CustomSessionSource
+	SubAgentSessionSource *SubAgentSessionSource
+}
+
+// SessionSourceFromString builds the String arm.
+func SessionSourceFromString(v string) SessionSource { return SessionSource{String: &v} }
+
+// SessionSourceFromCustomSessionSource builds the CustomSessionSource arm.
+func SessionSourceFromCustomSessionSource(v CustomSessionSource) SessionSource {
+	return SessionSource{CustomSessionSource: &v}
+}
+
+// SessionSourceFromSubAgentSessionSource builds the SubAgentSessionSource arm.
+func SessionSourceFromSubAgentSessionSource(v SubAgentSessionSource) SessionSource {
+	return SessionSource{SubAgentSessionSource: &v}
+}
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u SessionSource) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if u.CustomSessionSource != nil {
+		set++
+	}
+	if u.SubAgentSessionSource != nil {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("SessionSource: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if u.CustomSessionSource != nil {
+		return json.Marshal(u.CustomSessionSource)
+	}
+	if u.SubAgentSessionSource != nil {
+		return json.Marshal(u.SubAgentSessionSource)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *SessionSource) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("SessionSource: empty payload")
+	}
+	// Several arms are JSON objects; each is identified by its own required
+	// property, so probe for those keys rather than guessing by token alone.
+	var probe map[string]json.RawMessage
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '{':
+		if err := json.Unmarshal(data, &probe); err != nil {
+			return err
+		}
+		// CustomSessionSource arm
+		if _, ok := probe["custom"]; ok {
+			var v CustomSessionSource
+			if err := json.Unmarshal(data, &v); err != nil {
+				return err
+			}
+			u.CustomSessionSource = &v
+			return nil
+		}
+		// SubAgentSessionSource arm
+		if _, ok := probe["subAgent"]; ok {
+			var v SubAgentSessionSource
+			if err := json.Unmarshal(data, &v); err != nil {
+				return err
+			}
+			u.SubAgentSessionSource = &v
+			return nil
+		}
+		// No required key matched. Refusing is deliberate: guessing an arm
+		// would attribute the value to the wrong variant.
+		return fmt.Errorf("SessionSource: no object arm matches %s", trimmed)
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("SessionSource: unsupported arm %s", trimmed)
+	}
+}
 
 // Settings mirrors the upstream `Settings` definition.
 type Settings struct {
@@ -2775,8 +2884,126 @@ const (
 	SubAgentActivityKindCompleted   SubAgentActivityKind = "completed"
 )
 
-// SubAgentSource mirrors the upstream `SubAgentSource` definition.
-type SubAgentSource = json.RawMessage
+// ThreadSpawnSubAgentSourceThreadSpawn is the inline object on ThreadSpawnSubAgentSource.thread_spawn, named so its fields stay typed.
+type ThreadSpawnSubAgentSourceThreadSpawn struct {
+	AgentNickname  string     `json:"agent_nickname,omitempty"`
+	AgentPath      *AgentPath `json:"agent_path,omitempty"`
+	AgentRole      string     `json:"agent_role,omitempty"`
+	Depth          int64      `json:"depth"`
+	ParentThreadID ThreadId   `json:"parent_thread_id"`
+}
+
+// ThreadSpawnSubAgentSource is the object arm of its union.
+type ThreadSpawnSubAgentSource struct {
+	ThreadSpawn *ThreadSpawnSubAgentSourceThreadSpawn `json:"thread_spawn"`
+}
+
+// OtherSubAgentSource is the object arm of its union.
+type OtherSubAgentSource struct {
+	Other string `json:"other"`
+}
+
+// SubAgentSource is a union of a string, a ThreadSpawnSubAgentSource, a OtherSubAgentSource.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type SubAgentSource struct {
+	String                    *string
+	ThreadSpawnSubAgentSource *ThreadSpawnSubAgentSource
+	OtherSubAgentSource       *OtherSubAgentSource
+}
+
+// SubAgentSourceFromString builds the String arm.
+func SubAgentSourceFromString(v string) SubAgentSource { return SubAgentSource{String: &v} }
+
+// SubAgentSourceFromThreadSpawnSubAgentSource builds the ThreadSpawnSubAgentSource arm.
+func SubAgentSourceFromThreadSpawnSubAgentSource(v ThreadSpawnSubAgentSource) SubAgentSource {
+	return SubAgentSource{ThreadSpawnSubAgentSource: &v}
+}
+
+// SubAgentSourceFromOtherSubAgentSource builds the OtherSubAgentSource arm.
+func SubAgentSourceFromOtherSubAgentSource(v OtherSubAgentSource) SubAgentSource {
+	return SubAgentSource{OtherSubAgentSource: &v}
+}
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u SubAgentSource) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if u.ThreadSpawnSubAgentSource != nil {
+		set++
+	}
+	if u.OtherSubAgentSource != nil {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("SubAgentSource: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if u.ThreadSpawnSubAgentSource != nil {
+		return json.Marshal(u.ThreadSpawnSubAgentSource)
+	}
+	if u.OtherSubAgentSource != nil {
+		return json.Marshal(u.OtherSubAgentSource)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *SubAgentSource) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("SubAgentSource: empty payload")
+	}
+	// Several arms are JSON objects; each is identified by its own required
+	// property, so probe for those keys rather than guessing by token alone.
+	var probe map[string]json.RawMessage
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '{':
+		if err := json.Unmarshal(data, &probe); err != nil {
+			return err
+		}
+		// ThreadSpawnSubAgentSource arm
+		if _, ok := probe["thread_spawn"]; ok {
+			var v ThreadSpawnSubAgentSource
+			if err := json.Unmarshal(data, &v); err != nil {
+				return err
+			}
+			u.ThreadSpawnSubAgentSource = &v
+			return nil
+		}
+		// OtherSubAgentSource arm
+		if _, ok := probe["other"]; ok {
+			var v OtherSubAgentSource
+			if err := json.Unmarshal(data, &v); err != nil {
+				return err
+			}
+			u.OtherSubAgentSource = &v
+			return nil
+		}
+		// No required key matched. Refusing is deliberate: guessing an arm
+		// would attribute the value to the wrong variant.
+		return fmt.Errorf("SubAgentSource: no object arm matches %s", trimmed)
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("SubAgentSource: unsupported arm %s", trimmed)
+	}
+}
 
 // SubagentMigration mirrors the upstream `SubagentMigration` definition.
 type SubagentMigration struct {

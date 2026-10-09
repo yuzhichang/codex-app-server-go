@@ -64,6 +64,34 @@ func WithThreadPersonality(p string) ThreadOption {
 	}
 }
 
+// WithThreadModelProvider selects, by id, which configured model provider the thread uses.
+//
+// The provider must be declared somewhere the app-server can see it: either in its own config,
+// or -- for a shared server where per-tenant providers cannot be written into the shared config
+// -- in this thread's per-thread overlay via WithThreadConfigOverride.
+func WithThreadModelProvider(id string) ThreadOption {
+	return func(c *threadConfig) {
+		c.req.ModelProvider = id
+	}
+}
+
+// WithThreadConfigOverride adds one entry to the thread's per-thread config overlay (upstream
+// `thread/start.config`). The app-server deep-merges it into its own config for this thread
+// only, leaving the shared server config untouched, so a caller can declare a model provider
+// (or any other config) per thread.
+//
+// Keys may be dotted, e.g. WithThreadConfigOverride("model_providers.acme.base_url", u), or a
+// whole provider table may be passed as one nested object under "model_providers.<id>".
+// Repeatable; a later call for the same key overrides the earlier value.
+func WithThreadConfigOverride(key string, value any) ThreadOption {
+	return func(c *threadConfig) {
+		if c.req.Config == nil {
+			c.req.Config = map[string]any{}
+		}
+		c.req.Config[key] = value
+	}
+}
+
 // WithInitialInput sets a prompt to run immediately after the thread starts.
 // If set, StartThread / ResumeThread return only after the first turn completes.
 func WithInitialInput(input string) ThreadOption {

@@ -34,6 +34,13 @@ thread.Close()  // release semaphore slot
 #   WithThreadModel(model), WithThreadApprovalPolicy(AskForApproval),
 #   WithThreadApprovalsReviewer(ApprovalsReviewer), WithThreadCWD(cwd),
 #   WithThreadEphemeral(bool), WithThreadPersonality(p), WithInitialInput(input)
+#   WithThreadModelProvider(id)   -- select a configured model provider by id
+#   WithThreadConfigOverride(key, value) -- per-thread config overlay; e.g.
+#     WithThreadConfigOverride("model_providers.acme", map[string]any{
+#         "name":"acme","base_url":"https://.../v1","wire_api":"responses",
+#         "experimental_bearer_token":"..."})
+#     The app-server deep-merges it for this thread only, so a shared server can
+#     serve callers that each bring their own provider without editing server config.
 
 result, err := thread.Run(ctx, "prompt", opts...)     // synchronous turn, string input
 result, err := thread.RunInputs(ctx, []UserInput{...}, opts...)   // structured input

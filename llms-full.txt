@@ -168,6 +168,19 @@ ThreadOption values:
     codexgo.WithThreadCWD(cwd string)
     codexgo.WithThreadEphemeral(ephemeral bool)
     codexgo.WithThreadPersonality(personality string)
+    codexgo.WithThreadModelProvider(id string)
+        Select a configured model provider (by id) for this thread.
+    codexgo.WithThreadConfigOverride(key string, value any)
+        Add one entry to the thread's config overlay (upstream thread/start.config). The
+        app-server deep-merges it into its own config for this thread only, so a shared server
+        can serve callers that each bring their own provider without editing server config.
+        Repeatable; keys may be dotted. To declare a provider:
+            codexgo.WithThreadModelProvider("acme"),
+            codexgo.WithThreadConfigOverride("model_providers.acme", map[string]any{
+                "name": "acme", "base_url": "https://acme.internal/v1",
+                "wire_api": "responses", "experimental_bearer_token": os.Getenv("ACME_KEY"),
+            })
+        wire_api must be "responses": upstream's WireApi has only that variant.
     codexgo.WithInitialInput(input string)
         When set, StartThread/ResumeThread block until the first turn completes.
 

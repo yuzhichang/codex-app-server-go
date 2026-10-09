@@ -196,6 +196,17 @@ type ThreadStartParams struct {
 	DynamicTools          []string           `json:"dynamicTools,omitempty"`
 	Ephemeral             bool               `json:"ephemeral,omitempty"`
 	Metadata              json.RawMessage    `json:"metadata,omitempty"`
+
+	// ModelProvider selects, by id, which configured model provider this thread uses.
+	ModelProvider string `json:"modelProvider,omitempty"`
+
+	// Config is an open-ended per-thread config overlay (upstream types it as object|null). The
+	// app-server deep-merges it into its own config for THIS thread only -- the shared server
+	// config is left untouched -- so a caller can declare a model provider (base_url / wire_api /
+	// bearer token) without editing the server. Keys may be dotted
+	// (e.g. "model_providers.acme.base_url"), and a whole provider table can be passed as one
+	// nested object under "model_providers.<id>".
+	Config map[string]any `json:"config,omitempty"`
 }
 
 // ThreadResumeParams resumes a thread.

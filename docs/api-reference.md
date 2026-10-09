@@ -329,6 +329,8 @@ func WithThreadApprovalsReviewer(reviewer ApprovalsReviewer) ThreadOption
 func WithThreadCWD(cwd string) ThreadOption
 func WithThreadEphemeral(ephemeral bool) ThreadOption
 func WithThreadPersonality(personality string) ThreadOption
+func WithThreadModelProvider(id string) ThreadOption            // select a configured provider by id
+func WithThreadConfigOverride(key string, value any) ThreadOption // per-thread config overlay (e.g. model_providers.<id>)
 func WithInitialInput(input string) ThreadOption // runs first turn immediately after start
 ```
 

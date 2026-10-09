@@ -20,6 +20,8 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		Personality           string             `json:"personality,omitempty"`
 		DynamicTools          []string           `json:"dynamicTools,omitempty"`
 		Metadata              json.RawMessage    `json:"metadata,omitempty"`
+		ModelProvider         string             `json:"modelProvider,omitempty"`
+		Config                map[string]any     `json:"config,omitempty"`
 	}
 	return json.Marshal(alias{
 		Model:                 r.Model,
@@ -30,5 +32,7 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		Personality:           r.Personality,
 		DynamicTools:          r.DynamicTools,
 		Metadata:              r.Metadata,
+		ModelProvider:         r.ModelProvider,
+		Config:                r.Config,
 	})
 }

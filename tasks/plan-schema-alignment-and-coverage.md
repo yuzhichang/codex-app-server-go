@@ -1,212 +1,212 @@
-# 计划书：对齐 Codex 最新 app-server 协议并补齐能力缺口
+# Plan: align with the latest Codex app-server protocol and close capability gaps
 
-| 项 | 值 |
+| Item | Value |
 |---|---|
-| 日期 | 2026-10-08（含两轮复审修订） |
-| 目标仓库 | `github.com/Zealbase/codex-app-server-go` |
-| 当前基线 | SDK `HEAD=c319518`（2026-06-30）；`VERSION=v0.1.2`（README 写 v0.2.0，不一致） |
-| 上游参考 | `/home/zhichyu/github.com/openai/codex` @ **`14c8b777`** |
-| 上游"版本" | `codex-rs/Cargo.toml:163` `version = "0.0.0"`（**无有效版本号**，见 §2.1） |
-| **实现范围** | **仅 stable 面**（= 源码 `experimental=false`）：experimental 不实现（R2）；v1 deprecated 与 `attestation/generate` 不实现（R4） |
-| 兼容策略 | **严格对齐上游，不保留旧名/兼容分支**（R3） |
-| **Scope 模型** | `declared_stable` = **源码 non-experimental**；导出用于**对账**（R10） |
+| Date | 2026-10-08 (two review rounds incorporated) |
+| Target repo | `github.com/Zealbase/codex-app-server-go` |
+| Current baseline | SDK `HEAD=c319518` (2026-06-30); `VERSION=v0.1.2` (README says v0.2.0 — inconsistent) |
+| Upstream reference | `/home/zhichyu/github.com/openai/codex` @ **`14c8b777`** |
+| Upstream "version" | `codex-rs/Cargo.toml:163` `version = "0.0.0"` (**no meaningful version number**, see §2.1) |
+| **Implementation scope** | **stable surface only** (= source `experimental=false`): experimental not implemented (R2); v1 deprecated and `attestation/generate` not implemented (R4) |
+| Compatibility policy | **Align strictly with upstream, keep no old names / compatibility branches** (R3) |
+| **Scope model** | `declared_stable` = **source non-experimental**; the export is used for **reconciliation** (R10) |
 
 ---
 
-## 0. 决策记录（Decision Log）
+## 0. Decision Log
 
-| ID | 决策 | 影响 |
+| ID | Decision | Impact |
 |---|---|---|
-| **R2** | experimental 全部不予实现 | 89 项（65 ClientRequest + 1 ServerRequest + 23 通知）**不在 scope 内**（非 stable） |
-| **R3** | 与上游不一致者一律迁移 + 不兼容旧名 | ① `item/mcp/requestApproval` → `mcpServer/elicitation/request`，删除旧名 ② 删除 `jsonrpc:"2.0"` 字段，无开关 ③ D2/D4/D5/D6/D7 全修 |
-| **T1.4** | 同意 | 删除 `jsonrpc` 字段（已按 R3 收紧，取消 `WithJSONRPCVersionField` 开关）；新增 `trace`（W3C Trace Context） |
-| **T2.6** | 事件投递：不静默丢、关闭有界、可观测；超时默认 5s | 见 §5.1 T2.6（`publish` 永不阻塞；等待在订阅者侧；终止槽位按 A8 用 `len(out)` 真正预留） |
-| **R4** | v1 deprecated 5 项 + `attestation/generate` 不实现 | 入白名单（§5.7）；server-initiated 的入站按 §5.8 静默 decline |
-| **R9** | 未实现/未配置的 server-initiated request：静默 decline + 本地记录，不终止会话 | 见 §5.8 T2.13 |
-| **R10** | **`declared_stable` 由「源码 `#[experimental]` 分类」定义；导出实测仅用于对账** | 修正上一版"以导出为 Scope 权威"的错误（导出会**排除**方法、且**不过滤**通知） |
-| **R11** | 导出与源码的差集必须等于**显式登记集**（5 项），且以**集合**（非数量）比较 | 见 T0.4 |
-| **R12** | 终止槽位预留通过 `len(out)` 约束普通事件占用 ≤ `outCap-1` 实现 | 见 T2.6 |
-| **R13** | 终止广播用**一次性 `stop` 通道**；`Close()` 只置 terminal + `close(stop)`，`close(out)`/`close(done)` 只由转发 goroutine 执行 | 见 T2.6（修 A9；保证空闲订阅者关闭后必定退出） |
-| **R14** | 实现登记的 `kind` 覆盖四个 face（含 `client_notification_sender`），且 face↔kind 满射 | 见 T1.1（修 A10；否则 `initialized` 无法登记） |
+| **R2** | No experimental entries are implemented | 89 entries (65 ClientRequest + 1 ServerRequest + 23 notifications) are **out of scope** (not stable) |
+| **R3** | Anything that diverges from upstream is migrated, with no compatibility for old names | ① `item/mcp/requestApproval` → `mcpServer/elicitation/request`, old name deleted ② delete the `jsonrpc:"2.0"` field, no toggle ③ fix D2/D4/D5/D6/D7 in full |
+| **T1.4** | Approved | Delete the `jsonrpc` field (tightened per R3; the `WithJSONRPCVersionField` toggle is cancelled); add `trace` (W3C Trace Context) |
+| **T2.6** | Event delivery: no silent drop, bounded close, observable; timeout defaults to 5s | See §5.1 T2.6 (`publish` never blocks; waiting happens on the subscriber side; the terminal slot genuinely reserves capacity via `len(out)` per A8) |
+| **R4** | The 5 v1 deprecated methods + `attestation/generate` are not implemented | Added to the whitelist (§5.7); inbound server-initiated requests are silently declined per §5.8 |
+| **R9** | Unimplemented / unconfigured server-initiated request: silently decline + record locally, do not terminate the session | See §5.8 T2.13 |
+| **R10** | **`declared_stable` is defined by the source's `#[experimental]` classification; the measured export is used only for reconciliation** | Corrects the previous version's error of "treating the export as the scope authority" (the export **excludes** methods and does **not filter** notifications) |
+| **R11** | The set difference between source and export must equal the **explicitly registered set** (5 entries), compared as a **set** (not by count) | See T0.4 |
+| **R12** | Terminal-slot reservation is implemented by constraining ordinary events to occupy ≤ `outCap-1` via `len(out)` | See T2.6 |
+| **R13** | Terminal broadcast uses a **one-shot `stop` channel**; `Close()` only sets terminal + `close(stop)`, and `close(out)`/`close(done)` are performed only by the forwarding goroutine | See T2.6 (fixes A9; guarantees an idle subscriber's close always exits) |
+| **R14** | The registered `kind` covers all four faces (including `client_notification_sender`), and face↔kind is surjective | See T1.1 (fixes A10; otherwise `initialized` cannot be registered) |
 
-> ✅ **remote control 已确认放弃**：`remoteControl/*` 7 个方法全部 `#[experimental]`（`common.rs:1155-1193`），按 R2 不在 scope 内，不开例外。
+> ✅ **remote control is confirmed abandoned**: all 7 `remoteControl/*` methods are `#[experimental]` (`common.rs:1155-1193`), so per R2 they are out of scope; no exception.
 
-### 0.1 第一轮复审修订（A1–A5）
+### 0.1 First review round revisions (A1–A5)
 
-| # | 发现 | 修订 |
+| # | Finding | Revision |
 |---|---|---|
-| **A1** | 覆盖率门禁假阳性：用生成的 `Method*` 常量判覆盖 → 生成后缺口自动归零 | T1.1 拆分「声明集 / 实现集」，门禁只查实现集 + 三条防造假校验 |
-| **A2** | 独立转发 goroutine 仍不消除共享路径阻塞 | T2.6：`publish` 永不阻塞，等待迁移至订阅者执行路径 |
-| **A3** | 终止事件缺可行交付机制 | T2.6：带外 `Err()`/`Done()` 必达 + 带内预留槽位 |
-| **A4** | "stable 导出即纯 stable 集"前提不成立（通知未被过滤） | §2.5 改写；通知范围改由源码分类决定 |
-| **A5** | 阶段验收与最终 DoD 冲突 | 统一为**全量交付**；里程碑仅为交付顺序 |
+| **A1** | Coverage-gate false positive: coverage judged by the generated `Method*` constants → the gap drops to zero the moment they are generated | T1.1 splits "declared set / implemented set"; the gate checks only the implemented set + three anti-fraud checks |
+| **A2** | A separate forwarding goroutine still does not remove blocking on the shared path | T2.6: `publish` never blocks; waiting moves to the subscriber's execution path |
+| **A3** | The terminal event had no viable delivery mechanism | T2.6: out-of-band `Err()`/`Done()` guaranteed + in-band reserved slot |
+| **A4** | The premise "the stable export is a pure stable set" does not hold (notifications are not filtered) | §2.5 rewritten; notification scope is now decided by source classification |
+| **A5** | Per-phase acceptance conflicted with the final DoD | Unified as **full delivery**; milestones are only a delivery order |
 
-### 0.2 第二轮复审修订（A6–A8）
+### 0.2 Second review round revisions (A6–A8)
 
-| # | 发现 | 修订 |
+| # | Finding | Revision |
 |---|---|---|
-| **A6** | T0.4 断言在**当前基线上即失败**：源码 ClientRequest 173 / 通知 86 与导出 170 / 84 差 3 / 2 项，且**源码数字并非计数错误** | **T0.4 重设计**：登记 5 项「导出排除」；断言改为**集合相等**（明确差集），不再断言数量相等。**撤回上一版"手工枚举偏 +3/+2"的错误结论**（R11） |
-| **A7** | 缺口 59 重复扣除了 legacy：stable 导出的 105 项已不含 3 个 legacy 请求 | **修订为集合差计算**（R10）：缺口 = **62**；新增「核实 43 项已实现归属」任务（T1.1b） |
-| **A8** | 转发伪代码未落实终止槽位预留：`select { case out <- head }` 会填满全部 128 槽，终止事件仍无法保证写入 | **T2.6 修正**（R12）：用 `len(out)` 约束普通事件占用 ≤ `outCap-1`，明确容量耗尽后的消费进展等待；补"完全不消费 + 投递 ≥ outCap 个事件后终止"测试 |
-| **A9** | 空闲订阅者 `Close()` 可能永不退出：backlog 为空时阻塞在 `waitFor(notify)`，无人唤醒；而 `done` 由该 goroutine 关闭 → `C()`/`Done()` 永不关闭 | **T2.6 修正**（R13）：新增一次性 `stop` 广播通道，**两个等待点都必须 select 到 `stop`**；明确 `Close()` 只置 terminal + `close(stop)`，`close(out)`/`close(done)` 只由转发 goroutine 执行；补"订阅后不发布任何事件直接 Close"测试 |
-| **A10** | 实现登记遗漏 ClientNotification：`declared_stable` 含 `initialized`，但 `kind` 无发送路径 → 无法合法登记，门禁不能归零 | **T1.1 修正**（R14）：`kind` 增加 **`client_notification_sender`**，且断言 face↔kind **满射**；接线证据 = `transport.Notify(ctx, <Method*>, …)` 调用点；测试证据 = `TestInitializeUsesProtocolMethods` |
+| **A6** | The T0.4 assertion **fails on the current baseline**: source ClientRequest 173 / notifications 86 vs export 170 / 84 differ by 3 / 2, and **the source numbers are not a counting error** | **T0.4 redesigned**: register the 5 "export exclusions"; the assertion becomes **set equality** (an explicit difference set) instead of equal counts. **Withdraw the earlier "manually enumerated off by +3/+2" conclusion** (R11) |
+| **A7** | Gap 59 double-subtracted legacy: the 105 stable-export entries already exclude the 3 legacy requests | **Revised to a set-difference computation** (R10): gap = **62**; a new task verifies the ownership of the 43 implemented methods (T1.1b) |
+| **A8** | The forwarding pseudocode did not implement the terminal-slot reservation: `select { case out <- head }` fills all 128 slots, so the terminal event still cannot be guaranteed to write | **T2.6 corrected** (R12): constrain ordinary events to ≤ `outCap-1` via `len(out)`, and spell out the wait for consumer progress once capacity is exhausted; add a test for "consume nothing at all + deliver ≥ outCap events, then terminate" |
+| **A9** | An idle subscriber's `Close()` may never exit: with an empty backlog it blocks on `waitFor(notify)` with nobody to wake it; and `done` is closed by that goroutine → `C()`/`Done()` never close | **T2.6 corrected** (R13): add a one-shot `stop` broadcast channel, **both wait points must select on `stop`**; state that `Close()` only sets terminal + `close(stop)`, and `close(out)`/`close(done)` are performed only by the forwarding goroutine; add a "subscribe and publish nothing, then Close" test |
+| **A10** | The implementation registry missed ClientNotification: `declared_stable` contains `initialized`, but `kind` had no send path → it cannot be registered legally and the gate can never reach zero | **T1.1 corrected** (R14): add **`client_notification_sender`** to `kind`, and assert face↔kind is **surjective**; wiring evidence = a `transport.Notify(ctx, <Method*>, …)` call site; test evidence = `TestInitializeUsesProtocolMethods` |
 
-> 两轮复审均未修改文件，由计划书作者落实。
+> Neither review round modified files; the plan's author carried them out.
 
-### 0.3 实施期修订（I1–I3，2026-10-08 M0 实施中发现）
+### 0.3 Implementation-time revisions (I1–I3, found while implementing M0 on 2026-10-08)
 
-| # | 发现（均有实测证据） | 修订 |
+| # | Finding (all with measured evidence) | Revision |
 |---|---|---|
-| **I1** | **锚点必须是 codex 仓库 commit，不能是已安装的 CLI。** 实测本机 `codex-cli 0.160.0` 落后于 `14c8b777`：ClientRequest 少 1（`thread/attachmentOwner/list`，104 vs 105）、ServerNotification 少 1（`thread/prediction/updated`，83 vs 84）。若按原 T0.1「跑 CLI 生成」实施，会**静默丢掉一个方法** | T0.1 同步输入改为 **`--codex-src <repo>`（主路径）**；CLI 只用于新命令 **`diff-cli` 漂移守卫**（集合比较，不一致即失败） |
-| **I2** | **生成的 `version.go` 不得含时间戳。** 原 T0.2 要求记录 `GeneratedAt`，但时间戳会让每次 `sync` 都产生 diff，**直接违反 T0.1/T0.4 的"幂等、`git diff` 为空"验收** | T0.2 移除 `GeneratedAt`；`version.go` 只含确定性值（commit、schema sha256、各面计数）。实测已确认 `sync` 幂等 |
-| **I3** | 三处实现细节澄清：① 仓库已提交的 `schema/json/` 就是 **stable** 面（`ClientRequest.json` = 105，与 precomputed stable 一致），可直接作为汇总 schema 的 vendor 源（622KB）；② 两个 internal-only 通知的排除理由**有上游显式注释**（`common.rs:1977`/`:1979` *"This event is internal-only"*），理由由推断升级为有据；③ precomputed 解压后约 **4.9MB**，不宜 vendor | T0.1 改为 vendor **聚合 stable schema（622KB）+ 派生的 method-set 小文件**；`verify` 因此不需要 `zstandard`、不需要 repo、不需要网络（CI 安全） |
+| **I1** | **The anchor must be a codex repo commit, not the installed CLI.** Measured on this machine, `codex-cli 0.160.0` lags `14c8b777`: one fewer ClientRequest (`thread/attachmentOwner/list`, 104 vs 105) and one fewer ServerNotification (`thread/prediction/updated`, 83 vs 84). Implementing the original T0.1 ("run the CLI to generate") would **silently drop a method** | T0.1's sync input changes to **`--codex-src <repo>` (the main path)**; the CLI is used only for the new **`diff-cli` drift guard** (set comparison; fail on any mismatch) |
+| **I2** | **The generated `version.go` must not contain a timestamp.** The original T0.2 required recording `GeneratedAt`, but a timestamp makes every `sync` produce a diff, **directly violating T0.1/T0.4's "idempotent, empty `git diff`" acceptance** | T0.2 drops `GeneratedAt`; `version.go` contains only deterministic values (commit, schema sha256, per-face counts). `sync` idempotency is confirmed by measurement |
+| **I3** | Three implementation details clarified: ① the `schema/json/` committed in the repo *is* the **stable** surface (`ClientRequest.json` = 105, matching precomputed stable), so it can be the vendor source for the aggregate schema (622KB); ② the two internal-only notifications' exclusion reason **has an explicit upstream comment** (`common.rs:1977`/`:1979` *"This event is internal-only"*), upgrading the reason from inference to evidence; ③ precomputed decompresses to ~**4.9MB**, not worth vendoring | T0.1 vendors the **aggregate stable schema (622KB) + small derived method-set files**; `verify` therefore needs no `zstandard`, no repo, no network (CI-safe) |
 
-| **I4** | **D4 的原任务描述有误**：`emittedAtMs` 不是 `params` 的成员。上游 `#[serde(flatten)]` 使线上形状为 `{"method":…,"params":{…},"emittedAtMs":123}`，该字段与 `method`/`params` **同级**，而现有 transport 只取 `raw["params"]`，同级字段在读取阶段即被丢弃 | D4 改为**在 transport 层捕获**（`Notification` 增加 `EmittedAtMs`），并同步修正 §2.3 的 D4 行与 T1.3 |
-| **I5** | **T1.1b 审计结果远超计划预期：SDK 有 5 个（不是 1 个）方法被上游删除/改名**，均由 `scripts/coverage_gate.py` 的"wires-up-but-not-upstream"检查机械发现（见 `gen/unknown-methods.txt`）：<br>`config/update`（SetModel/SetApprovalPolicy/SetSandbox 在用）→ 上游改为 `config/value/write`（带 `expectedVersion` 乐观并发）<br>`thread/rollback` → 上游为 `thread/revert`<br>`turn/diff` → 上游**无对应请求方法**（只有 `turn/diff/updated` 通知），需另寻替代或删除<br>`item/mcp/requestApproval` → `mcpServer/elicitation/request`（= 已知 D3）<br>`item/updated` → 上游**已无此通知** | 按 R3 全部迁移/删除；新增任务 **T1.5**。注意 `config/update`、`thread/rollback`、`turn/diff` 三项是**计划书原先未识别的破坏性变更** |
-| **I6** | **计划书的"43 已实现"高估了完成度**：它统计的是"有接线"的方法，而 T1.1 的判据要求"接线 **且** 有测试证据"。机械统计（`make coverage`）的真实分布为：**已实现 59 + 已接线但缺测试 44 + 完全未开始 72 + 待迁移 5**（declared_stable=182，白名单 7） | 计划书中 M2–M5 的工作量按"72 未开始 + 44 补测试"重新理解；补测试是低成本项，应优先清掉 |
+| **I4** | **D4's original task description was wrong**: `emittedAtMs` is not a member of `params`. Upstream's `#[serde(flatten)]` makes the wire shape `{"method":…,"params":{…},"emittedAtMs":123}`, where the field is **sibling** to `method`/`params`, while the existing transport only reads `raw["params"]` and discards sibling fields at the read stage | D4 changed to **capture in the transport layer** (add `EmittedAtMs` to `Notification`), and the D4 row of §2.3 and T1.3 are corrected accordingly |
+| **I5** | **The T1.1b audit found far more than the plan expected: the SDK has 5 (not 1) methods removed/renamed upstream**, all found mechanically by `scripts/coverage_gate.py`'s "wires-up-but-not-upstream" check (see `gen/unknown-methods.txt`):<br>`config/update` (SetModel/SetApprovalPolicy/SetSandbox use it) → upstream is now `config/value/write` (with `expectedVersion` optimistic concurrency)<br>`thread/rollback` → upstream is `thread/revert`<br>`turn/diff` → upstream has **no corresponding request method** (only the `turn/diff/updated` notification), so an alternative is needed or it must be deleted<br>`item/mcp/requestApproval` → `mcpServer/elicitation/request` (= the already-known D3)<br>`item/updated` → upstream **no longer has this notification** | Migrate/delete all per R3; add task **T1.5**. Note that `config/update`, `thread/rollback` and `turn/diff` are **breaking changes the plan had not previously identified** |
+| **I6** | **The plan's "43 implemented" overstated completion**: it counted methods that merely "have wiring", while T1.1's criterion requires "wiring **and** test evidence". The mechanical count (`make coverage`) shows the real distribution: **59 implemented + 44 wired-but-untested + 72 not started + 5 to migrate** (declared_stable=182, whitelist 7) | Re-read the M2–M5 workload as "72 not started + 44 need tests"; adding tests is cheap and should be cleared first |
 
-| **I7** | **门禁是"方法级"的，看不到"类型级"漂移。** 全量审计（含所有 118 个 `Method*` 常量、内联/动态方法名、`Call` 站点）确认：SDK 真实 RPC 面 = **118 个方法，其中恰好 3 个上游不存在**（= `gen/unknown-methods.txt`），**不存在额外的幻影包装**。但对照 `codex_app_server_protocol.v2.schemas.json` 的 660 个 `definitions` 后发现：`client_types_gen.go` 的 55 个结构体里 **27 个在 schema 中无同名定义**。原因分三类：**(a) 命名约定差异（良性）** —— 上游用 `*Params`/`*Response`，SDK 用 `*Request`/`*Result`（如 `InitializeParams`↔`InitializeParams`、`ThreadStartParams`↔`ThreadStartParams`）；**(b) SDK 自造类型** —— `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError` 在聚合 schema 中**根本不存在**（上游不定义 JSON-RPC 信封），`InitializeCapabilities` 对应上游 `InitializeCapabilities`；**(c) 真实孤儿** —— `ThreadRollbackRequest` 无对应（上游是 `ThreadRevertParams`），与方法级审计交叉印证 `thread/rollback` 确已消失。另：`initialize` 的 `InitializeCapabilities` 命名与上游不一致，说明 T1.2 若做 codegen 会产出**不同名字**，需先定命名映射 | T1.2 增加"类型级对账"：即使暂不做全量 codegen，也要比对 SDK 结构体名与 schema 定义名，并对**有意改名**维护显式白名单，否则类型级漂移永远不可见 |
-| **I8** | **`TurnRead` 未使用幻影 RPC，但用的是上游已弃用路径**：`readTurn`（`wait.go:121-141`）走 `thread/read{includeTurns:true}`。上游明确标注全量 hydrate 对分页 thread 已弃用，应改用 `thread/turns/list` + `thread/items/list`（`thread.rs:1703-1706`） | 不改方法归属（`thread/read` 真实存在），但记录为"弃用用法"，纳入 M5 的读路径改造 |
+| **I7** | **The gate is "method-level" and cannot see "type-level" drift.** A full audit (all 118 `Method*` constants, inline/dynamic method names, `Call` sites) confirms the SDK's real RPC surface = **118 methods, of which exactly 3 do not exist upstream** (= `gen/unknown-methods.txt`), and there are **no additional phantom wrappers**. But comparing against the 660 `definitions` of `codex_app_server_protocol.v2.schemas.json` shows that of the 55 structs in `client_types_gen.go`, **27 have no same-named definition in the schema**. The causes fall into three classes: **(a) naming-convention differences (benign)** — upstream uses `*Params`/`*Response`, the SDK uses `*Request`/`*Result` (e.g. `InitializeParams`↔`InitializeParams`, `ThreadStartParams`↔`ThreadStartParams`); **(b) SDK-invented types** — `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError` **do not exist at all** in the aggregate schema (upstream does not define a JSON-RPC envelope), and `InitializeCapabilities` corresponds to upstream's `InitializeCapabilities`; **(c) a real orphan** — `ThreadRollbackRequest` has no counterpart (upstream is `ThreadRevertParams`), which cross-confirms the method-level audit that `thread/rollback` is indeed gone. Also: `initialize`'s `InitializeCapabilities` naming is inconsistent with upstream, meaning a T1.2 codegen would emit a **different name**, so a naming map must be fixed first | T1.2 gains "type-level reconciliation": even without full codegen, compare SDK struct names against schema definition names and keep an explicit whitelist for **intentional renames**, or type-level drift stays invisible forever |
+| **I8** | **`TurnRead` does not use a phantom RPC, but it uses a path upstream has deprecated**: `readTurn` (`wait.go:121-141`) goes through `thread/read{includeTurns:true}`. Upstream explicitly marks full hydrate as deprecated for paginated threads and recommends `thread/turns/list` + `thread/items/list` (`thread.rs:1703-1706`) | Do not change the method's ownership (`thread/read` really exists); record it as a "deprecated usage" and fold it into M5's read-path rework |
 
-| **I9** | **`TokenUsage` 不只是命名问题，而是整个 usage 模型过时**：上游 `TurnCompletedNotification` 的字段只有 `{threadId, turn}`（**没有 `usage`**），`Turn` 结构体也没有 usage 字段；usage 现由独立通知 `thread/tokenUsage/updated` 承载，类型为 `ThreadTokenUsage { last: TokenUsageBreakdown, total: TokenUsageBreakdown, modelContextWindow? }`，而 `TokenUsageBreakdown` 的字段是 `{cachedInputTokens, cacheWriteInputTokens, inputTokens, outputTokens, reasoningOutputTokens, totalTokens}`（注意是 **reasoningOutputTokens**，SDK 现叫 `reasoningTokens`，且缺 2 个 cached 字段）。因此 SDK 的 `TurnCompletedEvent.Usage` / `TurnResult.Usage` 建模了**上游不发送的东西** | **不能靠改名解决**。需：① 新增 `ThreadTokenUsage`/`TokenUsageBreakdown`（按上游名与字段）；② 把 usage 来源改为 `thread/tokenUsage/updated`；③ 从 `TurnCompletedEvent`/`TurnResult` 移除 `Usage`（破坏性）。已记为待办，未实施 |
-| **I10** | **类型级清理已完成（27 → 2 漂移）**：16 个纯命名差异已重命名为上游名（`*Request`/`*Result` → `*Params`/`*Response`，`Capabilities` → `InitializeCapabilities`）；`SchemaItem`/`SchemaTurn`/`SchemaThread` → 上游的 `ThreadItem`/`Turn`/`Thread`；删除 5 个 SDK 自造类型（`RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification`，上游根本不定义 JSON-RPC 信封，线上信封归 `internal/transport`）及其 `rpc_ext.go` 与 `envelope.go` 别名（`Request`/`Response`/`Notification`/`ErrorObject` 本就零使用）；删除真实孤儿 `ThreadRollbackRequest` 并把 `thread/rollback` 迁移为**真实存在**的 `thread/revert`（`ThreadRevertParams{threadId, beforeTurnId}` + `ThreadRevertResponse{thread, turnsBackwardsCursor, itemsBackwardsCursor}`） | 新增 `scripts/type_check.py` + `gen/type-allowlist.json`，纳入 `make typecheck` / `conformance` / `conformance-strict`：**任何不在白名单内的类型漂移都会让门禁失败**，防止再次腐化。剩余 2 项漂移：`InitializeResponse`（名字正确，仅 v2 聚合未收录 → 已白名单说明）、`TokenUsage`（见 I9，故意保持**未白名单**以持续报警） |
-| **I11** | **白名单由 8 项收敛为 5 项（实施期修正）**。计划原列 8 项（R4 v1 3 项 + server-initiated 3 项 + internal-only 通知 2 项），但实现把其中 3 项变成了**真实接线**：`applyPatchApproval`/`execCommandApproval` 由 `interaction.go` 依 §5.8 作 protocol-valid decline（正是 §5.8 要求的行为），`rawResponseItem/completed` 早已有类型化解码器（`events_extra.go`）。门禁的"白名单项不得与接线矛盾"检查禁止二者并存，故这 3 项移出白名单、登记为已实现。实际白名单（`gen/whitelist.json`）= `getAuthStatus`/`getConversationSummary`/`gitDiffToRemote`（v1 deprecated）+ `attestation/generate` + `rawResponse/completed` | §5.7 / §10.3 / §10.4 / §10.8 / 附录 A 的 "8 项" 更新为 **5 项**；新增**生成的**只读镜像 `gen/not-implemented.txt`（由 `gen/whitelist.json` 派生，`make conformance-strict` 校验其新鲜度） |
+| **I9** | **`TokenUsage` is not merely a naming issue — the whole usage model is outdated**: upstream's `TurnCompletedNotification` has only `{threadId, turn}` (**no `usage`**) and the `Turn` struct has no usage field; usage is now carried by the separate `thread/tokenUsage/updated` notification, typed `ThreadTokenUsage { last: TokenUsageBreakdown, total: TokenUsageBreakdown, modelContextWindow? }`, where `TokenUsageBreakdown` has `{cachedInputTokens, cacheWriteInputTokens, inputTokens, outputTokens, reasoningOutputTokens, totalTokens}` (note **reasoningOutputTokens** — the SDK currently calls it `reasoningTokens` — and it is missing the 2 cached fields). So the SDK's `TurnCompletedEvent.Usage` / `TurnResult.Usage` model **something upstream does not send** | **A rename cannot fix this.** Need: ① add `ThreadTokenUsage`/`TokenUsageBreakdown` (upstream names and fields); ② change the usage source to `thread/tokenUsage/updated`; ③ remove `Usage` from `TurnCompletedEvent`/`TurnResult` (breaking). Recorded as a todo, not implemented |
+| **I10** | **Type-level cleanup is done (27 → 2 drift)**: 16 pure naming differences were renamed to the upstream names (`*Request`/`*Result` → `*Params`/`*Response`, `Capabilities` → `InitializeCapabilities`); `SchemaItem`/`SchemaTurn`/`SchemaThread` → upstream's `ThreadItem`/`Turn`/`Thread`; 5 SDK-invented types were deleted (`RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification` — upstream does not define a JSON-RPC envelope at all; the wire envelope belongs to `internal/transport`) together with their `rpc_ext.go` and `envelope.go` aliases (`Request`/`Response`/`Notification`/`ErrorObject`, all unused); the real orphan `ThreadRollbackRequest` was deleted and `thread/rollback` was migrated to the **really existing** `thread/revert` (`ThreadRevertParams{threadId, beforeTurnId}` + `ThreadRevertResponse{thread, turnsBackwardsCursor, itemsBackwardsCursor}`) | Add `scripts/type_check.py` + `gen/type-allowlist.json`, wired into `make typecheck` / `conformance` / `conformance-strict`: **any type drift not on the whitelist fails the gate**, preventing re-decay. The 2 remaining drifts: `InitializeResponse` (correct name; only the v2 aggregate omits it → whitelisted with an explanation) and `TokenUsage` (see I9; deliberately left **not whitelisted** to keep alarming) |
+| **I11** | **The whitelist narrowed from 8 to 5 entries (implementation-time correction).** The plan listed 8 (R4 v1 ×3 + server-initiated ×3 + internal-only notifications ×2), but implementation turned 3 of them into **real wiring**: `applyPatchApproval`/`execCommandApproval` are protocol-validly declined by `interaction.go` per §5.8 (exactly the behaviour §5.8 requires), and `rawResponseItem/completed` already had a typed decoder (`events_extra.go`). The gate's "a whitelist entry must not be contradicted by wiring" check forbids both, so those 3 leave the whitelist and are registered as implemented. Actual whitelist (`gen/whitelist.json`) = `getAuthStatus`/`getConversationSummary`/`gitDiffToRemote` (v1 deprecated) + `attestation/generate` + `rawResponse/completed` | The "8 entries" in §5.7 / §10.3 / §10.4 / §10.8 / Appendix A becomes **5**; add a **generated** read-only mirror `gen/not-implemented.txt` (derived from `gen/whitelist.json`; `make conformance-strict` checks its freshness) |
 
-> 附带结论 1：M0 的机械提取（`scripts/codex_schema_surface.py`）**独立复现了计划书的全部计数**（173/65/108、11/1/10、86/23/63、1/0/1），且 6 条集合断言全绿 —— 此前手工推导的数字现已变为**机器验证**。
+> Side conclusion 1: M0's mechanical extraction (`scripts/codex_schema_surface.py`) **independently reproduced every count in the plan** (173/65/108, 11/1/10, 86/23/63, 1/0/1), and all six set assertions pass — numbers previously derived by hand are now **machine-verified**.
 >
-> 附带结论 2：D1 的移除已在本机真实 `codex app-server --listen ws://…` 上验证通过（无 `jsonrpc` 字段的握手与只读 RPC 均成功）。同时发现 **stdio 路径无法对齐**：它由 `jrpc2` 驱动，该库自身会发出并要求 `jsonrpc` 字段，故 `versionFixerReader` 入站修补必须保留 —— 这是"library 行为"而非我们可删的兼容 shim。
+> Side conclusion 2: the D1 removal was verified on this machine against a real `codex app-server --listen ws://…` (a handshake with no `jsonrpc` field and read-only RPCs both succeed). It also found that the **stdio path cannot be aligned**: it is driven by `jrpc2`, which itself emits and requires the `jsonrpc` field, so the `versionFixerReader` inbound patch must stay — that is "library behaviour", not a compatibility shim we can delete.
 
 ---
 
-## 1. 结论摘要（TL;DR）
+## 1. Summary (TL;DR)
 
-1. **没有"schema 版本"可以对齐。** 唯一锚点 = codex commit（**`14c8b777`**）+ 产物 sha256。
-2. **Scope 权威是源码的 `#[experimental]` 分类，不是导出模式**（R10）。导出**会排除** 5 个方法、且**不按 experimental 过滤通知**。
-3. **`declared_stable`**：ClientRequest **108**、ServerRequest **10**、ServerNotification **63**、ClientNotification **1**。
-4. **本期需实现缺口**（集合差，见 §2.2）：ClientRequest **62**、ServerRequest **2**、通知侧达成 **61** 目标。
-5. **不实现基线（声明为 stable 但本期不实现）= 5 项**（v1 deprecated 3 项 + `attestation/generate` + internal-only 通知 1 项；由 8 收敛而来，见 §0.3 I11）；experimental 89 项**因非 stable 而不在 scope**，二者须分开登记。
-6. **`fs/*`(9)、`plugin/*`(12) + `marketplace/*`(3)、`mcpServer/*`(5) 全部为 0**，是主要补齐对象。
-7. **reconnect 上游无协议级支持**，须 SDK 侧实现会话监督器（§5.1）。
+1. **There is no "schema version" to align to.** The only anchor = a codex commit (**`14c8b777`**) + artifact sha256.
+2. **The scope authority is the source's `#[experimental]` classification, not the export mode** (R10). The export **excludes** 5 methods and does **not filter notifications by experimental**.
+3. **`declared_stable`**: ClientRequest **108**, ServerRequest **10**, ServerNotification **63**, ClientNotification **1**.
+4. **Gaps to implement this round** (set difference, see §2.2): ClientRequest **62**, ServerRequest **2**, notifications reach the **61** target.
+5. **Non-implementation baseline (declared stable but not implemented this round) = 5** (3 v1 deprecated + `attestation/generate` + 1 internal-only notification; narrowed from 8, see §0.3 I11); the 89 experimental entries are **out of scope because they are not stable**, and the two must be registered separately.
+6. **`fs/*` (9), `plugin/*` (12) + `marketplace/*` (3), `mcpServer/*` (5) are all at 0**, and are the main things to fill in.
+7. **reconnect has no protocol-level support upstream**, so a session supervisor must be built on the SDK side (§5.1).
 
 ---
 
-## 2. 调研结论（Ground Truth）
+## 2. Ground Truth
 
-### 2.1 上游没有协议版本号
+### 2.1 Upstream has no protocol version number
 
-- `codex-rs/Cargo.toml:163` → `version = "0.0.0"`（`codex-app-server-protocol` 继承 workspace）。
-- `codex-rs/app-server-protocol/src/rpc.rs:11` → `JSONRPC_VERSION = "2.0"`，**全仓无引用（死代码）**。
-- 结论：**锚点 = git commit + vendored 产物 sha256**。
+- `codex-rs/Cargo.toml:163` → `version = "0.0.0"` (`codex-app-server-protocol` inherits the workspace).
+- `codex-rs/app-server-protocol/src/rpc.rs:11` → `JSONRPC_VERSION = "2.0"`, **referenced nowhere in the repo (dead code)**.
+- Conclusion: **anchor = git commit + vendored artifact sha256**.
 
-### 2.2 Scope 与缺口（集合模型，实测于 `14c8b777`）
+### 2.2 Scope and gaps (set model, measured at `14c8b777`)
 
-| 面 | 源码总数 | 源码 experimental | **declared_stable**（源码 non-exp） | 导出 stable | 导出 experimental | 导出排除 | 白名单 | 已实现 | **待实现** |
+| Face | Source total | Source experimental | **declared_stable** (source non-exp) | Export stable | Export experimental | Export exclusions | Whitelist | Implemented | **To implement** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| ClientRequest | **173** | 65 | **108** | 105 | 170 | **3** | 3（R4） | 43 | **62** |
-| ServerRequest | **11** | 1 | **10** | 10 | 11 | 0 | 3（R4） | 5 | **2** |
-| ServerNotification | **86** | 23 | **63** | 84 | 84 | **2** | 2（内部通知） | 待重基线 | 达成 **61** 目标 |
+| ClientRequest | **173** | 65 | **108** | 105 | 170 | **3** | 3 (R4) | 43 | **62** |
+| ServerRequest | **11** | 1 | **10** | 10 | 11 | 0 | 3 (R4) | 5 | **2** |
+| ServerNotification | **86** | 23 | **63** | 84 | 84 | **2** | 2 (internal) | awaiting re-baseline | reach the **61** target |
 | ClientNotification | **1** | 0 | **1** | 1 | 1 | 0 | 0 | 1 | 0 |
 
-**集合关系（必须全部成立，由 T0.4 断言）**：
+**Set relations (all must hold; asserted by T0.4)**:
 
-1. `源码全集 − 导出_experimental == 导出排除集`（**恰好** 5 项，按名登记，见下）
-2. `导出_experimental − 源码全集 == ∅`
-3. `导出_experimental − 导出_stable == 源码 experimental 集`（ClientRequest 65 ✅、ServerRequest 1 ✅）
-4. `导出_stable(ServerNotification) == 导出_experimental(ServerNotification)`（**成立且为已知上游行为**：通知不被过滤）
-5. `导出_stable(ClientRequest) == declared_stable(ClientRequest) − 3 legacy`
-6. `导出_stable(ServerNotification) == declared_stable(63) + 23(泄漏) − 2(内部)  == 84` ✅
+1. `source_all − export_experimental == export-exclusion set` (**exactly** 5, registered by name, see below)
+2. `export_experimental − source_all == ∅`
+3. `export_experimental − export_stable == source experimental set` (ClientRequest 65 ✅, ServerRequest 1 ✅)
+4. `export_stable(ServerNotification) == export_experimental(ServerNotification)` (**holds and is known upstream behaviour**: notifications are not filtered)
+5. `export_stable(ClientRequest) == declared_stable(ClientRequest) − 3 legacy`
+6. `export_stable(ServerNotification) == declared_stable(63) + 23 (leaked) − 2 (internal) == 84` ✅
 
-**导出排除集（5 项，R11 登记）**：
+**Export exclusion set (5 entries, R11 registration)**:
 
-| 方法 | 面 | 排除原因 |
+| Method | Face | Exclusion reason |
 |---|---|---|
-| `getAuthStatus` | ClientRequest | v1 deprecated 顶层方法；导出不产出 |
-| `getConversationSummary` | ClientRequest | 同上 |
-| `gitDiffToRemote` | ClientRequest | 同上 |
-| `rawResponse/completed` | ServerNotification | internal-only；不对客户端暴露 |
-| `rawResponseItem/completed` | ServerNotification | 同上 |
+| `getAuthStatus` | ClientRequest | v1 deprecated top-level method; not emitted by the export |
+| `getConversationSummary` | ClientRequest | same |
+| `gitDiffToRemote` | ClientRequest | same |
+| `rawResponse/completed` | ServerNotification | internal-only; not exposed to clients |
+| `rawResponseItem/completed` | ServerNotification | same |
 
-**缺口推导（集合差，不重复扣除）**：
+**Gap derivation (set difference, no double subtraction)**:
 
-- ClientRequest：`declared_stable(108) − 白名单(3) − 已实现(43) = 62`
-  - 注：其中 3 个 legacy **既不在导出、也已按 R4 入白名单**；不得再对"导出 stable 105"重复减 3（这是上一版 59 的错误来源）。
-- ServerRequest：`10 − 3 − 5 = 2`
-- ServerNotification：`declared_stable(63) − 内部通知(2) = 61`（实现目标）
+- ClientRequest: `declared_stable(108) − whitelist(3) − implemented(43) = 62`
+  - Note: the 3 legacy methods are **neither in the export nor (per R4) in the whitelist already applied above**; do not subtract 3 again from "export stable 105" (that was the source of the previous version's 59).
+- ServerRequest: `10 − 3 − 5 = 2`
+- ServerNotification: `declared_stable(63) − internal-only(2) = 61` (implementation target)
 
-> 口径与证据：
-> - **源码计数**：`common.rs` 四个宏调用块的变体数 → ClientRequest **173**、ServerRequest **11**（9 显式 wire + 2 由变体名转 camelCase：`applyPatchApproval`/`execCommandApproval`）、ServerNotification **86**、ClientNotification 1。
-> - **导出计数**：解压 `schema/precomputed/app-server-exports-{stable,experimental}.json.zst`，取 `json_schema[*]["method"].enum` 并集。
-> - **两份数据均经独立复核**；差集恰好为上述 5 项（已在两个导出中均不存在）。
-> - ⚠️ 不要用 `grep '"method"'` 统计聚合 JSON（嵌套对象会偏高：实测 210/20/170）。
+> Method and evidence:
+> - **Source counts**: the number of variants in `common.rs`'s four macro invocations → ClientRequest **173**, ServerRequest **11** (9 explicit wire + 2 derived from variant names as camelCase: `applyPatchApproval`/`execCommandApproval`), ServerNotification **86**, ClientNotification 1.
+> - **Export counts**: decompress `schema/precomputed/app-server-exports-{stable,experimental}.json.zst` and take the union of `json_schema[*]["method"].enum`.
+> - **Both datasets were independently re-checked**; the difference set is exactly the 5 above (they are absent from both exports).
+> - ⚠️ Do not count the aggregate JSON with `grep '"method"'` (nested objects inflate it: measured 210/20/170).
 
-### 2.3 已确认的不兼容 / 缺陷（R3 下全部需修正）
+### 2.3 Confirmed incompatibilities / defects (all must be fixed under R3)
 
-| # | 问题 | 证据 | 处置 |
+| # | Problem | Evidence | Disposition |
 |---|---|---|---|
-| D1 | SDK 发送 `"jsonrpc":"2.0"`；上游既不发送也不期望 | 上游 `rpc.rs:1-2`；SDK `internal/transport/transport.go` | **删除，不提供开关** |
-| D2 | `InitializeCapabilities.OptOutNotificationMethods` 类型为 `bool`，上游是 `Option<Vec<String>>` | 上游 `protocol/v1.rs:65`；SDK `client_types_gen.go` | 改 `[]string`（静默失效 bug） |
-| D3 | SDK 用 `item/mcp/requestApproval`；上游已无此名 | SDK `envelope.go:46`、`interaction.go:218`；上游 ServerRequest 面 | 迁移到 `mcpServer/elicitation/request`，**删旧名** |
-| D4 | 通知信封新增 `ServerNotificationEnvelope.emittedAtMs`，SDK 未建模 | 上游 `common.rs:2067-2080` | **建模并在 transport 层捕获**（`emittedAtMs` 与 `method`/`params` **同级**，见 T1.3 的 D4 说明；放在解码器里无效） |
-| D5 | `InitializeCapabilities` 缺 `explicitGatewayOauth`/`requestAttestation`/`extensions`；`ClientInfo` 缺 `title`；`client.go` 硬编码 `codex-go-sdk/0.1.0` | 上游 `protocol/v1.rs:29-70`；SDK `client.go:90-109` | 补字段；`ClientInfo` 可配置 |
-| D5b | 默认宣告 `experimentalApi: true`，与 R2 矛盾 | SDK `client.go:95-97` | **默认 false** |
-| D6 | 版本元数据矛盾（`0.141.0` vs `0.142.0`；`v0.1.2` vs `v0.2.0`；同步脚本路径失效且不写 pinned 版本） | `version.go:3-4`、`VERSION`、`README.md:9,40,106`、`scripts/update-codex-go-schema.sh:6-7` | 由生成器/单一来源产出 |
-| D7 | `llms.txt` 模块路径写成 `github.com/nharness/sdk/codex-go` | `llms.txt:2-5` | 修正 |
+| D1 | The SDK sends `"jsonrpc":"2.0"`; upstream neither sends nor expects it | upstream `rpc.rs:1-2`; SDK `internal/transport/transport.go` | **Delete, no toggle** |
+| D2 | `InitializeCapabilities.OptOutNotificationMethods` is typed `bool`; upstream is `Option<Vec<String>>` | upstream `protocol/v1.rs:65`; SDK `client_types_gen.go` | Change to `[]string` (silent no-op bug) |
+| D3 | The SDK uses `item/mcp/requestApproval`; upstream no longer has that name | SDK `envelope.go:46`, `interaction.go:218`; the upstream ServerRequest face | Migrate to `mcpServer/elicitation/request`, **delete the old name** |
+| D4 | The notification envelope gained `ServerNotificationEnvelope.emittedAtMs`, unmodelled by the SDK | upstream `common.rs:2067-2080` | **Model it and capture it in the transport layer** (`emittedAtMs` is **sibling** to `method`/`params`, see T1.3's D4 note; putting it in the decoder does not work) |
+| D5 | `InitializeCapabilities` lacks `explicitGatewayOauth`/`requestAttestation`/`extensions`; `ClientInfo` lacks `title`; `client.go` hardcodes `codex-go-sdk/0.1.0` | upstream `protocol/v1.rs:29-70`; SDK `client.go:90-109` | Add the fields; make `ClientInfo` configurable |
+| D5b | It announces `experimentalApi: true` by default, contradicting R2 | SDK `client.go:95-97` | **Default to false** |
+| D6 | Contradictory version metadata (`0.141.0` vs `0.142.0`; `v0.1.2` vs `v0.2.0`; the sync-script path is dead and it does not write a pinned version) | `version.go:3-4`, `VERSION`, `README.md:9,40,106`, `scripts/update-codex-go-schema.sh:6-7` | Produce from the generator / a single source |
+| D7 | `llms.txt` writes the module path as `github.com/nharness/sdk/codex-go` | `llms.txt:2-5` | Correct it |
 
-### 2.4 reconnect 的上游语义
+### 2.4 Upstream semantics of reconnect
 
-- **无协议级 ping/keepalive/session-resume**。唯一 ping 是 WS 帧级（`app-server-transport/src/transport/websocket.rs:363-373`）。
-- **订阅按连接**：`thread_state.rs:344-348`；断连 `remove_connection()`（`thread_processor.rs:3605`）。
-- **无客户端事件重放**：`app-server/src/transport.rs:204-243`。
-- **官方替代 = `thread/resume`**（`thread_state.rs:59-64`）。
-- 传输面仅 `stdio://`/`unix://`/`ws://`/`off`（`mod.rs:80-166`）；**无 HTTP/SSE**。
+- **No protocol-level ping/keepalive/session-resume.** The only ping is WS frame-level (`app-server-transport/src/transport/websocket.rs:363-373`).
+- **Subscriptions are per connection**: `thread_state.rs:344-348`; disconnect does `remove_connection()` (`thread_processor.rs:3605`).
+- **No client event replay**: `app-server/src/transport.rs:204-243`.
+- **The official replacement = `thread/resume`** (`thread_state.rs:59-64`).
+- The transport surface is only `stdio://`/`unix://`/`ws://`/`off` (`mod.rs:80-166`); **no HTTP/SSE**.
 
-### 2.5 导出与源码的关系（修订 A4/A6）
+### 2.5 The relationship between export and source (revised A4/A6)
 
-- CLI：`codex app-server generate-json-schema --out <DIR> [--experimental]`（`cli/src/main.rs:727-735`，分发 `1421-1425`）。
-- **结论 1**：`--experimental` 对 ClientRequest/ServerRequest **有效**（导出 exp-only = 65 / 1，与源码 experimental 计数**精确一致**）。
-- **结论 2**：`--experimental` 对 **ServerNotification 无效** —— stable 与 experimental **同为 84**（集合相等）；源码 23 个 experimental 通知**全部泄漏**进 stable 导出。
-- **结论 3**：导出**排除** 5 个源码方法（3 v1 deprecated client + 2 internal-only 通知）。
-- **结论 4**：stable 导出是 experimental 导出的严格子集（各面 stable-only = 0）。
-- **推论**：Scope 必须由**源码 non-experimental** 定义（R10）；导出用于**对账**，且对账必须是**集合比较 + 显式登记差集**（R11）。
+- CLI: `codex app-server generate-json-schema --out <DIR> [--experimental]` (`cli/src/main.rs:727-735`, dispatch `1421-1425`).
+- **Conclusion 1**: `--experimental` **does** affect ClientRequest/ServerRequest (export exp-only = 65 / 1, **exactly matching** the source experimental counts).
+- **Conclusion 2**: `--experimental` does **not** affect **ServerNotification** — stable and experimental are **both 84** (set-equal); all 23 source experimental notifications **leak** into the stable export.
+- **Conclusion 3**: the export **excludes** 5 source methods (3 v1 deprecated client + 2 internal-only notifications).
+- **Conclusion 4**: the stable export is a strict subset of the experimental export (stable-only per face = 0).
+- **Inference**: scope must be defined by **source non-experimental** (R10); the export is for **reconciliation**, and reconciliation must be **set comparison + explicit difference-set registration** (R11).
 
-### 2.6 schema 生成与分发
+### 2.6 Schema generation and distribution
 
-- 运行时不推导 schema：`precomputed_exports.rs:15-18` 解压内嵌 `.zst`。
-- fixtures：`schema_fixtures.rs:95-153`。
-- 上游已提交可 vendored 产物：`schema/json/{codex_app_server_protocol.schemas.json, codex_app_server_protocol.v2.schemas.json, ClientRequest.json, ServerRequest.json, ServerNotification.json, ClientNotification.json}` + `schema/json/v2/*.json`。
-- **实测澄清（I3）**：仓库里已提交的 `schema/json/` 就是 **stable** 面 —— `schema/json/ClientRequest.json` 的方法集大小 = 105，与 precomputed stable 一致。因此 `schema/json/codex_app_server_protocol.v2.schemas.json`（622KB）可直接作为 stable 汇总 schema 的 vendor 源。
-- **实测澄清（I3）**：precomputed `.zst` 解压后约 **4.9MB**（含 typescript + json_schema + internal），**不宜 vendor**；改为 vendor 聚合 schema + **派生的方法集小文件**（`.codex-schema/exports/{stable,experimental}-methods.json`），使 `verify` 无需 `zstandard`。
+- The runtime does not derive the schema: `precomputed_exports.rs:15-18` decompresses the embedded `.zst`.
+- fixtures: `schema_fixtures.rs:95-153`.
+- Upstream already commits vendorable artifacts: `schema/json/{codex_app_server_protocol.schemas.json, codex_app_server_protocol.v2.schemas.json, ClientRequest.json, ServerRequest.json, ServerNotification.json, ClientNotification.json}` + `schema/json/v2/*.json`.
+- **Measured clarification (I3)**: the committed `schema/json/` **is** the stable surface — the method-set size of `schema/json/ClientRequest.json` = 105, matching precomputed stable. So `schema/json/codex_app_server_protocol.v2.schemas.json` (622KB) can be the vendor source for the stable aggregate schema.
+- **Measured clarification (I3)**: precomputed `.zst` decompresses to ~**4.9MB** (typescript + json_schema + internal), **not worth vendoring**; instead vendor the aggregate schema + **small derived method-set files** (`.codex-schema/exports/{stable,experimental}-methods.json`), so `verify` needs no `zstandard`.
 
 ---
 
-## 3. WS0 — schema 同步基础设施（最高优先级）
+## 3. WS0 — schema sync infrastructure (highest priority)
 
-### T0.1 重写同步脚本
+### T0.1 Rewrite the sync script
 
-- 替换 `scripts/update-codex-go-schema.sh`（路径失效，D6）。
-- ✅ **已实施**：`scripts/codex_schema_surface.py`（子命令 `sync` / `verify` / `diff-cli`），`make sync` 驱动。
-- **输入是 codex 仓库（不是 CLI，见 I1）**：`--codex-src <path>`；从仓库同时取得
-  1. 源码 `.../protocol/common.rs` → `declared_stable` + experimental 标注；
-  2. `schema/precomputed/*.zst` → stable/experimental 导出方法集（对账用）；
-  3. `schema/json/codex_app_server_protocol.v2.schemas.json`（stable 汇总，622KB）→ vendor 到 `internal/protocol/schema/`。
-- 记录 `git -C <repo> rev-parse HEAD`；计算全部产物 sha256；**不写时间戳**（见 I2）。
-- 新增 `diff-cli`：把 CLI 生成的 bundle 与锚点做集合比较，不一致即失败（防"用落后/超前的 CLI 重新生成"）。
+- Replaces `scripts/update-codex-go-schema.sh` (dead path, D6).
+- ✅ **Implemented**: `scripts/codex_schema_surface.py` (subcommands `sync` / `verify` / `diff-cli`), driven by `make sync`.
+- **The input is a codex repo (not the CLI, see I1)**: `--codex-src <path>`; it takes from the repo
+  1. the source `.../protocol/common.rs` → `declared_stable` + experimental annotations;
+  2. `schema/precomputed/*.zst` → stable/experimental export method sets (for reconciliation);
+  3. `schema/json/codex_app_server_protocol.v2.schemas.json` (stable aggregate, 622KB) → vendored to `internal/protocol/schema/`.
+- Records `git -C <repo> rev-parse HEAD`; computes sha256 for every artifact; **writes no timestamp** (see I2).
+- Adds `diff-cli`: set-compares a CLI-generated bundle against the anchor and fails on any mismatch (guards against "regenerating from a CLI that is behind/ahead").
 
-### T0.2 `version.go` 由生成器书写
+### T0.2 `version.go` is written by the generator
 
-- ✅ **已实施**：`version.go` 由 `sync` 生成并 `gofmt`；只含**确定性**值 —— `SourceCodexCommit`、`SchemaRevision`（聚合 schema 的 sha256）、`SchemaTitle`、四个 `DeclaredStable*`、四个 `SourceExperimental*`、`NotInScopeTotal`。
-- **不写 `GeneratedAt`**（I2：时间戳破坏幂等）；**已删除 `PinnedCodexVersion`** 与 `SchemaDefinitionCount`（后者源于已退役的 core-subset 文件）。
+- ✅ **Implemented**: `version.go` is generated by `sync` and `gofmt`-ed; it contains only **deterministic** values — `SourceCodexCommit`, `SchemaRevision` (sha256 of the aggregate schema), `SchemaTitle`, the four `DeclaredStable*`, the four `SourceExperimental*`, `NotInScopeTotal`.
+- **No `GeneratedAt`** (I2: a timestamp breaks idempotency); **`PinnedCodexVersion` and `SchemaDefinitionCount` are deleted** (the latter came from the retired core-subset file).
 
-### T0.3 退役 "core subset" 模型
+### T0.3 Retire the "core subset" model
 
-✅ **已实施**：删除 `internal/protocol/schema/v2.schema.json`（56 `$defs` 裁剪件）及其哈希逻辑；改为 vendor 上游产物（`internal/protocol/schema/codex_app_server_protocol.v2.schemas.json`，622KB stable 汇总）。
-同时退役被取代的脚本：`scripts/update-codex-go-schema.sh`（路径失效 D6）、`scripts/generate_schema.go` 与 `scripts/compare_schema.py`（原 `make generate` / `make check-schema-drift` 走 CLI，存在 I1 的版本错位风险）。`Makefile` 目标改为 `sync` / `verify` / `diff-cli` / `conformance`。
+✅ **Implemented**: delete `internal/protocol/schema/v2.schema.json` (a 56-`$defs` cut-down) and its hashing logic; vendor the upstream artifact instead (`internal/protocol/schema/codex_app_server_protocol.v2.schemas.json`, 622KB stable aggregate).
+Also retire the superseded scripts: `scripts/update-codex-go-schema.sh` (dead path D6), `scripts/generate_schema.go` and `scripts/compare_schema.py` (the old `make generate` / `make check-schema-drift` went through the CLI, with I1's version-skew risk). `Makefile` targets become `sync` / `verify` / `diff-cli` / `conformance`.
 
-### T0.4 源码 ↔ 导出 对账（**按 A6 重设计**）
+### T0.4 Source ↔ export reconciliation (**redesigned per A6**)
 
-> ⚠️ **原设计缺陷**：断言"源码规模 == 导出规模"，但当前基线即相差 3 / 2 项，断言必然失败；且**源码数字本身是正确的**（不是计数错误）。必须改为**集合比较 + 显式登记差集**。
+> ⚠️ **Original design flaw**: it asserted "source size == export size", but the baseline already differs by 3 / 2, so the assertion must fail; and **the source numbers are themselves correct** (not a counting error). It must become **set comparison + explicit difference-set registration**.
 
-**产出 `gen/method-surface.json`**（Scope 唯一机器可读来源）：
+**Produces `gen/method-surface.json`** (the single machine-readable scope source):
 ```json
 { "method": "fs/readFile",
   "face": "client_request",
@@ -217,7 +217,7 @@
   "export_excluded": false }
 ```
 
-**产出 `gen/export-exclusions.json`**（5 项，人工评审 + 理由）：
+**Produces `gen/export-exclusions.json`** (5 entries, human-reviewed + reasoned):
 ```json
 [ { "method": "getAuthStatus", "face": "client_request", "reason": "v1 deprecated; not emitted by export" },
   { "method": "getConversationSummary", "face": "client_request", "reason": "v1 deprecated" },
@@ -226,353 +226,353 @@
   { "method": "rawResponseItem/completed", "face": "server_notification", "reason": "internal-only" } ]
 ```
 
-**断言（全部为集合比较，任一失败即 CI 失败并要求人工复核）**：
+**Assertions (all set comparisons; any failure fails CI and requires human review)**:
 
-| # | 断言 | 当前基线期望 |
+| # | Assertion | Expected at the current baseline |
 |---|---|---|
-| 1 | `源码全集 − 导出_experimental == export-exclusions.json` | 恰好 5 项 |
-| 2 | `导出_experimental − 源码全集 == ∅` | ∅ |
-| 3 | `导出_experimental − 导出_stable == 源码 experimental 集`（按面分别比较） | ClientRequest 65、ServerRequest 1 |
-| 4 | `导出_stable(ServerNotification) == 导出_experimental(ServerNotification)` | 相等（**登记为已知上游行为**；若变为不等 → 说明上游开始过滤通知，**必须复核并更新 Scope**） |
-| 5 | `导出_stable(ClientRequest) == declared_stable(ClientRequest) − 3` | 105 == 108 − 3 |
-| 6 | `export-exclusions.json` 内容相对上次无变化 | 否则需人工确认 |
+| 1 | `source_all − export_experimental == export-exclusions.json` | exactly 5 |
+| 2 | `export_experimental − source_all == ∅` | ∅ |
+| 3 | `export_experimental − export_stable == source experimental set` (per face) | ClientRequest 65, ServerRequest 1 |
+| 4 | `export_stable(ServerNotification) == export_experimental(ServerNotification)` | equal (**registered as known upstream behaviour**; if it becomes unequal → upstream started filtering notifications, **must review and update scope**) |
+| 5 | `export_stable(ClientRequest) == declared_stable(ClientRequest) − 3` | 105 == 108 − 3 |
+| 6 | `export-exclusions.json` content unchanged from last time | otherwise requires human confirmation |
 
-**验收**：脚本幂等（`git diff` 为空）；六条断言全绿；manifest 记录 commit 与 sha256。
+**Acceptance**: the script is idempotent (`git diff` empty); all six assertions pass; the manifest records the commit and sha256.
 
 ---
 
-## 4. WS1 — JSON Schema 对齐 codex 最新代码
+## 4. WS1 — align the JSON Schema with the latest codex code
 
-### T1.1 覆盖判定与差分工具（**按 A1 重设计**）
+### T1.1 Coverage determination and diff tooling (**redesigned per A1**)
 
-> ⚠️ **原设计缺陷**：用 `protocol.Method*` 常量是否存在判断"是否实现"。而 T1.2 会从 schema **生成全部常量**，导致生成后缺口自动归零，即使没有任何 `Client` 方法、dispatcher 分支或通知解码。**必须把「协议声明」与「实际实现」分开登记，门禁只查后者。**
+> ⚠️ **Original design flaw**: it judged "implemented" by whether a `protocol.Method*` constant exists. But T1.2 **generates all the constants** from the schema, so the gap drops to zero the moment they are generated — even with no `Client` method, dispatcher branch or notification decoder. **"Protocol declaration" and "actual implementation" must be registered separately, and the gate must check only the latter.**
 
-- **两个集**：
-  - **声明集 declared**：由 T1.2 生成的常量与类型。**仅表示协议中存在，不构成任何覆盖信号。** 生成物头部须加醒目注释。
-  - **实现集 implemented**：显式登记 `gen/implemented-methods.json`（人工评审、随 PR 更新）：
+- **Two sets**:
+  - **declared**: the constants and types generated by T1.2. **It only means the protocol has it; it is no coverage signal at all.** The generated artifacts must carry a prominent header comment.
+  - **implemented**: explicitly registered in `gen/implemented-methods.json` (human-reviewed, updated with each PR):
     ```json
     { "method": "fs/readFile", "face": "client_request", "kind": "client_method",
       "call_site": "(*Client).FSReadFile", "test": "TestFSReadFile" }
     ```
-    `kind` ∈ `client_method` | `server_request_handler` | `notification_decoder` | `client_notification_sender`。
-- **face ↔ kind 必须一一覆盖（修 A10）**：`client_request` → `client_method`；`server_request` → `server_request_handler`；`server_notification` → `notification_decoder`；`client_notification` → **`client_notification_sender`**（client → server 的**发送**路径，不是解码路径）。四者构成满射，校验器需断言「任一 face 都有对应 kind 可用于登记」，否则 `declared_stable` 中的 `initialized`（ClientNotification）将无法合法登记，门禁永远无法归零。
-- **门禁**：`declared_stable − whitelist(§5.7, 5 项) − implemented == ∅`。
-- **三条防造假校验（必须同时满足，否则该条视为未实现）**：
-  1. **接线证据（按 kind 分派）**：
-     - `client_method` → 某 `Client`/`SessionThread` 方法体内出现该 `Method*` 调用点（**排除**常量定义文件与生成物）；
-     - `server_request_handler` → `Dispatcher.HandleServerRequest` 有对应 `case`；
-     - `notification_decoder` → `decodeEvent` / `extraEventTarget` 有对应 `case`；
-     - `client_notification_sender` → 存在 **`transport.Notify(ctx, <Method*>, …)`** 的调用点（**排除**常量定义文件与生成物）。当前基线：`initialized` 的证据为 `(*Client).Initialize` 内的 `Notify(ctx, protocol.MethodInitialized, nil)`。
-  2. **测试证据**：存在具名测试且确实引用该方法常量或走通该分支。当前基线：`initialized` 由 `client_test.go:62` `TestInitializeUsesProtocolMethods` 覆盖，该测试同时断言 `callMethod == "initialize"` **与** `notifyMethod == "initialized"`（`client_test.go:73-78`），可直接作为 `client_notification_sender` 的测试证据；`client_extended_test.go:31` `TestInitializeNotifyFails` 覆盖 Notify 失败路径。
-  3. **双向一致**：无孤立登记，也无未登记接线。
-- **T1.1b 核实 43 项已实现归属（按 A7 新增）**：逐一审计当前 43 个已实现方法，分类为
-  (a) 属于 `declared_stable` 且仍有效 → 计入实现；
-  (b) 上游已移除/改名（如 `item/mcp/requestApproval`）→ 按 R3 删除；
-  (c) 属于 experimental → 按 R2 需移除或明确保留理由。
-  结果写入 `gen/implemented-methods.json` 并附对账说明。**在 (b) 清理完成前，不得把 43 当作有效基数**。
-- ✅ **已实施**：`scripts/coverage_gate.py`（`report` / `write` / `check [--strict]`）+ `gen/whitelist.json`（7 项）+ `gen/implemented-methods.json` + `gen/unknown-methods.txt`；`make coverage` / `make conformance` / `make conformance-strict`。
-  - **判据按 face 绑定 kind**（不用"扫描全部 role 再取优先级"——`client.go` 同时承载 client_request 与唯一 client notification，那种写法会把请求误判为 `client_notification_sender` 后被 Notify 检查丢弃，实测造成 44 个方法的假缺口）。
-  - **测试证据放宽**为"引用常量 **或** 引用 wire 方法字符串"：SDK 的测试普遍用 wire 字符串驱动 mock server，只认常量会严重低估。
-  - 新增 4 条自检：白名单项必须属于 `declared_stable`；白名单项不得已被实现（矛盾）；已接线但上游已删除的方法必须为空；双向一致。
-- **实测结果（`make coverage`）**：`declared_stable=182 / 白名单=7 / 已实现=60 / 缺口=115`，其中 **未开始 71 + 已接线但缺测试 44**；另有 **2 个待迁移方法**（`config/update`、`item/mcp/requestApproval`）。
-- **输出**：`gen/method-surface.json`、`gen/export-exclusions.json`、`gen/not-in-scope.txt`、`gen/whitelist.json`、`gen/implemented-methods.json`、`gen/unknown-methods.txt`。
+    `kind` ∈ `client_method` | `server_request_handler` | `notification_decoder` | `client_notification_sender`.
+- **face ↔ kind must cover one-to-one (fixes A10)**: `client_request` → `client_method`; `server_request` → `server_request_handler`; `server_notification` → `notification_decoder`; `client_notification` → **`client_notification_sender`** (the **send** path, client → server, not the decode path). The four form a surjection; the checker must assert that "every face has a kind usable for registration", otherwise `declared_stable`'s `initialized` (ClientNotification) can never be registered legally and the gate can never reach zero.
+- **Gate**: `declared_stable − whitelist(§5.7, 5 entries) − implemented == ∅`.
+- **Three anti-fraud checks (all must hold, otherwise the entry counts as not implemented)**:
+  1. **Wiring evidence (dispatched by kind)**:
+     - `client_method` → the `Method*` call site appears inside some `Client`/`SessionThread` method body (**excluding** the constant-definition file and generated artifacts);
+     - `server_request_handler` → `Dispatcher.HandleServerRequest` has a matching `case`;
+     - `notification_decoder` → `decodeEvent` / `extraEventTarget` has a matching `case`;
+     - `client_notification_sender` → a **`transport.Notify(ctx, <Method*>, …)`** call site exists (**excluding** the constant-definition file and generated artifacts). Current baseline: `initialized`'s evidence is `Notify(ctx, protocol.MethodInitialized, nil)` inside `(*Client).Initialize`.
+  2. **Test evidence**: a named test exists and actually references the method constant or exercises the branch. Current baseline: `initialized` is covered by `client_test.go:62` `TestInitializeUsesProtocolMethods`, which asserts both `callMethod == "initialize"` **and** `notifyMethod == "initialized"` (`client_test.go:73-78`), usable directly as `client_notification_sender` test evidence; `client_extended_test.go:31` `TestInitializeNotifyFails` covers the Notify failure path.
+  3. **Two-way agreement**: no orphan registration, and no unregistered wiring.
+- **T1.1b Verify the ownership of the 43 implemented methods (new per A7)**: audit each of the 43 currently implemented methods and classify as
+  (a) within `declared_stable` and still valid → counts as implemented;
+  (b) removed/renamed upstream (e.g. `item/mcp/requestApproval`) → delete per R3;
+  (c) experimental → remove per R2, or keep with an explicit reason.
+  Write the result to `gen/implemented-methods.json` with a reconciliation note. **Until (b) is cleaned up, 43 must not be treated as a valid base.**
+- ✅ **Implemented**: `scripts/coverage_gate.py` (`report` / `write` / `check [--strict]`) + `gen/whitelist.json` (7 entries) + `gen/implemented-methods.json` + `gen/unknown-methods.txt`; `make coverage` / `make conformance` / `make conformance-strict`.
+  - **The criterion binds kind to face** (rather than "scan every role and take a priority" — `client.go` carries both client_request and the single client notification, and that approach mis-attributed requests to `client_notification_sender` and then dropped them in the Notify check, empirically producing 44 phantom gaps).
+  - **Test evidence is relaxed** to "references the constant **or** the wire method string": the SDK's tests generally drive mock servers with wire strings, and requiring constants would badly undercount.
+  - Four self-checks added: a whitelist entry must be in `declared_stable`; a whitelist entry must not already be implemented (contradiction); methods wired but removed upstream must be empty; two-way agreement.
+- **Measured result (`make coverage`)**: `declared_stable=182 / whitelist=7 / implemented=60 / gap=115`, of which **71 not started + 44 wired but untested**; plus **2 methods to migrate** (`config/update`, `item/mcp/requestApproval`).
+- **Outputs**: `gen/method-surface.json`, `gen/export-exclusions.json`, `gen/not-in-scope.txt`, `gen/whitelist.json`, `gen/implemented-methods.json`, `gen/unknown-methods.txt`.
 
-### M2 实施状态（2026-10-08）
+### M2 implementation status (2026-10-08)
 
-- ✅ **T1.2 部分落地**：新增 `scripts/gen_go_types.py` + `make generate-types`，从 vendor 的聚合 schema 生成 Go 类型（**只生成 SDK 缺失的定义**，避免与 `client_types_gen.go` 的既有 55 个手写结构体冲突；全量替换仍属 T1.2 剩余工作）。已处理 schemars 的两个坑：单元素 `allOf` 包裹的 `$ref` 必须解包（否则每个带 description 的路径字段都会退化成 `json.RawMessage`），以及无 properties 的 `object` 应生成 `struct{}` 而非 `map[string]any`。
-- ✅ **§5.2 fs 完成（9 RPC + 1 通知）**：`fs.go` 提供 `FSReadFile`/`FSWriteFile`/`FSCreateDirectory`/`FSGetMetadata`/`FSReadDirectory`/`FSRemove`/`FSCopy`/`FSWatch`/`FSUnwatch`，外加 `FSReadFileBytes`/`FSWriteFileBytes` 做 base64 往返。`fs/changed` 通知**此前已实现**（`events_extra.go` 早有 `FsChangedEvent` 与解码分支）——即通知面先于 RPC 面存在。
-- ✅ **§5.3 MCP 完成（5 RPC）**：`mcp.go` 提供 `MCPServerOauthLogin`/`MCPServerStatusList`/`MCPServerResourceRead`/`MCPServerToolCall`/`ConfigMCPServerReload`；两个通知 (`mcpServer/oauthLogin/completed`、`mcpServer/startupStatus/updated`) 同样**此前已实现**。
-- ✅ **MCP elicitation 已实施**（`f5f43e0`）：`Dispatcher.Elicitation` 已接线；`item/mcp/requestApproval` → `mcpServer/elicitation/request` 替换完成；无 handler 时回 **decline**（R9）。类型**必须手写**的原因仍然成立：`mcpServer/elicitation/request` 的方法本身是 **stable**，但其**载荷类型完全不在 vendor 的 schema 里** —— 因为 `McpServerElicitationRequestParams.request` 带 `#[experimental(nested)]`，导出一并省略。因此这几个类型必须**照 Rust 源码手写**（属"真正需要才自造"的正当情形，需在 `gen/type-allowlist.json` 登记理由），并同时完成 `item/mcp/requestApproval` → `mcpServer/elicitation/request` 的 dispatcher 替换（R3/D3）。
-- ⚠️ **门禁自身修了一个会漏报的 bug**：`coverage_gate.py` 原来用**硬编码文件清单**判断 client_method 的接线证据，导致实现于新文件（`fs.go`/`mcp.go`）的方法**完全不可见**（80 项被漏报）。已改为**按角色定位**：client_method = 除解码层/处理层与生成物之外的任意调用点；notification_decoder / server_request_handler 仍限定在各自层次内。修复后 implemented **60 → 74**。
+- ✅ **T1.2 partially landed**: add `scripts/gen_go_types.py` + `make generate-types`, generating Go types from the vendored aggregate schema (**only definitions the SDK is missing**, to avoid clashing with the 55 existing hand-written structs in `client_types_gen.go`; the full replacement is still T1.2's remaining work). Two schemars pitfalls were handled: a single-element `allOf`-wrapped `$ref` must be unwrapped (otherwise every documented path field degrades to `json.RawMessage`), and an `object` with no properties should become `struct{}` rather than `map[string]any`.
+- ✅ **§5.2 fs is done (9 RPC + 1 notification)**: `fs.go` provides `FSReadFile`/`FSWriteFile`/`FSCreateDirectory`/`FSGetMetadata`/`FSReadDirectory`/`FSRemove`/`FSCopy`/`FSWatch`/`FSUnwatch`, plus `FSReadFileBytes`/`FSWriteFileBytes` for base64 round-trips. The `fs/changed` notification **already existed** (`events_extra.go` already had `FsChangedEvent` and a decode branch) — i.e. the notification surface predated the RPC surface.
+- ✅ **§5.3 MCP is done (5 RPC)**: `mcp.go` provides `MCPServerOauthLogin`/`MCPServerStatusList`/`MCPServerResourceRead`/`MCPServerToolCall`/`ConfigMCPServerReload`; the two notifications (`mcpServer/oauthLogin/completed`, `mcpServer/startupStatus/updated`) likewise **already existed**.
+- ✅ **MCP elicitation is implemented** (`f5f43e0`): `Dispatcher.Elicitation` is wired; `item/mcp/requestApproval` → `mcpServer/elicitation/request` is replaced; with no handler it replies **decline** (R9). The reason the types **must be hand-written** still holds: the `mcpServer/elicitation/request` method itself is **stable**, but its **payload types are not in the vendored schema at all** — because `McpServerElicitationRequestParams.request` carries `#[experimental(nested)]`, so the export omits it. So these types must be **hand-written from the Rust source** (a legitimate "invent only when genuinely necessary" case, to be registered with a reason in `gen/type-allowlist.json`), along with the `item/mcp/requestApproval` → `mcpServer/elicitation/request` dispatcher replacement (R3/D3).
+- ⚠️ **The gate itself fixed a bug that under-reported**: `coverage_gate.py` used a **hardcoded file list** to determine client_method wiring evidence, so methods implemented in new files (`fs.go`/`mcp.go`) were **completely invisible** (80 entries under-reported). Changed to **locate by role**: client_method = any call site outside the decode/handle layers and generated artifacts; notification_decoder / server_request_handler stay confined to their respective layers. After the fix, implemented went **60 → 74**.
 
-### M4 实施状态（2026-10-08）
+### M4 implementation status (2026-10-08)
 
-- ✅ **§5.5 完成（15 项）**：`plugin.go` 提供 `MarketplaceAdd`/`MarketplaceRemove`/`MarketplaceUpgrade` + `PluginList`/`PluginInstalled`/`PluginReconcile`/`PluginRead`/`PluginSkillRead`/`PluginShareSave`/`PluginShareUpdateTargets`/`PluginShareList`/`PluginShareCheckout`/`PluginShareDelete`/`PluginInstall`/`PluginUninstall`。`plugin/search` 为 experimental，按 R2 不实现。已在代码注释中登记上游的 `serialization: global("config")` 语义（服务端串行化，不要依赖两个 config 变更的发出顺序）。
-- ✅ **§5.6 的 app 组完成（3 项 + 1 通知）**：`app.go` 提供 `AppsList`/`AppsInstalled`/`AppsRead`；`app/list/updated` 通知**此前已实现**。
-- ⚠️ **codegen 又修了 3 个映射缺陷**（均由测试暴露，且都会影响 M5 的产出质量）：
-  1. **可空引用**（`anyOf: [$ref, null]`）原先退化成 `json.RawMessage` —— 而该模式在 schema 中**大量存在**（如 `pluginInstallParams.marketplacePath`）。现映射为 `*T`。
-  2. **camelCase 未分词的初值缩写**：`remotePluginId` 作为单个 token，任何初值表都匹配不上，导致生成 `RemotePluginId`，与既有手写类型 `RemotePluginID` 对同一概念给出两种拼写。已改为先按 camelCase 分词。
-  3. **传递依赖绕过去重**：`existing` 跳过逻辑没有应用到传递引用遍历，导致重复声明（编译器报 `AbsolutePathBuf`/`SkillSummary` redeclared）。
-- ✅ **`generate-types` 幂等**（重跑 `git diff` 为空）。
+- ✅ **§5.5 done (15 entries)**: `plugin.go` provides `MarketplaceAdd`/`MarketplaceRemove`/`MarketplaceUpgrade` + `PluginList`/`PluginInstalled`/`PluginReconcile`/`PluginRead`/`PluginSkillRead`/`PluginShareSave`/`PluginShareUpdateTargets`/`PluginShareList`/`PluginShareCheckout`/`PluginShareDelete`/`PluginInstall`/`PluginUninstall`. `plugin/search` is experimental and not implemented per R2. Upstream's `serialization: global("config")` semantics are registered in a code comment (server-side serialization; do not rely on the emission order of two config changes).
+- ✅ **§5.6's app group done (3 + 1 notification)**: `app.go` provides `AppsList`/`AppsInstalled`/`AppsRead`; the `app/list/updated` notification **already existed**.
+- ⚠️ **codegen fixed 3 more mapping defects** (all exposed by tests, all affecting the quality of M5's output):
+  1. **Nullable refs** (`anyOf: [$ref, null]`) previously degraded to `json.RawMessage` — and this pattern is **widespread** in the schema (e.g. `pluginInstallParams.marketplacePath`). Now mapped to `*T`.
+  2. **Initialism not split out of camelCase**: `remotePluginId` as a single token matched no initialism table, producing `RemotePluginId`, giving two spellings for the same concept next to the existing hand-written `RemotePluginID`. Changed to split by camelCase first.
+  3. **Transitive dependencies bypassed dedup**: the `existing` skip logic was not applied to transitive-reference traversal, causing duplicate declarations (the compiler reported `AbsolutePathBuf`/`SkillSummary` redeclared).
+- ✅ **`generate-types` is idempotent** (re-running leaves `git diff` empty).
 
-### T1.2 收尾（全量 codegen）—— **开工前的度量结果：这不是去重，是修协议违规**
+### T1.2 wrap-up (full codegen) — **measured before starting: this is not dedup, it is fixing protocol violations**
 
-动手前先做了**逐字段对比**（`client_types_gen.go` 的 50 个手写结构体 vs 生成器对同名的产出）：
+Before starting, a **field-by-field comparison** was done (the 50 hand-written structs in `client_types_gen.go` vs the generator's output for the same names):
 
-| | 数 |
+| | Count |
 |---|---|
-| 手写结构体 | 50 |
-| 其中在聚合 schema 中有同名定义 | **49**（唯一例外 `InitializeResponse`，已白名单） |
-| **字段形状不一致的** | **26**（`make type-shape-check` 可复现） |
+| Hand-written structs | 50 |
+| Of which have a same-named definition in the aggregate schema | **49** (the sole exception `InitializeResponse`, whitelisted) |
+| **With inconsistent field shape** | **26** (`make type-shape-check` reproduces) |
 
-> ⚠️ **自我更正（重要）**：我最初据此断言"`SessionThread.Run` 发出了畸形载荷"，**这是错的**。`internal/protocol/schema/marshal_ext.go` 为 `TurnStartParams` / `TurnSteerParams` / `ThreadStartParams` 提供了**手写 `MarshalJSON`**，其中 `wireInput` 会把 Go 字符串**正确转成** `[{"type":"text","text":…}]` —— **线上形状一直是对的**。该设计刻意保留"Go 侧用字符串"的人机工程。教训：类型名/字段名不一致**不等于**协议错误，必须继续追一层到序列化行为。
+> ⚠️ **Self-correction (important)**: I initially asserted from this that "`SessionThread.Run` sends a malformed payload" — **that was wrong**. `internal/protocol/schema/marshal_ext.go` provides a **hand-written `MarshalJSON`** for `TurnStartParams` / `TurnSteerParams` / `ThreadStartParams`, whose `wireInput` **correctly converts** a Go string to `[{"type":"text","text":…}]` — **the wire shape was always right**. The design deliberately keeps the "use a string on the Go side" ergonomics. Lesson: a type/field name mismatch **does not equal** a protocol error; you must go one layer down to serialization behaviour.
 >
-> 但追这一层也**确实挖到两个真问题**：
-> 1. **`TurnStartParams.Skill` 可设置但永不上线** —— 手写 marshaller 用一个 `alias` 结构**逐字段重新列出**，`Skill` 漏了；而它的测试只断言 `req.Skill` 被设置（**断言了本地字段而非载荷**），所以 no-op 长期无人发现。且**上游 `TurnStartParams` 根本没有 `skill` 字段** ⇒ 该字段与 `WithSkill` 选项均为**死 API**，已删除（含其误导性测试）。
-> 2. `Environments` 上游标为 **`#[experimental("turn/start.environments")]`** ⇒ 按 R2 本不该暴露（且上游类型是 `Vec<TurnEnvironmentParams>`，SDK 是 `[]string`）。**未改**，记为待办。
+> But going that extra layer **did dig up two real problems**:
+> 1. **`TurnStartParams.Skill` is settable but never reaches the wire** — the hand-written marshaller uses an `alias` struct that **re-lists the fields one by one**, and it missed `Skill`; its test only asserted that `req.Skill` was set (**asserted the local field, not the payload**), so the no-op went unnoticed for a long time. And **upstream `TurnStartParams` has no `skill` field at all** ⇒ that field and the `WithSkill` option are **dead API** and were deleted (with their misleading test).
+> 2. `Environments` is marked upstream as **`#[experimental("turn/start.environments")]`** ⇒ per R2 it should not be exposed (and upstream's type is `Vec<TurnEnvironmentParams>`, the SDK's is `[]string`). **Not changed**, recorded as a todo.
 >
-> **新增不变量测试 `TestMarshalledParamsSendEveryField`**：用反射把三个手写 marshaller 对应的结构体**每个可设置字段**填成非零标记，再断言**每个字段都出现在线上 JSON 里**。已**验证它会失败**（临时把 `Skill` 加回去 ⇒ 报 `field "skill" is settable but never reaches the wire`），不是空跑。这把"新增字段必须同步改第二处"从**隐性义务**变成**受检属性**。
+> **A new invariant test `TestMarshalledParamsSendEveryField` was added**: using reflection it fills **every settable field** of the three structs behind the hand-written marshallers with a non-zero marker, then asserts **every field appears in the wire JSON**. It was **verified to fail** (temporarily adding `Skill` back ⇒ reports `field "skill" is settable but never reaches the wire`), so it is not a no-op. This turns "adding a field must also update the second place" from an **implicit obligation** into a **checked property**.
 
-### T1.2 分诊结论（26 项逐项定级）
+### T1.2 triage conclusion (26 entries, each graded)
 
-分诊方法：**按 JSON 语义而非 Go 类型文本**分类（`*T` 与 `T`、`string` 与字符串别名同族，不算差异），再交叉两点 —— **该类型是否被别名/使用**、**是否有手写 marshaller 接管线上形状**。
+Triage method: classify by **JSON semantics rather than the Go type text** (`*T` and `T`, `string` and a string alias are the same family and not a difference), then cross two points — **whether the type is aliased/used**, and **whether a hand-written marshaller takes over the wire shape**.
 
-**① 死重复（2 项，可直接删或自由重生成）**
-`schema.Thread` / `schema.Turn` 与运行时类型 `protocol.Thread` / `protocol.Turn` **同名但不同物**：后者在 `internal/protocol/types.go` 声明并带有**自定义 `UnmarshalJSON`**（弹性时间解析），而根包的 `codexgo.Thread`/`Turn` 别名指向 `protocol.*`。**没有任何地方别名或解码 `schema.Thread`/`schema.Turn`** ⇒ 它们是**死副本**。
-> 这也解释了那两个最刺眼的差异（`CreatedAt`/`StartedAt` 手写为 `*time.Time`，上游是 `int64`）**为什么无害** —— 真正解码的是带弹性解析的运行时类型。**"看起来最危险"的两项实际风险为零。**
+**① Dead duplicates (2, safe to delete or freely regenerate)**
+`schema.Thread` / `schema.Turn` have the **same names but are different objects** from the runtime types `protocol.Thread` / `protocol.Turn`: the latter are declared in `internal/protocol/types.go` with a **custom `UnmarshalJSON`** (lenient time parsing), and the root package's `codexgo.Thread`/`Turn` aliases point at `protocol.*`. **Nothing aliases or decodes `schema.Thread`/`schema.Turn`** ⇒ they are **dead copies**.
+> This also explains why the two most alarming differences (`CreatedAt`/`StartedAt` hand-written as `*time.Time`, upstream `int64`) **are harmless** — what actually decodes is the runtime type with lenient parsing. **The two items that "look most dangerous" carry zero real risk.**
 
-**② 已别名且被使用 ⇒ 形状有意义（真正的活）**
-`ClientInfo`、`InitializeParams`、`InitializeCapabilities`、`ThreadStartParams`、`TurnStartParams`、`TurnSteerParams`、`ThreadListParams`、`ThreadForkParams`、`ThreadResumeParams`、`ReviewStartParams`、`ThreadGoal{Set,Clear}Params`、`Skills*Params`、`SkillMetadata`、`TurnError`。
+**② Aliased and used ⇒ the shape matters (real work)**
+`ClientInfo`, `InitializeParams`, `InitializeCapabilities`, `ThreadStartParams`, `TurnStartParams`, `TurnSteerParams`, `ThreadListParams`, `ThreadForkParams`, `ThreadResumeParams`, `ReviewStartParams`, `ThreadGoal{Set,Clear}Params`, `Skills*Params`, `SkillMetadata`, `TurnError`.
 
-**③ 未被包外使用（4 项，差异无害）**
-`SkillInterface`、`SkillSummary`、`ThreadForkResponse`、`ThreadListResponse`。
+**③ Not used outside the package (4, harmless differences)**
+`SkillInterface`, `SkillSummary`, `ThreadForkResponse`, `ThreadListResponse`.
 
-**④ 真问题（✅ 四项已全部修复）**
+**④ Real problems (✅ all four fixed)**
 
-| 类型 | 问题 | 修复 |
+| Type | Problem | Fix |
 |---|---|---|
-| `ReviewStartParams` | 缺 required 的 `target`；`turnId` 自造；响应被丢弃 | `dc46d71`：建模 `ReviewTarget`（4 变体扁平联合体）+ `ReviewDelivery` + 4 个构造器；移除 `turnId`；`ReviewStart` 返回 `ReviewStartResponse` |
-| `ThreadResumeParams` | 5 个字段中 4 个自造（`history`/`path`/`initialTurnsPage`）、`excludeTurns` 类型错（`[]string` vs `bool`）；11 个上游字段不可达 | `1b8f7c9`：字段集对齐；`ExcludeTurns bool`；顺带把重复声明的 `SandboxMode` 与 schema 类型统一为别名 |
-| `TurnError` | `code`/`data` 自造；缺 `codexErrorInfo`/`additionalDetails`/`misalignment`（**解码时全部丢失**） | `52c1086`：采用生成形状。注意区分：这是**输出**字段，可读即可；`CodexErrorInfo` 为 `*json.RawMessage`、`MisalignmentErrorDetails` 为内部结构体指针（可读、不必可构造） |
-| `GitInfo` | 6 个字段中 5 个自造；与**已有且正确**的 `ThreadMetadataGitInfo`（patch 方向）自相矛盾 | `ca91695`：读取方向对齐为 `{branch,originUrl,sha}`；`ThreadMetadataGitInfo` **刻意保持独立声明** —— 读取方向用 `string` 无法区分"缺失"与"空"，而 patch 方向必须区分（nil 不动、`""` 清空） |
+| `ReviewStartParams` | Missing the required `target`; `turnId` invented; the response is discarded | `dc46d71`: model `ReviewTarget` (a 4-variant flat union) + `ReviewDelivery` + 4 constructors; remove `turnId`; `ReviewStart` returns `ReviewStartResponse` |
+| `ThreadResumeParams` | 4 of 5 fields invented (`history`/`path`/`initialTurnsPage`), `excludeTurns` mistyped (`[]string` vs `bool`); 11 upstream fields unreachable | `1b8f7c9`: align the field set; `ExcludeTurns bool`; also unify the duplicate `SandboxMode` with the schema type as an alias |
+| `TurnError` | `code`/`data` invented; missing `codexErrorInfo`/`additionalDetails`/`misalignment` (**all lost on decode**) | `52c1086`: adopt the generated shape. Note the distinction: these are **output** fields, readable is enough; `CodexErrorInfo` is `*json.RawMessage`, `MisalignmentErrorDetails` is an internal struct pointer (readable, need not be constructible) |
+| `GitInfo` | 5 of 6 fields invented; contradicts the **existing and correct** `ThreadMetadataGitInfo` (patch direction) | `ca91695`: align the read direction to `{branch,originUrl,sha}`; `ThreadMetadataGitInfo` **deliberately stays a separate declaration** — the read direction uses `string`, which cannot distinguish "absent" from "empty", while the patch direction must (nil leaves it alone, `""` clears it) |
 
-`make type-shape-check`：**26 → 23**（3 项完全清除；`ThreadResumeParams` 仍被标记，但只剩**三处刻意的类型简化**，已在类型注释里说明理由）。
+`make type-shape-check`: **26 → 23** (3 fully cleared; `ThreadResumeParams` is still flagged, but only for **three deliberate type simplifications**, explained in a type comment).
 
-**④ 原始定级（保留以记录过程）**
+**④ Original grading (kept to record the process)**
 
-| 类型 | 问题 | 性质 |
+| Type | Problem | Nature |
 |---|---|---|
-| `ReviewStartParams` | 缺 **required** 的 `Target`（上游 `ReviewTarget`），且无 marshaller | **已确认为真断的**：上游 `required: [target, threadId]`，而 SDK 只发 `{threadId, turnId}` ⇒ 服务端必然拒绝。另：`Client.ReviewStart` **丢弃响应**（`nil`），上游实际会返回 review 结果。**为何一直没被发现**：唯一覆盖它的是一个**生成的冒烟测试**，而 mock server 对任意载荷都回成功 ⇒ **断言不了载荷合法性**。修复需要：建模 `ReviewTarget` tagged union + `ReviewDelivery`，改字段集与调用方。 |
-| `ThreadResumeParams.ExcludeTurns` | 手写 `[]string`，上游 **`bool`** | **类型不匹配**，发出的 JSON 形状错误 |
-| `TurnError` | 缺 `CodexErrorInfo`/`AdditionalDetails`/`Misalignment`，多出 `Code`/`Data` | **解码丢字段** + 自造字段 |
-| `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached` 全部自造；上游是 `originUrl`/`sha` | **自造结构**，解码全空 |
+| `ReviewStartParams` | Missing the **required** `Target` (upstream `ReviewTarget`) and no marshaller | **Confirmed genuinely broken**: upstream `required: [target, threadId]`, while the SDK sends only `{threadId, turnId}` ⇒ the server must reject it. Also: `Client.ReviewStart` **discards the response** (`nil`), whereas upstream does return a review result. **Why it was never found**: the only thing covering it is a **generated smoke test**, and the mock server returns success for any payload ⇒ **it cannot assert payload validity**. The fix needs: model a `ReviewTarget` tagged union + `ReviewDelivery`, and change the field set and callers. |
+| `ThreadResumeParams.ExcludeTurns` | Hand-written `[]string`, upstream **`bool`** | **Type mismatch**, sending the wrong JSON shape |
+| `TurnError` | Missing `CodexErrorInfo`/`AdditionalDetails`/`Misalignment`, extra `Code`/`Data` | **Fields lost on decode** + invented fields |
+| `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached` all invented; upstream is `originUrl`/`sha` | **Invented struct**, decodes to empty |
 
-**⑤ 能力缺口（非错误，但用户无法表达）**
-多个请求参数缺上游字段，其中最多的是 `ThreadForkParams`（14）、`ThreadListParams`（11）、`ThreadResumeParams`（11）、`ThreadStartParams`（10）。
+**⑤ Capability gaps (not errors, but the user cannot express them)**
+Several request params lack upstream fields; the largest are `ThreadForkParams` (14), `ThreadListParams` (11), `ThreadResumeParams` (11), `ThreadStartParams` (10).
 
-**⚠️ 一处方法学更正**：我第一次统计"哪些类型被使用"时按**裸名**匹配，把 `schema.Thread` 与 `protocol.Thread`、`codexgo.Thread` **混为一谈**，得出"22 项被生产代码使用"——该数字**不可信**。改为按**包限定名**核查后才得到上面的分诊。**同名不同类型是这个代码库反复出现的陷阱**，任何基于名字的统计都必须限定包。
+**⚠️ A methodological correction**: when I first counted "which types are used" I matched by **bare name**, conflating `schema.Thread` with `protocol.Thread` and `codexgo.Thread`, and got "22 used by production code" — that number is **untrustworthy**. Only after checking by **package-qualified name** did I get the triage above. **Same name / different type is a recurring trap in this codebase**; any name-based count must qualify the package.
 
-**下一步（未开工）**：先修 ④ 的四项（都是**具体、可验证**的 bug），再决定 ② 的其余项是改为生成、白名单、还是补全字段；最后才把 `type_shape_check` 提为门禁。
+**Next steps (not started)**: first fix ④'s four items (all **concrete, verifiable** bugs), then decide whether ②'s remaining items are generated, whitelisted, or field-completed; only then promote `type_shape_check` to a gate.
 
-**以下为原始度量结果（部分结论已被上面的更正推翻，保留以记录过程）：**
+**The following is the original measurement (some conclusions were overturned by the corrections above; kept to record the process):**
 
-| 类型 | SDK 手写 | 上游实际 |
+| Type | SDK hand-written | Upstream actual |
 |---|---|---|
-| **`TurnStartParams.Input`** | `string` | **`Vec<UserInput>`（required）** |
+| **`TurnStartParams.Input`** | `string` | **`Vec<UserInput>` (required)** |
 | `TurnSteerParams.Input` | `string` | `Vec<UserInput>` |
-| `ReviewStartParams` | `turnId` | `target`（**required**）+ `delivery` |
-| `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached`（自造） | `originUrl`/`sha` |
+| `ReviewStartParams` | `turnId` | `target` (**required**) + `delivery` |
+| `GitInfo` | `Root`/`Commit`/`Remote`/`Dirty`/`Detached` (invented) | `originUrl`/`sha` |
 | `SkillInterface.IconLarge` | `string` | `*AbsolutePathBuf` |
 | `ClientInfo.Name`/`Version` | `omitempty` | required |
 
-**`TurnStartParams` 是要害**：`SessionThread.Run`（SDK 的**主入口**）在 `thread.go:125` 构造 `TurnStartParams{ThreadID: …, Input: input}`，而 `Input` 是 Go 字符串 ⇒ 实际发出 `{"input":"hello"}`，而上游要求 `{"input":[{"type":"text","text":"hello"}]}`。
+**`TurnStartParams` is the critical one**: `SessionThread.Run` (the SDK's **primary entry point**) builds `TurnStartParams{ThreadID: …, Input: input}` at `thread.go:125`, where `Input` is a Go string ⇒ it actually sends `{"input":"hello"}`, while upstream requires `{"input":[{"type":"text","text":"hello"}]}`.
 
-**为什么一直没被发现**（三个盲区叠加）：
-1. Go 类型系统不校验线上形状 —— 编译期无从发现；
-2. mock server 测试**断言的是同一个手写类型**，属**循环验证**；
-3. 真实 server 测试在没有 codex 二进制时被 skip。
+**Why it went unnoticed** (three blind spots compounding):
+1. The Go type system does not check the wire shape — nothing to find at compile time;
+2. The mock-server tests **assert against the same hand-written type**, a **circular validation**;
+3. Real-server tests are skipped without a codex binary.
 
-外加一个方法学问题：`type_check.py` **只比对类型名**。名字全对，形状全错，门禁绿灯。这正是 I7 当时指出但未闭合的层面。
+Plus a methodological problem: `type_check.py` **compares type names only**. All names correct, all shapes wrong, the gate is green. That is exactly the layer I7 pointed at but did not close.
 
-**新增 `scripts/type_shape_check.py`**（`make type-shape-check`，已并入 `make conformance` 的**报告**步骤）逐字段对比手写与生成结果，让这 26 项**可枚举、可复现**。
-- **刻意暂不纳入 `conformance-strict`**：这是 T1.2 的**待完成工作量**，且尚未分诊（哪些该改为生成、哪些该白名单），把它设成门禁只会得到一个"已知失败"，不如先把清单做实。迁移完成后必须加进 strict。
+**A new `scripts/type_shape_check.py`** (`make type-shape-check`, folded into `make conformance`'s **report** step) compares hand-written vs generated field by field, making these 26 **enumerable and reproducible**.
+- **Deliberately not in `conformance-strict` yet**: this is T1.2's **outstanding work** and it is not yet triaged (which to generate, which to whitelist); making it a gate would just yield a "known failure". Better to make the list solid first. It must be added to strict once the migration is done.
 
-**迁移工作量（未开工）**：① 让 `--from-surface` 的产出**取代** `client_types_gen.go`，而非并存；② `UserInput` 等 tagged union 目前退化为 `json.RawMessage`（`type UserInput = json.RawMessage`），需**建模为带判别字段的结构体**才能让 `Input` 可用（照 elicitation 那套做法）；③ 修 `Run`/`TurnStart`/`ReviewStart` 的调用方 —— **破坏性公开 API 变更**（`Run(ctx, string)` 的签名需要重新设计以接受结构化输入，或提供 `RunInputs(ctx, []UserInput)`）；④ 取消 `Init` 与 `initialize` 之间的命名不一致（`Capabilities` vs `InitializeCapabilities`）；⑤ 为 `GitInfo` 等确认上游是否真有替代。
+**Migration workload (not started)**: ① make `--from-surface`'s output **replace** `client_types_gen.go` rather than coexist; ② `UserInput` and other tagged unions currently degrade to `json.RawMessage` (`type UserInput = json.RawMessage`), and must be **modelled as structs with a discriminator field** before `Input` is usable (the same approach as elicitation); ③ fix the callers of `Run`/`TurnStart`/`ReviewStart` — **breaking public API changes** (`Run(ctx, string)`'s signature must be redesigned to accept structured input, or a `RunInputs(ctx, []UserInput)` provided); ④ remove the naming inconsistency between `Init` and `initialize` (`Capabilities` vs `InitializeCapabilities`); ⑤ for `GitInfo` et al., confirm whether upstream really has a replacement.
 
-> ⚠️ 结论：**「消除双轨」的真实价值不在整洁，而在于它已经掩盖了一个主入口的协议违规。** 必须先修 `TurnStartParams`（或至少让它显式报错），再谈类型整洁。
+> ⚠️ Conclusion: **the real value of "eliminating the dual track" is not tidiness — it has already masked a protocol violation in the main entry point.** Fix `TurnStartParams` first (or at least make it fail loudly), before talking about type tidiness.
 
-### 决策（用户裁定）：**保留生成类型，废弃 SDK 自造的手写类型**
+### Decision (user-ruled): **keep the generated types, discard the SDK's hand-invented ones**
 
-用户裁定采用生成形状、废弃 SDK 自己的 `SandboxMode`/`ApprovalMode`。**执行该决策时发现两个"值级"bug**，其严重性远超类型整洁 —— 它们不是"形状不好看"，而是**发出服务端不接受的值**：
+The user ruled to adopt the generated shapes and discard the SDK's own `SandboxMode`/`ApprovalMode`. **Executing that decision surfaced two "value-level" bugs**, far more serious than type tidiness — they are not "ugly shapes" but **values the server does not accept**:
 
-| 字段 | SDK 发出 | 上游实际需要 |
+| Field | SDK sends | Upstream actually requires |
 |---|---|---|
-| `TurnStartParams.SandboxPolicy` | 裸字符串 `"workspace-write"` | **对象** `{"type":"workspaceWrite"}` —— 判别值是 **camelCase**（`readOnly`/`workspaceWrite`/`dangerFullAccess`/`externalSandbox`），与 `SandboxMode` 的拼写（`read-only`/`workspace-write`/`danger-full-access`）**不同** |
-| `TurnStartParams.ApprovalPolicy`（经 `ApprovalMode`） | `deny_all` / `auto_review` / `on-request` / `never` | 上游 `AskForApproval` 枚举只有 **`untrusted`/`on-request`/`never`** ⇒ **`deny_all` 在任何枚举里都不存在**；**`auto_review` 属于 `ApprovalsReviewer`**（`user`/`auto_review`/`guardian_subagent`），被**张冠李戴** |
+| `TurnStartParams.SandboxPolicy` | a bare string `"workspace-write"` | an **object** `{"type":"workspaceWrite"}` — the discriminators are **camelCase** (`readOnly`/`workspaceWrite`/`dangerFullAccess`/`externalSandbox`), **different** from `SandboxMode`'s spellings (`read-only`/`workspace-write`/`danger-full-access`) |
+| `TurnStartParams.ApprovalPolicy` (via `ApprovalMode`) | `deny_all` / `auto_review` / `on-request` / `never` | upstream's `AskForApproval` enum has only **`untrusted`/`on-request`/`never`** ⇒ **`deny_all` exists in no enum**; **`auto_review` belongs to `ApprovalsReviewer`** (`user`/`auto_review`/`guardian_subagent`) and was **misattributed** |
 
-即 `sandboxPolicy` 是**双重错**（JSON 类型错 + 值拼写错），`ApprovalMode` 则是**把两个上游枚举混成了一个**。
+So `sandboxPolicy` was **doubly wrong** (wrong JSON type + wrong value spelling), and `ApprovalMode` **merged two upstream enums into one**.
 
-> ✅ `fadc033` **sandboxPolicy 已修**：`SandboxPolicy` 建为 4 变体扁平判别结构体 + 构造器（与 `UserInput`/`ReviewTarget`/elicitation 一致）；`WithSandbox(string)` → **`WithSandboxPolicy(SandboxPolicy)`**（裸字符串**不可能**是合法 policy，故删除而非重新解释；且它无调用者）；`WithSandboxMode` **改转换而非类型转换**（`SandboxPolicyFromMode`）。
-> ⚠️ 原测试断言 `req.SandboxPolicy == "workspace-write"` —— **它把这个 bug 钉住了**，而不是抓住它。现改为断言判别值，并新增载荷断言。
-> ⚠️ **验证方法学**：我的第一次反向对照改的是 `SandboxPolicyFromMode`，而该测试**并不调用它** ⇒ 对照"通过"、什么也没证明。改到测试真正调用的构造器后，如期报 `type = "workspace-write", want "workspaceWrite"`。
+> ✅ `fadc033` **sandboxPolicy fixed**: `SandboxPolicy` is built as a 4-variant flat discriminated struct + constructors (consistent with `UserInput`/`ReviewTarget`/elicitation); `WithSandbox(string)` → **`WithSandboxPolicy(SandboxPolicy)`** (a bare string **cannot** be a legal policy, so it is deleted rather than reinterpreted; and it had no callers); `WithSandboxMode` becomes a **conversion rather than a type cast** (`SandboxPolicyFromMode`).
+> ⚠️ The original test asserted `req.SandboxPolicy == "workspace-write"` — **it pinned the bug** rather than catching it. Now it asserts the discriminator value, plus a new payload assertion.
+> ⚠️ **Verification methodology**: my first negative control changed `SandboxPolicyFromMode`, which that test **does not call** ⇒ the control "passed" and proved nothing. After changing the constructor the test actually calls, it reported `type = "workspace-write", want "workspaceWrite"` as expected.
 
-> ✅ `51c2260` **`ApprovalMode` 已拆分**：`AskForApproval`（`untrusted`/`on-request`/`never` **或** `{"granular":{...}}`）与 `ApprovalsReviewer`（`user`/`auto_review`/`guardian_subagent`）建为**两个**类型，`ApprovalMode` 及 `WithApprovalMode`/`WithThreadApprovalMode` 删除；`WithApprovalPolicy` 改为接收 `AskForApproval`（原 `string` **可携带任意值**）。
-> - **实现要点**：`AskForApproval` 的一个分支是**裸字符串** ⇒ **不能**用 `SandboxPolicy` 那套带 `type` 字段的扁平结构体（结构体**恒**编码为对象），必须**自定义 `MarshalJSON`/`UnmarshalJSON`**。`granular` 对象的字段名上游是 **snake_case**（与协议其余部分不同），三个 required 字段**不带 `omitempty`**。
-> - 三个请求结构体新增 `ApprovalsReviewer` —— 那才是 `auto_review` 的归宿。
-> - 新增 `Ptr[T]`（可选指针字段在字面量里很常见）。
-> - 测试覆盖两个分支及其往返；载荷测试断言 `approvalPolicy` 是裸字符串、`auto_review` 落在 `approvalsReviewer`。**反向对照已实测**（把枚举分支包成对象 ⇒ 报 `got {"policy":"never"}, want "never"`）。
+> ✅ `51c2260` **`ApprovalMode` split**: `AskForApproval` (`untrusted`/`on-request`/`never` **or** `{"granular":{...}}`) and `ApprovalsReviewer` (`user`/`auto_review`/`guardian_subagent`) are built as **two** types; `ApprovalMode` and `WithApprovalMode`/`WithThreadApprovalMode` are deleted; `WithApprovalPolicy` now takes `AskForApproval` (the old `string` **could carry any value**).
+> - **Implementation note**: one arm of `AskForApproval` is a **bare string** ⇒ it **cannot** use `SandboxPolicy`'s flat struct with a `type` field (a struct **always** encodes as an object), so it must have **custom `MarshalJSON`/`UnmarshalJSON`**. The `granular` object's field names are **snake_case** upstream (unlike the rest of the protocol), and its three required fields carry **no `omitempty`**.
+> - The three request structs gain `ApprovalsReviewer` — that is where `auto_review` belongs.
+> - Added `Ptr[T]` (optional pointer fields are common in literals).
+> - Tests cover both branches and their round-trips; the payload test asserts that `approvalPolicy` is a bare string and `auto_review` lands in `approvalsReviewer`. **The negative control was actually run** (wrapping the enum branch as an object ⇒ reports `got {"policy":"never"}, want "never"`).
 
-### 形状差异第二轮分诊：16 个"自造字段"逐项定级（`30ea584` 发现第 6 个真 bug）
+### Second-round shape triage: 16 "invented fields", each graded (`30ea584` found a 6th real bug)
 
-方法：先看**每个自造字段**（SDK 有、上游无），而不是看结构体。16 个字段分布在 9 个结构体。
+Method: look at **each invented field** (present in the SDK, absent upstream) rather than at the struct. The 16 fields are spread across 9 structs.
 
-| 判定 | 项 | 说明 |
+| Verdict | Item | Note |
 |---|---|---|
-| ✅ **真 bug（已修）** | `TurnSteerParams.TurnID` | 上游 `required: [expectedTurnId, input, threadId]`，SDK 发 `turnId`（上游**根本不定义**）且**完全没有 `expectedTurnId`** ⇒ **转向功能从未可用**；且该字段**无 `omitempty`**，错的字段**每次都在发**。已改为 `ExpectedTurnID`（wire `expectedTurnId`）、补 `clientUserMessageId`、`TurnSteer` 不再丢弃响应 |
-| ⚪ **无害：类型是死的** | `ThreadListResponse.Threads`/`Cursor` | 看起来是解码 bug，但 `Client.ThreadList` **自己解码进匿名 `{data}` 结构**（`client.go:348`），从未用这个类型 ⇒ 差异不可达。**先查可达性再改**，避免修一个没人用的类型 |
-| 🔤 **仅命名**（同 json tag，4 项） | `InitializeCapabilities.MCPServerOpenAIFormElicitation`、`InitializeParams.InitializeCapabilities`、`SkillsListParams.CWDs`、`schema.Turn.DurationMS` | 生成器产出 `McpServerOpenaiFormElicitation`/`Capabilities`/`Cwds`/`DurationMs`，**json tag 完全相同** ⇒ 改名即可，零行为风险。**未做** |
-| ⚪ **无害：上游忽略未知字段** | `TurnStartParams.Permissions`/`CollaborationMode`/`MultiAgentMode`/`Environments`、`ThreadStartParams.RuntimeWorkspaceRoots`/`DynamicTools`/`Metadata`/`Environments`、`ThreadForkParams.TurnID` | 会发到线上，但上游对它不认识的字段**不报错**（无 `deny_unknown_fields`）⇒ 死重，非错误。**未做**（其中 `environments` 上游标 experimental，按 R2 本不该暴露） |
+| ✅ **Real bug (fixed)** | `TurnSteerParams.TurnID` | Upstream `required: [expectedTurnId, input, threadId]`; the SDK sends `turnId` (which upstream **does not define at all**) and has **no `expectedTurnId` whatsoever** ⇒ **steering never worked**; and the field had **no `omitempty`**, so the wrong field **was sent every time**. Changed to `ExpectedTurnID` (wire `expectedTurnId`), added `clientUserMessageId`, and `TurnSteer` no longer discards the response |
+| ⚪ **Harmless: the type is dead** | `ThreadListResponse.Threads`/`Cursor` | Looks like a decode bug, but `Client.ThreadList` **decodes into an anonymous `{data}` struct itself** (`client.go:348`) and never uses this type ⇒ the difference is unreachable. **Check reachability before changing**, to avoid fixing an unused type |
+| 🔤 **Naming only** (same json tag, 4 items) | `InitializeCapabilities.MCPServerOpenAIFormElicitation`, `InitializeParams.InitializeCapabilities`, `SkillsListParams.CWDs`, `schema.Turn.DurationMS` | The generator produces `McpServerOpenaiFormElicitation`/`Capabilities`/`Cwds`/`DurationMs` with **identical json tags** ⇒ rename only, zero behavioural risk. **Not done** |
+| ⚪ **Harmless: upstream ignores unknown fields** | `TurnStartParams.Permissions`/`CollaborationMode`/`MultiAgentMode`/`Environments`, `ThreadStartParams.RuntimeWorkspaceRoots`/`DynamicTools`/`Metadata`/`Environments`, `ThreadForkParams.TurnID` | They reach the wire, but upstream **does not error** on fields it does not know (no `deny_unknown_fields`) ⇒ dead weight, not errors. **Not done** (of these, `environments` is marked experimental upstream and should not be exposed per R2) |
 
-> ⚠️ **又一处"测试钉住 bug"**：既有的 `TestSessionThreadSteer` 断言 `req.TurnID` —— 它**照着同一个错误模型写的断言**，所以通过。这与 `sandboxPolicy` 那个测试是同一模式（`30ea584` 已一并改正）。**本轮共 3 次遇到"测试复制了错误的模型"**，值得记为模式而非巧合。
+> ⚠️ **Another "test pinned the bug"**: the existing `TestSessionThreadSteer` asserted `req.TurnID` — it was **written against the same wrong model**, so it passed. This is the same pattern as the `sandboxPolicy` test (`30ea584` corrected it too). **This round hit "the test copied the wrong model" three times**, worth recording as a pattern rather than a coincidence.
 
-**能力缺口（GAP）仍未分诊**：共 73 个缺失字段，最多为 `ThreadForkParams`(14)、`ThreadListParams`(11)、`ThreadForkResponse`(10)、`ThreadStartParams`(9)、`Thread`(8)、`TurnStartParams`(7)。性质是"**用户无法表达**"而非"发错值"。
+**Capability gaps (GAP) are still untriaged**: 73 missing fields in total, the largest being `ThreadForkParams`(14), `ThreadListParams`(11), `ThreadForkResponse`(10), `ThreadStartParams`(9), `Thread`(8), `TurnStartParams`(7). Their nature is "**the user cannot express it**", not "a wrong value is sent".
 
-### T1.6 生成器支持判别联合体（**可行性已验证：可做，且是 T1.2 迁移的前置条件**）
+### T1.6 Generator support for discriminated unions (**feasibility verified: doable, and a prerequisite for the T1.2 migration**)
 
-**为什么要做**：生成器把所有联合体退化为 `= json.RawMessage`，这使 T1.2 的迁移变成**回退**（见下节）。补上这个能力后，① 迁移才安全；② 目前已退化的类型获得类型化访问；③ 我**已手写这个模式 4 次**（`UserInput`/`ReviewTarget`/`SandboxPolicy`/elicitation）的手写副本可删除。
+**Why do it**: the generator degrades every union to `= json.RawMessage`, which turns the T1.2 migration into a **regression** (next section). With this capability in place, ① the migration is safe; ② currently degraded types get typed access; ③ the hand-written copies I have **already written this pattern 4 times** (`UserInput`/`ReviewTarget`/`SandboxPolicy`/elicitation) can be deleted.
 
-**度量（vendor 聚合 schema）**：
+**Measurement (vendor aggregate schema)**:
 
-| 联合体类别 | 数 | 可自动化？ |
+| Union category | Count | Automatable? |
 |---|---|---|
-| **tagged-object**（每个分支都是带 `type` 枚举判别字段的对象） | **36** | ✅ 可 → 扁平判别结构体 |
-| **string-arm**（含裸字符串分支，如 `AskForApproval`） | **17** | ⚠️ 需**自定义 `MarshalJSON`**（结构体恒编码为对象，表达不了裸字符串分支） |
-| 其它 | 12 | 需逐个判断 |
+| **tagged-object** (every arm is an object with a `type`-enum discriminator field) | **36** | ✅ Yes → flat discriminated struct |
+| **string-arm** (contains a bare string arm, e.g. `AskForApproval`) | **17** | ⚠️ Needs a **custom `MarshalJSON`** (a struct always encodes as an object and cannot express a bare string arm) |
+| Other | 12 | Needs case-by-case judgement |
 
-其中 **28 个今天是 `= json.RawMessage`**（13 个 tagged-object + 10 个 string-arm）—— 即退化是**普遍现象**，不是个案。
+Of these, **28 are `= json.RawMessage` today** (13 tagged-object + 10 string-arm) — i.e. degradation is **widespread**, not a special case.
 
-**36 个 tagged-object 的细分**：
-- **27 个分支间无字段名冲突** ⇒ 扁平结构体可直接安全产出。
-- **9 个有冲突**（同名不同型，例：`CommandAction.path`: `LegacyAppPathString` vs `null|string`；`ResponseItem.content`: `array` vs `array|null`）。
-- **34 处嵌套联合体字段**（分支字段本身是联合体）。
+**Breakdown of the 36 tagged-object unions**:
+- **27 have no field-name conflicts between arms** ⇒ a flat struct can be produced safely.
+- **9 have conflicts** (same name, different type, e.g. `CommandAction.path`: `LegacyAppPathString` vs `null|string`; `ResponseItem.content`: `array` vs `array|null`).
+- **34 nested union fields** (an arm field is itself a union).
 
-**可实施规则（已验证足以覆盖全部 36 个）**：
-1. 分支字段按名合并，`Type string` 判别字段 + 各分支字段并集；
-2. **嵌套联合体字段 → `json.RawMessage` 回退**（这正是我手写 `SandboxPolicy.networkAccess` 的做法）；
-3. **冲突字段 → `json.RawMessage` 回退**，而非发明合并语义（保留形状、不猜）；
-4. 生成 `Type` 常量块 + 各分支构造器；字段按生成器的字母序约定排列。
+**Implementable rules (verified sufficient to cover all 36)**:
+1. Merge arm fields by name: a `Type string` discriminator field + the union of the arms' fields;
+2. **Nested union fields → `json.RawMessage` fallback** (exactly what I did for the hand-written `SandboxPolicy.networkAccess`);
+3. **Conflicting fields → `json.RawMessage` fallback**, rather than inventing merge semantics (keep the shape, do not guess);
+4. Emit a `Type` constant block + per-arm constructors; order the fields by the generator's alphabetical convention.
 
-> 规则 1–4 对 `SandboxPolicy` 产出的形状应与我的手写版本**等价**（它的 `networkAccess` 恰好走规则 2）。`UserInput`/`ReviewTarget` 无冲突，走规则 1。
+> Rules 1–4 should produce a shape **equivalent** to my hand-written version for `SandboxPolicy` (its `networkAccess` happens to go through rule 2). `UserInput`/`ReviewTarget` have no conflicts and go through rule 1.
 
-**尚未实施**：这是一次生成器能力扩展，需重新生成全部产物并逐项比对，属独立工作；**在它落地前，T1.2 的迁移仍是回退，不可做**。
+**Not yet implemented**: this is a generator capability extension, requiring all artifacts to be regenerated and compared item by item; it is separate work. **Until it lands, the T1.2 migration is still a regression and must not be done.**
 
-### T1.2 剩余部分（清理，非修 bug）—— 已度量，**不建议直接开工**
+### T1.2 remaining part (cleanup, not bug fixes) — measured, **not recommended to start directly**
 
-**度量方法**：把生成器输出到**空目录**（`existing={}` 被清空）得到"整个 surface 能生成什么"，再与手写子集比对。
+**Measurement method**: point the generator at an **empty directory** (`existing={}` cleared) to get "what the whole surface can generate", then compare against the hand-written subset.
 
-| | 数 |
+| | Count |
 |---|---|
-| `client_types_gen.go` 手写类型 | 58（794 行） |
-| 生成器**也能产出** | **52** |
-| 其中与手写**逐字节相同** | **23**（纯重复，删除零行为变化） |
-| 必须手写 | 6（`AskForApprovalGranular`/`CommandExecutionApprovalDecision`/`FileChangeApprovalDecision`/`InitializeResponse`/`ItemKind`/`PermissionGrantScope`，均已在名称白名单） |
+| `client_types_gen.go` hand-written types | 58 (794 lines) |
+| The generator **can also produce** | **52** |
+| Of which **byte-identical** to hand-written | **23** (pure duplicates; deleting changes zero behaviour) |
+| Must stay hand-written | 6 (`AskForApprovalGranular`/`CommandExecutionApprovalDecision`/`FileChangeApprovalDecision`/`InitializeResponse`/`ItemKind`/`PermissionGrantScope`, all already on the name whitelist) |
 
-> ⚠️ **不能整体迁移 —— 会回退三个真实修复。** 生成器把 **tagged union 退化为 `json.RawMessage`**：
-> `type SandboxPolicy = json.RawMessage`、`type AskForApproval = json.RawMessage`、`type ReviewTarget = json.RawMessage`。
-> 而这三个手写版本是**判别结构体**，正是 `fadc033`/`51c2260`/`dc46d71` 三个 commit 修的东西（`sandboxPolicy` 对象 vs 字符串、`ApprovalMode` 混两个枚举、`ReviewStartParams` 缺 required 的 `target`）。
-> **先让生成器会产出判别联合体，再谈迁移**；否则迁移就是回退。
+> ⚠️ **It cannot be migrated wholesale — that would regress three real fixes.** The generator degrades **tagged unions to `json.RawMessage`**:
+> `type SandboxPolicy = json.RawMessage`, `type AskForApproval = json.RawMessage`, `type ReviewTarget = json.RawMessage`.
+> But the three hand-written versions are **discriminated structs**, exactly what `fadc033`/`51c2260`/`dc46d71` fixed (the `sandboxPolicy` object vs string, `ApprovalMode` merging two enums, `ReviewStartParams` missing the required `target`).
+> **Make the generator emit discriminated unions first, then talk about migrating**; otherwise the migration is a regression.
 >
-> ⚠️ **另一处使迁移非机械的原因**：生成器的注释曾声称"被跳过的类型仍会被遍历"，**但代码并不遍历** —— 遍历从 `wanted` 出发，而 `wanted` 已排除 `existing`。后果：**仅被其它手写类型引用的类型，删掉后不会被重新生成**，且失败是静默的（生成器什么都不产出，编译器报未定义名）。因此迁移必须**按引用链整体进行**，不能逐类型删。注释已更正。
+> ⚠️ **Another reason the migration is not mechanical**: the generator's comment once claimed "skipped types are still traversed", **but the code does not traverse them** — traversal starts from `wanted`, which already excludes `existing`. Consequence: **a type reachable only through other hand-written types will not be regenerated after deletion**, and the failure is silent (the generator emits nothing; the compiler reports an undefined name). So the migration must be **done along the reference chain as a whole**, not type by type. The comment has been corrected.
 
-**结论**：这是**清理**而非正确性工作，且需要先补生成器的判别联合体能力。不建议在无明确目标时开工。
+**Conclusion**: this is **cleanup**, not correctness work, and it needs the generator's discriminated-union capability first. Not recommended to start without a clear goal.
 
-### T1.5 迁移上游已删除/改名的方法（**I5 新增**）
+### T1.5 Migrate methods upstream deleted/renamed (**added by I5**)
 
-`scripts/coverage_gate.py` 的 `wires-up-but-not-upstream` 检查机械发现 5 项，比计划原以为的多 4 项。按 R3 一律迁移、**不留旧名**：
+`scripts/coverage_gate.py`'s `wires-up-but-not-upstream` check mechanically found 5 items, 4 more than the plan expected. All are migrated per R3, **leaving no old name**:
 
-| SDK 现有方法 | 上游现状与**权威参数形状**（取自 codex 源码） | 处置 |
+| Current SDK method | Upstream status and the **authoritative param shape** (from the codex source) | Disposition |
 |---|---|---|
-| `config/update` | 不存在。替代为 `config/value/write`，其 `ConfigValueWriteParams { key_path, value, merge_strategy, file_path?: Option, expected_version?: Option }`（`protocol/v2/config.rs:1101-1110`）；版本需先经 `config/read`（`ConfigReadParams { include_layers, cwd? }` → `ConfigReadResponse { config, origins, layers? }`）取 `origins[key].version` | 迁移 `SetModel`/`SetApprovalPolicy`/`SetSandbox`。**非改名**：需补 `keyPath`+`mergeStrategy`，并新增乐观并发读版本流程；还要确定 `model`/`approval_policy`/`sandbox_mode` 的真实配置键名 |
-| `thread/rollback` | 不存在。替代为 `thread/revert`，`ThreadRevertParams { thread_id, before_turn_id }`（`protocol/v2/thread.rs:1288-1292`），语义是"**排除该 turn 及其之后的所有 turn**"；响应 `ThreadRevertResponse { thread, cursor }`，`turns` 恒为空，须用 `thread/turns/list` 回填 | **非改名 → 语义变更**：现有 `ThreadRollback(ctx, ThreadRollbackRequest{TurnIDs []string})` 是"按 id 列表回滚"，无法一一对应。需重新设计 API（单 `beforeTurnID` + 游标回填），并同步 `SessionThread.Rollback` |
-| `turn/diff` | **不存在对应的请求方法**（`turn/*` 仅有 interrupt/settings-update/start/steer 四个请求；`Turn` 结构体也**无 diff 字段**，`thread_data.rs:386-409`）。diff 数据仍可取（聚合 diff 只经 `turn/diff/updated` 通知推送；逐文件 diff 在 `FileUpdateChange.diff`，`item.rs:1146-1150`），但**JSON-RPC 层面没有 `turn/diff` 这个方法** | ✅ **已完成（用户决策）**：JSON-RPC 没有 `turn/diff`，**SDK 侧就不实现它**。删除 `MethodTurnDiff`、`TurnDiffRequest`/`TurnDiffResult`、`Client.TurnDiff`、`SessionThread.GitDiff` 及 `types.go` 别名；同步清理 `docs/api-reference.md`、`docs/index.md`、`llms.txt`、`llms-full.txt` 的悬空引用；`TestSessionThreadGitDiff` 一并删除。**保留** `TurnDiffUpdatedEvent`（它是真实存在的上游通知） |
-| `item/mcp/requestApproval` | → `mcpServer/elicitation/request` | = 原 D3，见 §5.3 T2.8 |
-| `item/updated` | 上游已无此通知 | ✅ **已完成**：删除 `MethodItemUpdated`、`ItemUpdatedEvent` 结构体/别名/解码分支/deref 分支；`wait.go` 的 `eventMatchesTurn` 改由既有的 `RawNotificationEvent` 分支覆盖（`wait.go:197`）。原测试改写为 `TestRemovedNotificationFallsBackToRaw`，断言回退为 `RawNotificationEvent` |
+| `config/update` | Does not exist. Replaced by `config/value/write`, whose `ConfigValueWriteParams { key_path, value, merge_strategy, file_path?: Option, expected_version?: Option }` (`protocol/v2/config.rs:1101-1110`); the version must first be read via `config/read` (`ConfigReadParams { include_layers, cwd? }` → `ConfigReadResponse { config, origins, layers? }`) from `origins[key].version` | Migrate `SetModel`/`SetApprovalPolicy`/`SetSandbox`. **Not a rename**: add `keyPath`+`mergeStrategy` and a new optimistic-concurrency read-version flow; also determine the real config key names for `model`/`approval_policy`/`sandbox_mode` |
+| `thread/rollback` | Does not exist. Replaced by `thread/revert`, `ThreadRevertParams { thread_id, before_turn_id }` (`protocol/v2/thread.rs:1288-1292`), meaning "**exclude that turn and every later turn**"; response `ThreadRevertResponse { thread, cursor }`, `turns` is always empty and must be backfilled with `thread/turns/list` | **Not a rename → a semantic change**: the current `ThreadRollback(ctx, ThreadRollbackRequest{TurnIDs []string})` is "roll back by id list", which cannot map one-to-one. The API must be redesigned (a single `beforeTurnID` + cursor backfill), and `SessionThread.Rollback` updated too |
+| `turn/diff` | **No corresponding request method** (`turn/*` has only interrupt/settings-update/start/steer; the `Turn` struct also has **no diff field**, `thread_data.rs:386-409`). Diff data is still obtainable (the aggregate diff is pushed only via the `turn/diff/updated` notification; per-file diffs are in `FileUpdateChange.diff`, `item.rs:1146-1150`), but at the **JSON-RPC level there is no `turn/diff` method** | ✅ **Done (user decision)**: JSON-RPC has no `turn/diff`, so **the SDK does not implement it**. Delete `MethodTurnDiff`, `TurnDiffRequest`/`TurnDiffResult`, `Client.TurnDiff`, `SessionThread.GitDiff` and the `types.go` aliases; also clean the dangling references in `docs/api-reference.md`, `docs/index.md`, `llms.txt`, `llms-full.txt`; delete `TestSessionThreadGitDiff`. **Keep** `TurnDiffUpdatedEvent` (it is a real upstream notification) |
+| `item/mcp/requestApproval` | → `mcpServer/elicitation/request` | = the original D3, see §5.3 T2.8 |
+| `item/updated` | Upstream no longer has this notification | ✅ **Done**: delete `MethodItemUpdated`, the `ItemUpdatedEvent` struct/alias/decode branch/deref branch; `wait.go`'s `eventMatchesTurn` now relies on the existing `RawNotificationEvent` branch (`wait.go:197`). The old test was rewritten as `TestRemovedNotificationFallsBackToRaw`, asserting the fallback to `RawNotificationEvent` |
 
-> ⚠️ **重要更正**：I5 初版把 `thread/rollback → thread/revert` 与 `config/update → config/value/write` 视为"改名迁移"。读源码后确认二者都是**语义变更**，迁移成本远高于改名，必须按新 API 设计而非机械替换。`turn/diff` 更须产品决策。
+> ⚠️ **Important correction**: I5's first version treated `thread/rollback → thread/revert` and `config/update → config/value/write` as "rename migrations". Reading the source confirmed both are **semantic changes**, far more expensive than a rename, and must be designed as new APIs rather than mechanically replaced. `turn/diff` needs a product decision even more.
 
-**验收**：`make conformance-strict` 的 `wires-up-but-not-upstream` 检查为空。当前剩余 4 项（`config/update`、`thread/rollback`、`turn/diff`、`item/mcp/requestApproval`）。
+**Acceptance**: `make conformance-strict`'s `wires-up-but-not-upstream` check is empty. 4 remain today (`config/update`, `thread/rollback`, `turn/diff`, `item/mcp/requestApproval`).
 
-### T1.2 生成 Go 协议类型
+### T1.2 Generate Go protocol types
 
-- **A. codegen（建议）**：从 vendored schema 生成 params/response 结构体 + 方法名常量（`atombender/go-jsonschema` 或自写模板）；文件头 `// Code generated; DO NOT EDIT.` + 覆盖判定说明注释。
-- **B. 手写 + T1.1 卡漏项。**
-- ⚠️ **无论 A/B：生成常量绝不作为覆盖依据。**
+- **A. codegen (recommended)**: generate params/response structs + method-name constants from the vendored schema (`atombender/go-jsonschema` or a hand-written template); the file header `// Code generated; DO NOT EDIT.` plus a note explaining the coverage determination.
+- **B. Hand-write + let T1.1 catch omissions.**
+- ⚠️ **Either way: generated constants are never a coverage basis.**
 
-### T1.3 修复类型/建模缺陷（D2/D4/D5/D5b）
+### T1.3 Fix type/modelling defects (D2/D4/D5/D5b)
 
-- ✅ **D2 已修**：`InitializeCapabilities.OptOutNotificationMethods` → `[]string`；回归测试同时断言"旧 `bool` 形状必须解码失败"。
-- ✅ **D5 已修**：`InitializeCapabilities` 补 `ExplicitGatewayOauth`/`RequestAttestation`/`Extensions`；`ClientInfo` 补 `Title`；新增 `WithClientInfo(name, title, version)`；新增 `options.go` 的 `Version` 变量（可由 `-ldflags -X` 注入，取代硬编码 `0.1.0`）。
-- ✅ **D5b 已修**：默认不宣告任何 capabilities —— `InitializeParams.InitializeCapabilities` 改为**指针**（`nil` → 字段整体从线上省略，对齐上游 `Option`）；`New()` 不再硬编码 `ExperimentalAPI: true`；新增 `WithInitializeCapabilities` 供显式覆盖。
-- ✅ **D1 配套**：`RPCRequest`/`RPCResponse`/`RPCNotification` 移除 `Version`（实测聚合 schema 中根本不存在 JSONRPC 信封类型，故这三个 `Version` 字段本就是 SDK 自造）。
-- ✅ **D4 已实施（`c9d4db3`），原设计判断正确**：`ServerNotificationEnvelope.emittedAtMs` **不是 `params` 的成员** —— 上游 `#[serde(flatten)] notification` + `emitted_at_ms`（`common.rs:2067-2080`）意味着线上形状是 `{"method":…,"params":{…},"emittedAtMs":123}`，`emittedAtMs` 与 `method`/`params` **同级**。而现有 transport 只把 `raw["params"]` 取出（`websocket.go` / `transport.go` 的 readLoop），**同级字段在这一步就被丢弃**。因此 D4 必须在 **transport 层**（`Notification` 增加 `EmittedAtMs`）而不是解码器里实现 —— 原任务描述有误，已修正。 现已实现：`Notification.EmittedAtMs` + `Event.EmittedAtMs` + `ThreadEvent.EmittedAtMs`，三个读取循环共用 `envelopeEmittedAtMs` 以免漂移。**已知限制**：stdio 底层是 jrpc2，它自行解析信封、只暴露 method/params，故同级字段到不了 SDK（`EmittedAtMs` 恒为 0）；WS/HTTP 已覆盖。
+- ✅ **D2 fixed**: `InitializeCapabilities.OptOutNotificationMethods` → `[]string`; the regression test also asserts that "the old `bool` shape must fail to decode".
+- ✅ **D5 fixed**: `InitializeCapabilities` gains `ExplicitGatewayOauth`/`RequestAttestation`/`Extensions`; `ClientInfo` gains `Title`; added `WithClientInfo(name, title, version)`; added a `Version` variable in `options.go` (injectable via `-ldflags -X`, replacing the hardcoded `0.1.0`).
+- ✅ **D5b fixed**: no capabilities are announced by default — `InitializeParams.InitializeCapabilities` becomes a **pointer** (`nil` → the field is omitted entirely from the wire, matching upstream's `Option`); `New()` no longer hardcodes `ExperimentalAPI: true`; added `WithInitializeCapabilities` for an explicit override.
+- ✅ **D1 follow-up**: `RPCRequest`/`RPCResponse`/`RPCNotification` lose `Version` (the aggregate schema has no JSONRPC envelope type at all, so these three `Version` fields were SDK inventions).
+- ✅ **D4 implemented (`c9d4db3`); the original design judgement was correct**: `ServerNotificationEnvelope.emittedAtMs` is **not a member of `params`** — upstream `#[serde(flatten)] notification` + `emitted_at_ms` (`common.rs:2067-2080`) means the wire shape is `{"method":…,"params":{…},"emittedAtMs":123}`, with `emittedAtMs` **sibling** to `method`/`params`. The existing transport only extracts `raw["params"]` (`websocket.go` / `transport.go`'s readLoop), so **sibling fields are discarded at that step**. So D4 must be implemented in the **transport layer** (`Notification` gaining `EmittedAtMs`), not in a decoder — the original task description was wrong and is corrected. Now implemented: `Notification.EmittedAtMs` + `Event.EmittedAtMs` + `ThreadEvent.EmittedAtMs`, sharing `envelopeEmittedAtMs` across the three read loops to prevent drift. **Known limitation**: the stdio transport is jrpc2 underneath, which parses the envelope itself and only exposes method/params, so sibling fields cannot reach the SDK (`EmittedAtMs` is always 0); WS/HTTP are covered.
 
-### T1.4 线格式严格对齐（D1 + trace）✅ 已完成
+### T1.4 Strict wire-format alignment (D1 + trace) ✅ done
 
-- ✅ **删除 `"jsonrpc":"2.0"`**：`requestEnvelope`/`notificationEnvelope`/`replyEnvelope` 移除 `Version`；删除 `JSONRPCVersion` 常量；`transport.go` / `http.go` / `websocket.go` 中全部 `Version: "2.0"` 字面量清除。**未提供兼容开关**（R3）。
-  - **唯一保留的例外（必要且有意）**：stdio 传输由 `jrpc2`（严格 JSON-RPC 2.0 实现）驱动，它既发出也要求该字段；其入站修补 `versionFixerReader`（`stdio.go:153-196`）必须保留，除非替换 jrpc2。已在 `transport.go` 与 `stdio.go` 就地注释说明。
-- ✅ **新增 `trace`**：`TraceContext{Traceparent, Tracestate}`（形状取自 `codex-rs/protocol/src/protocol.rs:168-175`；该类型不在 app-server 聚合 schema 中，故本地建模）+ `WithTraceContext(ctx, *TraceContext)` / `TraceContextFromContext(ctx)`；`JSONRPCTransport.Call`、`WebSocketTransport.Call`、`HTTPTransport.Call` 自动注入。**仅请求携带**（上游 `JSONRPCNotification` 无 `trace`）。
-- ✅ **回归测试**：`internal/transport/wire_shape_test.go`（出站无 `jsonrpc`、trace 仅在请求上、helper nil 安全）、`internal/protocol/schema/client_types_wire_test.go`。
-- ✅ **真实 server 验证**（T1.4 明确要求）：`tests/real/wire_alignment_real_test.go` 对本地 `codex app-server --listen ws://…` 执行**无 `jsonrpc` 字段**的 `initialize`+`initialized` 握手与只读 RPC，**实测通过**。
+- ✅ **Delete `"jsonrpc":"2.0"`**: `requestEnvelope`/`notificationEnvelope`/`replyEnvelope` drop `Version`; the `JSONRPCVersion` constant is deleted; every `Version: "2.0"` literal in `transport.go` / `http.go` / `websocket.go` is removed. **No compatibility toggle** (R3).
+  - **The one necessary and deliberate exception**: the stdio transport is driven by `jrpc2` (a strict JSON-RPC 2.0 implementation), which both emits and requires that field; its inbound patch `versionFixerReader` (`stdio.go:153-196`) must stay unless jrpc2 is replaced. It is documented in-place in `transport.go` and `stdio.go`.
+- ✅ **Add `trace`**: `TraceContext{Traceparent, Tracestate}` (shape from `codex-rs/protocol/src/protocol.rs:168-175`; the type is not in the app-server aggregate schema, so it is modelled locally) + `WithTraceContext(ctx, *TraceContext)` / `TraceContextFromContext(ctx)`; `JSONRPCTransport.Call`, `WebSocketTransport.Call`, `HTTPTransport.Call` inject it automatically. **Carried on requests only** (upstream's `JSONRPCNotification` has no `trace`).
+- ✅ **Regression tests**: `internal/transport/wire_shape_test.go` (no `jsonrpc` on the wire, trace only on requests, nil-safe helpers), `internal/protocol/schema/client_types_wire_test.go`.
+- ✅ **Real-server verification** (explicitly required by T1.4): `tests/real/wire_alignment_real_test.go` runs an `initialize`+`initialized` handshake **with no `jsonrpc` field** and read-only RPCs against a local `codex app-server --listen ws://…`, and **passes**.
 
-**验收**：出站不含 `jsonrpc` ✅；`trace` 可注入 ✅；D2/D5 有回归单测 ✅；真实 server 接受无字段信封 ✅。
+**Acceptance**: no `jsonrpc` on the wire ✅; `trace` injectable ✅; D2/D5 have regression unit tests ✅; a real server accepts the field-less envelope ✅.
 
 ---
 
-## 5. WS2 — 协议能力缺口补齐（仅 stable）
+## 5. WS2 — close protocol capability gaps (stable only)
 
-统一规范：①`Method*` 常量 ②请求/响应类型 ③实际接线 ④单测 ⑤`docs/api-reference.md` ⑥`llms.txt` ⑦登记 `gen/implemented-methods.json`。**不得引入 experimental 门控语义**（R2）。
+Common spec: ①`Method*` constant ②request/response type ③actual wiring ④unit test ⑤`docs/api-reference.md` ⑥`llms.txt` ⑦registration in `gen/implemented-methods.json`. **No experimental gating semantics may be introduced** (R2).
 
-### 5.1 reconnect（会话监督器）
+### 5.1 reconnect (session supervisor)
 
-- **T2.1 transport**：WS keepalive（`conn.Ping` + 超时）；`ReconnectingWS` 修复重拨窗口期内 `Call` 打到死连接。
-- ✅ **T2.2 会话重建（已实施，含一处与原设计的偏离）**：新增 `sessionSupervisor`（`supervisor.go`）—— 监听**传输层重连信号** → **重跑 `initialize`+`initialized`** → 对**期望订阅集**内每个 thread 调 `thread/resume`；提供 `WithAutoReconnect`。
-  - ⚠️ **偏离原设计**：原计划写"监听 `Done()` → 重拨"，但 `ReconnectingWS.Done()` **只在永久关闭时关闭**，连接掉线时并不关闭（重拨是透明的）。故改为在传输层新增 **`Reconnects() <-chan struct{}`**（每次重拨成功后触发一次，cap=1 合并），supervisor 消费它。这也修正了一个概念错误：**"重拨"≠"会话恢复"** —— 重拨只恢复 socket，而 app-server 把新连接视为**全新客户端**；不重跑握手就会在服务端没有会话的连接上继续发请求（更糟的是可能"看起来成功"，实际打在空会话上）。
-  - ✅ `WithAutoReconnect` 在传输**无法报告重连**时**显式报错**（而非静默无效），否则调用方会误以为会话在被恢复。
-  - ✅ **事件缺口回填已实施**：`sdk/sessionBackfilled` 携带**每个已恢复 thread 的权威历史**（`thread/turns/list`）。**刻意是"历史"而非"重放错过的通知"** —— 若发出线路形状的事件，将与实时通知无法区分，**在断连前已收到部分 turn 的消费者会重复计数**；契约是"按 turn id 合并"。默认每 thread 20 个 turn，`WithSessionBackfill(n)` 可调、`0` 禁用。
-    - ⚠️ 采用 `thread/turns/list` 时暴露一个**真 bug**：`schema.Turn` 曾把 `startedAt`/`completedAt` 类型化为 `*time.Time`，而**上游发 int64 Unix 秒** ⇒ **真实 turn 解码失败**，回填对任何带时间戳的 turn 都不会触发。原测试 fixture 恰好**没有时间戳**，故未暴露。已修（`Turn` 改为生成）并补真实时间戳断言。
-- **T2.3 在途操作**：修正 `retry.go:125-127`（`ErrClosed` 不可重试导致掉线瞬间全硬失败）；区分只读可重试 / 写不重试；`Notify` 与 server-request 回包不重试。
-- ✅ **T2.4 审批跨重连（已实施）**：`requestLoop` 原先用 `_ = req.Reply(...)` **丢弃所有回包错误** —— 这是**处理器自身无法察觉**的失效：它可能已经做出决定（甚至批准了命令），而该决定被丢弃。现检查回包错误并发出 `sdk/pendingApprovalLost`（含 method 与尽力提取的 thread/turn id）；同一请求的**二次回包被过滤**（那是编程错误，不是"落空"）。
-  - ⚠️ **覆盖范围caveat（已写在调用点注释）**：stdio 传输底层是 jrpc2，它把回包交给自己的 channel，因此那里丢失的回包可能表现为**正常返回**。故 WebSocket/HTTP 上检测可靠，stdio 上为**尽力而为**。
-  - ✅ **approval 可配置超时已实施**：`Dispatcher.ApprovalTimeout`（默认 0 = 无限等待，适合"批准来自人类"的场景）。超时后 SDK **代答**，且答案与"未配置 handler"**完全相同**（一律拒绝）并上报 `timedOut` ⇒ **超时永不授予任何权限**（不变量，有测试钉住）。应用于全部 5 个 server-request handler（permissions / user input / exec / file change / elicitation）。
-- ✅ **T2.5 可观测性事件（已完成）**：`ReconnectStartedEvent` / `ReconnectSucceededEvent`（含 `ThreadsResumed`/`ThreadsFailed`）/ `ReconnectFailedEvent`（含 `Err` 与 `Attempt`）/ `SessionRecoveredEvent`（含**具体 thread id 列表**）/ `UnhandledServerRequestEvent` / `PendingApprovalLostEvent`。**注意**：这些**不是线上通知**（上游无此方法），因此用 `sdk/` 前缀的**合成方法名**投递到同一 `EventSubscription`，便于单一消费循环统一处理，且前缀使其与真实通知不可混淆。
-  - ✅ `EventsLostError`/`EventsLostEvent` 新增 **`GapFrom`/`GapTo`**：界定被丢弃事件的时间窗口。**刻意用时间戳而非序号** —— 上游通知**不带序号**，"按位置命名缺口"根本无法导出；时间是**可导出**的，且足以把丢失与同期发生的事关联起来。窗口只覆盖**终止时仍在排队**的事件（已交给消费者的事件不算丢失 —— 测试显式钉住了这点，我第一版断言就把一个**已经投递**的事件算了进去）。
-  - ✅ **跨重连的缺口已由回填覆盖**（见上）；上游无重放，故回填是唯一手段。
+- **T2.1 transport**: WS keepalive (`conn.Ping` + timeout); `ReconnectingWS` fixes `Call` hitting a dead connection during the re-dial window.
+- ✅ **T2.2 session rebuild (implemented, with one deviation from the original design)**: add `sessionSupervisor` (`supervisor.go`) — listen for the **transport-layer reconnect signal** → **re-run `initialize`+`initialized`** → call `thread/resume` for every thread in the **expected subscription set**; provide `WithAutoReconnect`.
+  - ⚠️ **Deviation from the original design**: the original said "listen for `Done()` → re-dial", but `ReconnectingWS.Done()` **only closes on permanent shutdown**, not on a dropped connection (re-dial is transparent). So instead the transport layer gains **`Reconnects() <-chan struct{}`** (one signal per successful re-dial, merged with cap=1) that the supervisor consumes. This also corrects a conceptual error: **"re-dial" ≠ "session recovery"** — re-dial only restores the socket, whereas the app-server treats a new connection as a **brand-new client**; without replaying the handshake, requests keep going out on a connection the server has no session for (worse, they may "look successful" against an empty session).
+  - ✅ `WithAutoReconnect` **fails loudly** when the transport **cannot report reconnects** (rather than silently doing nothing), so callers do not believe the session is being recovered.
+  - ✅ **Event-gap backfill implemented**: `sdk/sessionBackfilled` carries **the authoritative history of each resumed thread** (`thread/turns/list`). It is **deliberately "history", not "a replay of missed notifications"** — emitting wire-shaped events would be indistinguishable from live notifications, and **a consumer that had already received part of a turn before the drop would double-count**; the contract is "merge by turn id". Default 20 turns per thread; `WithSessionBackfill(n)` adjusts it, `0` disables it.
+    - ⚠️ Adopting `thread/turns/list` exposed a **real bug**: `schema.Turn` typed `startedAt`/`completedAt` as `*time.Time`, while **upstream sends an int64 Unix second** ⇒ **real turns failed to decode**, and backfill would never fire for any turn with a timestamp. The original test fixture happened to have **no timestamps**, so it was not exposed. Fixed (`Turn` switched to generated) and a real-timestamp assertion added.
+- **T2.3 in-flight operations**: fix `retry.go:125-127` (`ErrClosed` being non-retryable caused total hard failure at the instant of a drop); distinguish read-only retryable from non-retryable writes; `Notify` and server-request replies are not retried.
+- ✅ **T2.4 approvals across reconnects (implemented)**: `requestLoop` previously used `_ = req.Reply(...)`, **discarding every reply error** — a failure the **handler itself cannot notice**: it may already have decided (even approved a command) while the decision is discarded. It now checks the reply error and emits `sdk/pendingApprovalLost` (with the method and a best-effort thread/turn id); a **second reply** to the same request is filtered (that is a programming error, not a "lost" one).
+  - ⚠️ **Coverage caveat (documented at the call site)**: the stdio transport is jrpc2 underneath, which hands replies to its own channel, so a lost reply there can present as a **normal return**. So detection is reliable over WebSocket/HTTP, and **best-effort** over stdio.
+  - ✅ **Configurable approval timeout implemented**: `Dispatcher.ApprovalTimeout` (default 0 = wait forever, suitable when "the approval comes from a human"). On timeout the SDK **answers on the handler's behalf**, with **exactly the same** answer as "no handler configured" (always refuse) and reports `timedOut` ⇒ **a timeout never grants anything** (an invariant pinned by a test). Applied to all 5 server-request handlers (permissions / user input / exec / file change / elicitation).
+- ✅ **T2.5 observability events (done)**: `ReconnectStartedEvent` / `ReconnectSucceededEvent` (with `ThreadsResumed`/`ThreadsFailed`) / `ReconnectFailedEvent` (with `Err` and `Attempt`) / `SessionRecoveredEvent` (with the **concrete thread id list**) / `UnhandledServerRequestEvent` / `PendingApprovalLostEvent`. **Note**: these are **not wire notifications** (upstream has no such methods), so they are delivered to the same `EventSubscription` under **synthetic method names** with an `sdk/` prefix, so a single consumer loop can handle everything and the prefix keeps them from being confused with real notifications.
+  - ✅ `EventsLostError`/`EventsLostEvent` gain **`GapFrom`/`GapTo`**: they bound the time window of dropped events. **Deliberately timestamps rather than sequence numbers** — upstream notifications **carry no sequence number**, so "name the gap by position" is impossible to derive; time is **derivable** and sufficient to correlate a loss with what else happened. The window covers only events **still queued at termination** (events already handed to the consumer do not count as lost — the test pins this explicitly; my first assertion wrongly counted an **already-delivered** event).
+  - ✅ **Gaps across a reconnect are covered by backfill** (above); upstream has no replay, so backfill is the only means.
 
 
-- **T2.6 事件投递：不静默丢、关闭有界、可观测（超时默认 5s）— 按 A2/A3/A8 重设计**
+- **T2.6 Event delivery: no silent drop, bounded close, observable (timeout defaults to 5s) — redesigned per A2/A3/A8**
 
-  **不变目标**：不静默丢弃、关闭有界、丢失可观测。
-  **两条硬约束**：
-  - **C1：`publish` 在任何情况下都不等待订阅者。** 若在共享发布路径上为慢订阅者等待超时，路径会被 O(慢订阅者数 × 5s) 拖住；加转发 goroutine、释放锁都**不能**解决 —— 等待必须只发生在**订阅者自身执行路径**上。
-  - **C2：终止通知必须有不依赖消费者读取的交付通道**；且**带内终止事件必须真正预留槽位**（仅声明"预留"而用 `select` 直接写会填满通道，预留形同虚设）。
+  **Invariant goals**: no silent drop; bounded close; observable loss.
+  **Two hard constraints**:
+  - **C1: `publish` never waits for a subscriber under any circumstance.** Waiting on the shared publish path for a slow subscriber would drag the path out by O(#slow subscribers × 5s); adding a forwarding goroutine or releasing locks **does not** fix it — the wait must happen only on the **subscriber's own execution path**.
+  - **C2: the terminal notification must have a delivery channel that does not depend on the consumer reading**; and **the in-band terminal event must genuinely reserve a slot** (merely declaring "reserved" while writing directly with `select` fills the channel, making the reservation meaningless).
 
-  **结构（每订阅者一份）**：
+  **Structure (one per subscriber)**:
   ```
-  backlog   有界双端队列, maxBacklogEvents (默认 4096)
-  out       chan Event, cap = outCap (默认 128, 要求 >= 2)
+  backlog   bounded deque, maxBacklogEvents (default 4096)
+  out       chan Event, cap = outCap (default 128, must be >= 2)
   terminal  atomic { reason: "stall"|"overflow"|"closed", since, lostCount }
-  stop      chan struct{}   // 终止广播: 首次置 terminal 时由胜者关闭一次(sync.Once)
-  done      chan struct{}   // 带外终止信号: 由转发 goroutine 退出流程中关闭
-  notify    chan struct{}, cap 1   // 合并唤醒信号(仅表示"有新事件")
+  stop      chan struct{}   // terminal broadcast: closed once by the winner on the first terminal set (sync.Once)
+  done      chan struct{}   // out-of-band terminal signal: closed by the forwarding goroutine in its exit path
+  notify    chan struct{}, cap 1   // coalesced wake signal (only means "there are new events")
   ```
 
-  **`publish(ev)`（永不阻塞）**：对每个订阅者 —— 取短锁；已终止则跳过；`len(backlog) >= maxBacklogEvents` → 置 `terminal(overflow)`（计入 `lostCount`，并由胜者 `close(stop)`）后跳过；否则 append；解锁；非阻塞发 `notify`。耗时 O(#订阅者)，仅 append + atomic，**无任何超时等待**。
+  **`publish(ev)` (never blocks)**: for each subscriber — take a short lock; skip if already terminal; if `len(backlog) >= maxBacklogEvents` → set `terminal(overflow)` (counts into `lostCount`, and the winner does `close(stop)`) then skip; otherwise append; unlock; non-blocking send to `notify`. Cost is O(#subscribers), only append + atomic, **no timeout wait at all**.
 
-  **唤醒与退出（修 A9，关键）**：
+  **Wake-up and exit (fixes A9; critical)**:
 
-  - **`terminal` 的置位者有三类**：`Close()`（`"closed"`）、`publish` 溢出（`"overflow"`）、转发 goroutine 自身停滞（`"stall"`）。**任一置位者都必须由 `sync.Once` 保护、只关闭一次的 `stop` 通道做广播。**
-  - **转发 goroutine 的两个等待点都必须 `select` 到 `stop`**：空闲等待 `select { case <-notify: case <-stop: }`（**不能只等 `notify`**）；投递等待 `select { case out <- head: …; case <-time.After(remaining): …; case <-stop: … }`。
-  - **为什么不能只依赖 `notify`**：`notify` 是 cap=1 的**合并**信号，可能已有待处理 token（此时非阻塞发送失败，且没有人会被唤醒）。因此"订阅后从未收到任何事件即 `Close()`"的场景下，若无 `stop`，转发 goroutine 会**永久阻塞**在 `notify` 上 → `out` 永不关闭、`done` 永不关闭 → 消费方的 `for range sub.C()` 与 `<-sub.Done()` **永久挂起**（goroutine 泄漏）。`close(stop)` 对阻塞在该通道上的 goroutine 是**可靠唤醒**，与合并信号状态无关。
-  - **退出责任划分**：`Close()` 只负责「CAS 置 `terminal("closed")` + `close(stop)`」并**立即返回**（不等待、不阻塞、幂等）；**`close(out)` 与 `close(done)` 一律只由转发 goroutine 在其退出流程中执行**，以保证 `close(out)` 之后不再有写入（避免 send-on-closed panic）。`stop` 与 `done` 各自由 `sync.Once` 保护；`Close()` 在 stall/overflow 已触发后调用必须幂等且不 panic。
-  - **顺序**：置 terminal → `close(stop)` → goroutine 观察到 `stop`/`terminal` → 写预留槽终止事件 → `close(out)` → `close(done)`。消费方经 `C()`（关闭或终止事件）**或** `Done()`/`Err()` 感知终止，二者都不依赖消费方是否读取 `C()`。
+  - **There are three classes of `terminal` setter**: `Close()` (`"closed"`), a `publish` overflow (`"overflow"`), and the forwarding goroutine's own stall (`"stall"`). **Every setter must broadcast via a `sync.Once`-protected, close-once `stop` channel.**
+  - **Both wait points of the forwarding goroutine must `select` on `stop`**: the idle wait `select { case <-notify: case <-stop: }` (**it cannot wait on `notify` alone**); the delivery wait `select { case out <- head: …; case <-time.After(remaining): …; case <-stop: … }`.
+  - **Why `notify` alone is not enough**: `notify` is a cap=1 **coalescing** signal, so a token may already be pending (the non-blocking send fails and nobody gets woken). So in the "subscribe and receive nothing, then `Close()`" scenario, without `stop` the forwarding goroutine would **block forever** on `notify` → `out` never closes, `done` never closes → the consumer's `for range sub.C()` and `<-sub.Done()` **hang forever** (goroutine leak). `close(stop)` is a **reliable wake-up** for a goroutine blocked on that channel, independent of the coalescing signal's state.
+  - **Division of exit responsibility**: `Close()` only 「CAS-sets `terminal("closed")` + `close(stop)`」 and **returns immediately** (no waiting, no blocking, idempotent); **`close(out)` and `close(done)` are performed only by the forwarding goroutine in its exit path**, guaranteeing no write after `close(out)` (avoiding a send-on-closed panic). `stop` and `done` are each `sync.Once`-protected; calling `Close()` after stall/overflow has fired must be idempotent and not panic.
+  - **Order**: set terminal → `close(stop)` → the goroutine observes `stop`/`terminal` → write the reserved terminal event → `close(out)` → `close(done)`. The consumer perceives termination via `C()` (closed, or a terminal event) **or** `Done()`/`Err()`, neither of which depends on the consumer reading `C()`.
 
-  **转发 goroutine（每订阅者 1 条；等待只在此处）—— 含槽位预留（修 A8）+ 可靠退出（修 A9）**：
+  **Forwarding goroutine (one per subscriber; waits happen only here) — with slot reservation (fixes A8) + reliable exit (fixes A9)**:
 
   ```
-  stallDeadline: time.Time  // 零值=未进入停滞
+  stallDeadline: time.Time  // zero value = not yet stalled
   for {
       if terminal != nil { break }
       if len(backlog) == 0 {
-          select { case <-notify: case <-stop: }   // 必须可被 stop 唤醒
+          select { case <-notify: case <-stop: }   // must be wakeable by stop
           continue
       }
       head := backlog[0]
 
-      // 关键：普通事件占用严格 <= outCap-1，最末槽位专供终止事件
+      // Key: an ordinary event occupies strictly <= outCap-1, leaving the last slot for the terminal event
       if len(out) >= outCap-1 {
           if stallDeadline.IsZero() { stallDeadline = now() }
           if since(stallDeadline) > timeout { setTerminalOnce("stall"); break }
-          select {                                  // 等待消费进展(有界)，且可被 stop 唤醒
+          select {                                  // wait (bounded) for consumer progress, also wakeable by stop
           case <-time.After(pollInterval /* 50ms */):
           case <-stop:
           }
@@ -580,313 +580,313 @@
       }
       select {
       case out <- head:
-          pop(backlog); stallDeadline = zero      // 消费进展 → 重置
+          pop(backlog); stallDeadline = zero      // consumer progress -> reset
       case <-time.After(remaining(stallDeadline, timeout)):
           setTerminalOnce("stall"); break
       case <-stop:
           break
       }
   }
-  // 终止交付(仅此 goroutine 执行；观察到 stop 即蕴含 terminal 已置位)
+  // terminal delivery (only this goroutine does it; observing stop implies terminal is set)
   if terminal != nil {
-      out <- terminalEvent   // 保证立即成功：普通事件最多占 outCap-1，最末槽位必空
+      out <- terminalEvent   // guaranteed to succeed immediately: ordinary events occupy at most outCap-1, so the last slot is free
   }
   close(out)
-  close(done)                // 带外（权威）
+  close(done)                // out-of-band (authoritative)
   ```
 
-  ⚠️ **实现注意（易踩）**：Go 中 `select` 内的 `break` **只跳出 `select`，不跳出 `for`**。上面对 `<-stop` 的分支必须用**标签化 break**（`break loop`）或退出标志位实现，否则会在 `terminal` 已置位后空转。`setTerminalOnce` 亦须为幂等（`sync.Once` 或 CAS）。
+  ⚠️ **Implementation note (easy to get wrong)**: in Go, `break` inside `select` **only leaves the `select`, not the `for`**. The `<-stop` branches above must use a **labelled break** (`break loop`) or an exit flag, otherwise it spins once `terminal` is set. `setTerminalOnce` must also be idempotent (`sync.Once` or CAS).
 
-  **预留正确性论证**：`out` 的**唯一写者**是本转发 goroutine；守卫 `len(out) >= outCap-1` 保证普通发送后占用 ≤ `outCap-1`；读者只会减少 `len`。因此第 `outCap` 个槽位**恒为空**，终止事件的发送**必定立即成功**（非阻塞语义）。⚠️ `outCap` 必须 ≥ 2。
+  **Reservation correctness argument**: the **only writer** of `out` is this forwarding goroutine; the guard `len(out) >= outCap-1` ensures occupancy after an ordinary send is ≤ `outCap-1`; readers only decrease `len`. Therefore the `outCap`-th slot is **always free**, and the terminal event's send **always succeeds immediately** (non-blocking semantics). ⚠️ `outCap` must be ≥ 2.
 
-  **容量耗尽后如何等待消费进展**：走 `len(out) >= outCap-1` 分支，以 `pollInterval`（50ms）轮询 + `stallDeadline` 计总超时；消费恢复（`len` 下降）即回到正常路径并重置 `stallDeadline`；持续无进展 → `terminal("stall")`。
+  **How to wait for consumer progress once capacity is exhausted**: take the `len(out) >= outCap-1` branch, polling at `pollInterval` (50ms) with `stallDeadline` tracking the total timeout; when consumption resumes (`len` drops) it returns to the normal path and resets `stallDeadline`; continued lack of progress → `terminal("stall")`.
 
-  **终止交付双通道（修 A3）**：
-  1. **带外（权威、必达）**：`EventSubscription.Err() error` + `Done() <-chan struct{}`。即使消费方**从不读** `C()`，终止状态也必定可见、`done` 必定关闭 → 这是"关闭有界 + 丢失可观测"的保证。
-  2. **带内（由预留保证）**：终止事件写入预留槽位后 `close(out)`；消费方始终不读时事件静置缓冲内，**不阻塞任何 goroutine**。
+  **Two-channel terminal delivery (fixes A3)**:
+  1. **Out-of-band (authoritative, guaranteed)**: `EventSubscription.Err() error` + `Done() <-chan struct{}`. Even if the consumer **never reads** `C()`, the terminal state is visible and `done` closes → this is the "bounded close + observable loss" guarantee.
+  2. **In-band (guaranteed by the reservation)**: the terminal event is written to the reserved slot, then `close(out)`; if the consumer never reads, the event sits in the buffer and **blocks no goroutine**.
 
-  **语义小结**：正常路径无丢失且 `publish` 不阻塞；异常路径（stall / backlog 溢出 / 显式 Close）经 `Err()`/`Done()` + 预留槽位收敛，`lostCount` 体现丢弃量。**`Close()` 返回后，转发 goroutine 必定在有限时间内退出并关闭 `out`/`done`**（依赖 `stop` 广播，**与是否曾有事件无关**）。**不提供**可选策略开关。`Close()` 幂等、可并发、不阻塞。
+  **Semantics summary**: the normal path has no loss and `publish` does not block; the abnormal paths (stall / backlog overflow / explicit Close) converge via `Err()`/`Done()` + the reserved slot, with `lostCount` reflecting the drop count. **After `Close()` returns, the forwarding goroutine is guaranteed to exit within a bounded time and close `out`/`done`** (it relies on the `stop` broadcast, **independent of whether any event ever occurred**). **No** optional policy toggle. `Close()` is idempotent, concurrency-safe, non-blocking.
 
-  **必测**：
-  - **空闲订阅者直接 `Close()`（按 A9 要求）**：订阅后**不发布任何事件**，直接 `Close()` → 断言 ① `C()` 在限定时间内关闭（`for range` 能退出，不挂起）② `Done()` 关闭 ③ `Err()` 非 nil 且 `reason == "closed"` ④ 无 goroutine 泄漏（关闭前后 goroutine 计数对比，或以超时断言兜底）。
-  - **`Close()` 与终止并发**：在 stall / overflow 已触发（`stop` 已关闭）后再调用 `Close()` → 幂等、不 panic、不重复 close；且 `reason` 保持首次置位值。
-  - **完全不消费 + 投递 ≥ `outCap` 个普通事件**（按 A8 要求）：断言 ① 普通事件占用 ≤ `outCap-1` ② 终止事件**可立即写入**（用 `select`+`default` 断言可即时入队）③ `Err()` 非 nil 且 `Done()` 已关闭 ④ `publish` 全程未阻塞（在 `maxBacklogEvents` 内）。
-  - **消费恢复**：消费者恢复读取后普通事件继续投递，且不误触发 stall，`stallDeadline` 被正确重置。
-  - **多订阅者中仅 1 个慢**：其他订阅者投递延迟不受影响。
-  - **`publish` 延迟不随饱和时长增长**：饱和前/后 p99 差值在阈值内。
-  - **backlog 溢出**：`reason == "overflow"` 且 `lostCount > 0`，且溢出后 goroutine 亦能及时退出。
-  - `-race` 下并发 `Close`/`publish`/转发 goroutine 无竞态。
+  **Required tests**:
+  - **Idle subscriber closes directly (per A9)**: subscribe, **publish nothing**, `Close()` directly → assert ① `C()` closes within a bounded time (`for range` exits, does not hang) ② `Done()` closes ③ `Err()` is non-nil with `reason == "closed"` ④ no goroutine leak (compare the goroutine count before/after, or fall back to a timeout assertion).
+  - **`Close()` concurrent with termination**: call `Close()` after stall/overflow has fired (`stop` already closed) → idempotent, no panic, no double close; and `reason` keeps the first set value.
+  - **Consume nothing at all + deliver ≥ `outCap` ordinary events (per A8)**: assert ① ordinary occupancy ≤ `outCap-1` ② the terminal event **can be written immediately** (assert with `select`+`default` that it enqueues instantly) ③ `Err()` is non-nil and `Done()` has closed ④ `publish` never blocked throughout (within `maxBacklogEvents`).
+  - **Consumption resumes**: after the consumer starts reading again, ordinary events resume and no stall is falsely triggered; `stallDeadline` is correctly reset.
+  - **Only 1 of several subscribers is slow**: the others' delivery latency is unaffected.
+  - **`publish` latency does not grow with the saturation duration**: the p99 difference before/after saturation is within a threshold.
+  - **Backlog overflow**: `reason == "overflow"` and `lostCount > 0`, and the goroutine exits promptly after the overflow too.
+  - Under `-race`, concurrent `Close`/`publish`/forwarding goroutine show no data race.
 
-### 5.2 filesystem（9 方法 + 1 通知，当前 0）
+### 5.2 filesystem (9 methods + 1 notification, currently 0)
 
-- `fs/readFile`、`fs/writeFile`、`fs/createDirectory`、`fs/getMetadata`、`fs/readDirectory`、`fs/remove`、`fs/copy`、`fs/watch`、`fs/unwatch`；通知 `fs/changed`。
-- `fs/readFile` 返回 base64 → 提供 `ReadFileBytes()`。
-- `fs/watch` 有状态：`Client.Close()`/thread 结束时自动 `fs/unwatch`；`fs/changed` 按 watch id 路由。
-- 上游：`protocol/v2/fs.rs`。
+- `fs/readFile`, `fs/writeFile`, `fs/createDirectory`, `fs/getMetadata`, `fs/readDirectory`, `fs/remove`, `fs/copy`, `fs/watch`, `fs/unwatch`; notification `fs/changed`.
+- `fs/readFile` returns base64 → provide `ReadFileBytes()`.
+- `fs/watch` is stateful: automatically `fs/unwatch` on `Client.Close()` / thread end; route `fs/changed` by watch id.
+- Upstream: `protocol/v2/fs.rs`.
 
-### 5.3 MCP lifecycle（5 方法 + 1 ServerRequest + 2 通知，当前 0）
+### 5.3 MCP lifecycle (5 methods + 1 ServerRequest + 2 notifications, currently 0)
 
-- Client 方法：`mcpServer/oauth/login`、`config/mcpServer/reload`、`mcpServerStatus/list`、`mcpServer/resource/read`、`mcpServer/tool/call`
-- ServerRequest：`mcpServer/elicitation/request`
-- 通知：`mcpServer/oauthLogin/completed`、`mcpServer/startupStatus/updated`
-- T2.8：新增 `McpElicitationHandler`；**删除** `item/mcp/requestApproval`（`envelope.go:46`、`interaction.go:164,218`、`decode.go:34`、`sdk_v2_test.go:2200`）——按 R3 不留旧名。
-- 上游：`protocol/v2/mcp.rs`。
+- Client methods: `mcpServer/oauth/login`, `config/mcpServer/reload`, `mcpServerStatus/list`, `mcpServer/resource/read`, `mcpServer/tool/call`
+- ServerRequest: `mcpServer/elicitation/request`
+- Notifications: `mcpServer/oauthLogin/completed`, `mcpServer/startupStatus/updated`
+- T2.8: add `McpElicitationHandler`; **delete** `item/mcp/requestApproval` (`envelope.go:46`, `interaction.go:164,218`, `decode.go:34`, `sdk_v2_test.go:2200`) — per R3, leave no old name.
+- Upstream: `protocol/v2/mcp.rs`.
 
-### 5.4 remote control — **按 R2 不在 scope（已确认放弃）** ❌
+### 5.4 remote control — **out of scope per R2 (confirmed abandoned)** ❌
 
-`remoteControl/*` 7 个方法全部 experimental（`common.rs:1155-1193`）。保留 `RemoteControlStatusChangedEvent` 通知类型，文档标注 RPC 面不提供；不保留恢复例外。
+All 7 `remoteControl/*` methods are experimental (`common.rs:1155-1193`). Keep the `RemoteControlStatusChangedEvent` notification type, and document that the RPC surface is not provided; no exception is restored.
 
-### 5.5 plugins / marketplace（15 方法，当前 0）
+### 5.5 plugins / marketplace (15 methods, currently 0)
 
-- `marketplace/`(3)：`add`、`remove`、`upgrade`
-- `plugin/`(12)：`list`、`installed`、`reconcile`、`read`、`skill/read`、`share/save`、`share/updateTargets`、`share/list`、`share/checkout`、`share/delete`、`install`、`uninstall`
-- ⚠️ 标注 `serialization: global("config")` 的变体（`plugin/install|uninstall`、`marketplace/*`、`plugin/share/*`）是**全局配置级变更**，服务端串行化（`ClientRequestSerializationScope`，`common.rs:129-206`）；文档需说明并发调用会被排队。
-- 先只读、后写路径。
+- `marketplace/` (3): `add`, `remove`, `upgrade`
+- `plugin/` (12): `list`, `installed`, `reconcile`, `read`, `skill/read`, `share/save`, `share/updateTargets`, `share/list`, `share/checkout`, `share/delete`, `install`, `uninstall`
+- ⚠️ Variants marked `serialization: global("config")` (`plugin/install|uninstall`, `marketplace/*`, `plugin/share/*`) are **global-config-level changes**, serialized server-side (`ClientRequestSerializationScope`, `common.rs:129-206`); the docs must state that concurrent calls are queued.
+- Read paths first, then write paths.
 
-### 5.6 其它 stable 缺口（按交付顺序，**全量交付**）
+### 5.6 Other stable gaps (by delivery order, **full delivery**)
 
-> ⚠️ 修订 A5：本节方法**全部**须在最终交付完成。P1/P2/P3 只表示**交付顺序**。
+> ⚠️ Revision A5: every method in this section **must** be delivered in the final release. P1/P2/P3 indicate **delivery order** only.
 
-| 顺序 | 组 | 数量 | 说明 |
+| Order | Group | Count | Note |
 |---|---|---:|---|
-| P1 | `thread/turns/list`、`thread/items/list` | 2 | reconnect 回填必需 |
-| P1 | `account/chatgptAuthTokens/refresh` | 1 | ServerRequest；不实现则长会话认证过期无法恢复 |
-| P1 | `mcpServer/elicitation/request` | 1 | 见 §5.3 |
-| P1 | `account/*` stable 补齐 | 8 | 12 stable − 4 已实现 |
-| P2 | `thread/attachment/*` | 4 | + 通知 `thread/attachment/updated` |
+| P1 | `thread/turns/list`, `thread/items/list` | 2 | required for reconnect backfill |
+| P1 | `account/chatgptAuthTokens/refresh` | 1 | ServerRequest; without it, an expired auth in a long session cannot recover |
+| P1 | `mcpServer/elicitation/request` | 1 | see §5.3 |
+| P1 | `account/*` stable completion | 8 | 12 stable − 4 implemented |
+| P2 | `thread/attachment/*` | 4 | + notification `thread/attachment/updated` |
 | P2 | `threadSection/*` | 4 | `list/create/update/delete` |
-| P2 | `app/*` | 3 | + 通知 `app/list/updated` |
+| P2 | `app/*` | 3 | + notification `app/list/updated` |
 | P2 | `thread/revert` | 1 | |
-| P3 | `permissionProfile/list`、`configRequirements/read` | 2 | |
+| P3 | `permissionProfile/list`, `configRequirements/read` | 2 | |
 | P3 | `feedback/upload` | 1 | |
 | P3 | `externalAgentConfig/*` | 4 | `detect/import/import/recordHistory/import/readHistories` |
-| P3 | `windowsSandbox/*` | 2 | `setupStart`、`readiness` |
-| P3 | `fuzzyFileSearch` | 1 | 仅基础方法 |
-| — | 通知侧 | 达成 **61** | 按 §5.7 分类实现到 61 项（现有 65 typed 基于旧 schema，须重新基线化） |
+| P3 | `windowsSandbox/*` | 2 | `setupStart`, `readiness` |
+| P3 | `fuzzyFileSearch` | 1 | the basic method only |
+| — | notifications | reach **61** | implement to 61 per §5.7 (the existing 65 typed are based on the old schema and must be re-baselined) |
 
-**验收**：上表全部实现、接线、测试并登记；通知达成 61 项。**唯一允许未实现者为 §5.7 白名单（5 项，见 §0.3 I11）。**
+**Acceptance**: every method in the table above is implemented, wired, tested and registered; notifications reach 61. **The only allowed unimplemented entries are §5.7's whitelist (5, see §0.3 I11).**
 
-### 5.7 不实现基线（**5 项**，CI 白名单 —— 原列 8 项，见 §0.3 I11）
+### 5.7 Non-implementation baseline (**5 entries**, CI whitelist — was 8, see §0.3 I11)
 
-> **范围澄清**：白名单只收录**「`declared_stable` 内但本期不实现」**的方法（**实施后为 5 项**；计划初稿为 8 项，其中 3 项在实施中变为真实接线，见 I11）。experimental 89 项**因不是 stable 而不在 scope**，属另一类，**不计入白名单**（否则会在门禁中对非 scope 项做无意义扣除）。
+> **Scope clarification**: the whitelist contains only methods that are **"within `declared_stable` but not implemented this round"** (**5 after implementation**; the draft listed 8, of which 3 became real wiring during implementation, see I11). The 89 experimental entries are **out of scope because they are not stable** — a different class, **not counted in the whitelist** (otherwise the gate would make a meaningless deduction for non-scope entries).
 
-**白名单 A — v1 deprecated（R4，ClientRequest 3 项）**：`getAuthStatus`、`getConversationSummary`、`gitDiffToRemote`
-（注：这 3 项**也被导出排除**，见 §2.2；它们仍属 `declared_stable`，故需登记。）
+**Whitelist A — v1 deprecated (R4, 3 ClientRequest)**: `getAuthStatus`, `getConversationSummary`, `gitDiffToRemote`
+(Note: these 3 are **also excluded from the export**, see §2.2; they are still in `declared_stable`, hence registered.)
 
-**白名单 B — R4 server-initiated（实施后 1 项）**：
+**Whitelist B — R4 server-initiated (1 after implementation)**:
 
-| 方法 | 处置 |
+| Method | Disposition |
 |---|---|
-| `attestation/generate` | D5b 默认不宣告 `requestAttestation`；**入站按 §5.8 回 `-32601` + 记录** |
-| ~~`applyPatchApproval`~~ | ✅ **已移出白名单**：由 `interaction.go` 依 §5.8 作 protocol-valid decline（真实接线），故登记为已实现（见 I11） |
-| ~~`execCommandApproval`~~ | ✅ **已移出白名单**：同上 |
+| `attestation/generate` | D5b does not announce `requestAttestation` by default; **inbound replies `-32601` per §5.8 + records** |
+| ~~`applyPatchApproval`~~ | ✅ **Removed from the whitelist**: `interaction.go` performs a protocol-valid decline per §5.8 (real wiring), so it is registered as implemented (see I11) |
+| ~~`execCommandApproval`~~ | ✅ **Removed from the whitelist**: as above |
 
-**白名单 C — internal-only 通知（实施后 1 项）**：`rawResponse/completed`
-（源码存在但**导出排除**，不对客户端暴露；不实现解码器。）
-> `rawResponseItem/completed` **已移出白名单**：它已有类型化解码器（`events_extra.go` 的 `RawResponseItemCompletedEvent`），属真实接线，按门禁"白名单项不得与接线矛盾"登记为已实现（见 I11）。
+**Whitelist C — internal-only notifications (1 after implementation)**: `rawResponse/completed`
+(present in the source but **excluded from the export**; not exposed to clients; no decoder implemented.)
+> `rawResponseItem/completed` **was removed from the whitelist**: it already has a typed decoder (`RawResponseItemCompletedEvent` in `events_extra.go`), i.e. real wiring, so per the gate's "a whitelist entry must not be contradicted by wiring" it is registered as implemented (see I11).
 
-**非 scope 集（另一类，登记于 `gen/not-in-scope.txt`）**：experimental 89 项 = 65 ClientRequest + 1 ServerRequest（`currentTime/read`）+ 23 通知。依据：源码 `#[experimental("...")]` 标注。
+**Non-scope set (a different class, registered in `gen/not-in-scope.txt`)**: the 89 experimental entries = 65 ClientRequest + 1 ServerRequest (`currentTime/read`) + 23 notifications. Basis: source `#[experimental("...")]` annotations.
 
-### 5.8 未实现 / 未配置的 server-initiated request 策略（T2.13）✅ 已实施（含对计划书的一处更正）
+### 5.8 Policy for unimplemented / unconfigured server-initiated requests (T2.13) ✅ implemented (with one correction to the plan)
 
-> ⚠️ **更正：计划书原定的应答值 `"denied"` 是错的。** 上游 `ReviewDecision::Denied` 是 **struct variant**（`Denied { rejection: String }`），serde 外部标签下序列化为 **`{"denied":{"rejection":"denied"}}`**，而**不是**裸字符串 `"denied"` —— 裸串没有任何 unit variant 与之匹配，会被服务端拒绝，把一个可恢复的 deny 变成协议错误。已按导出的 schema（`schema/json/ApplyPatchApprovalResponse.json`）核实并实施；测试同时断言**不得**出现裸串形式，也**不得**出现 `abort`（那会中止会话）。
+> ⚠️ **Correction: the plan's original answer value `"denied"` is wrong.** Upstream's `ReviewDecision::Denied` is a **struct variant** (`Denied { rejection: String }`), which under serde's external tagging serializes to **`{"denied":{"rejection":"denied"}}`**, **not** the bare string `"denied"` — no unit variant matches the bare string, so the server would reject it, turning a recoverable deny into a protocol error. Verified against the exported schema (`schema/json/ApplyPatchApprovalResponse.json`) and implemented; the test also asserts that the bare-string form must **not** appear, nor may `abort` (which would abort the session).
 >
-> ⚠️ **更正 2：门禁的 `server_request_handler` 判据原先过宽。** T1.1 原文写的是"`Dispatcher.HandleServerRequest` 有 `case`"，但实现里把 `internal/protocol/decode.go` 也算作证据 —— 而"能解码参数"不等于"有人处理该请求"。收紧为只认 `interaction.go` 后，暴露出 **2 个此前被虚报为已实现的方法**：`item/permissions/requestApproval` 与 `item/tool/requestUserInput` **只有解码分支、没有任何 dispatch 分支**（`grep` 确认二者在 `interaction.go` 中 0 次出现）。缺口因此从 0 变为 **2**（这才是真实状态）。
+> ⚠️ **Correction 2: the gate's `server_request_handler` criterion was too broad.** T1.1's text said "`Dispatcher.HandleServerRequest` has a `case`", but the implementation also counted `internal/protocol/decode.go` as evidence — whereas "can decode the params" does not mean "someone handles the request". Tightening it to accept only `interaction.go` exposed **2 methods previously reported as implemented but not**: `item/permissions/requestApproval` and `item/tool/requestUserInput` have **only decode branches, no dispatch branch at all** (`grep` confirms zero occurrences in `interaction.go`). The gap therefore went from 0 to **2** (the true state).
 
 
 
-**目标**：不实现某个 server→client 请求**不得终止会话/轮次**。对外是正常协议应答，对内留下可观测记录。
+**Goal**: not implementing a server→client request **must not terminate the session/turn**. Externally it is a normal protocol reply; internally it leaves an observable record.
 
-**现状问题**：`Dispatcher.HandleServerRequest` default 返回 `protocol.ErrUnsupportedServerRequest`（`interaction.go:232-237`）→ `requestLoop` 回 JSON-RPC error `-32603`（`client.go:574-576`）→ 服务端可能终止轮次。
+**Current problem**: `Dispatcher.HandleServerRequest`'s default returns `protocol.ErrUnsupportedServerRequest` (`interaction.go:232-237`) → `requestLoop` replies with a JSON-RPC error `-32603` (`client.go:574-576`) → the server may terminate the turn.
 
-| 情形 | 对外应答 | 对内 |
+| Case | External reply | Internal |
 |---|---|---|
-| 已知审批类但未配置 handler（含白名单 B 的两个 legacy，及 `d.Exec/File/MCP == nil`） | **协议有效的 deny/decline**，不发 JSON-RPC error | 记录 + 事件 |
-| 未知方法（无法构造有效响应体） | `-32601 Method not found` | 记录 + 事件 |
-| 已实现且 handler 正常 | 正常应答 | — |
+| A known approval-class request with no handler configured (including whitelist B's two legacy methods, and `d.Exec/File/MCP == nil`) | **A protocol-valid deny/decline**, no JSON-RPC error | record + event |
+| Unknown method (cannot construct a valid response body) | `-32601 Method not found` | record + event |
+| Implemented and the handler works | normal reply | — |
 
-- **legacy 两方法**：响应为 `{ decision: ReviewDecision }`（上游 `protocol/v1.rs:156-180`）。取 **`"denied"`**，其语义即 *"…should not execute it, **but it should continue the session and try something else**"*。
-  - ⚠️ v1 `ReviewDecision` 是 **snake_case**（`approved`/`approved_for_session`/`denied`/`timed_out`/`abort` + 两个带载荷对象），**不可**复用 v2 的 `accept`/`decline`/`cancel`。
-  - ⚠️ **不可**用 `"abort"`（会中止轮次）。
-- **可观测性**：`UnhandledServerRequestEvent{Method, ThreadID, TurnID, Action, Reason}` 经 `client.Events()` 下发 + 写日志。
-- **不提供**策略开关。
-- **回归测试**：未配置 handler 的 `applyPatchApproval` 入站 → 断言 ① 回包 `{"decision":"denied"}` ② 无 JSON-RPC error ③ 轮次/会话继续 ④ 发出事件。
-
----
-
-## 6. WS3 — 更新 README.md、样例与文档
-
-- **T3.1 README**：覆盖率表**自动生成**（`implemented-methods.json` 对 `method-surface.json`），表头注明"对齐 codex `14c8b777`，scope=stable"；修正 D6 版本不一致；声明三条策略（R2/R3/R4）并链接 `gen/not-implemented.txt` 与 `gen/not-in-scope.txt`；补"上游不使用 `jsonrpc`"；新增 Reliability 小节（reconnect 边界 + 事件投递语义与 `Err()`/`Done()` 用法）。
-- **T3.2 样例**：`reconnect-supervisor/`、`approval-over-websocket/`、`fs-and-mcp/`、`streaming-to-sse/`（展示 `Err()`/`Done()` 与背压下的正确消费）。
-- **T3.3 文档**：`docs/index.md`（reconnect + 投递语义 + transport 表）、`docs/api-reference.md`（新方法/类型）、`llms.txt`+`llms-full.txt`（修 D7、补清单、标注基线）、新增 `docs/reconnect.md`；清理过时的 `PHASE3_REVIEW.md`。
-  - ✅ **方法清单改为生成**（实施期增补）：`docs/api-reference.md` 与 `llms*.txt` 里的 Client/SessionThread 方法清单不再手写，由 Go 工具 `tools/gendocs` 用 `go/ast` 解析导出面生成（`make docs`），`make docs-check` 校验方法清单与代码一致、纳入 `conformance-strict`。理由与 README 覆盖率表相同：手写的、描述机器可校验数据的内容必然腐化。用 Go 而非 Python，避免为此再引入 Python 工具链。
-
-**验收**：样例 `go build` 通过并被 CI 编译；README 数字与 conformance report 一致。
+- **The two legacy methods**: the response is `{ decision: ReviewDecision }` (upstream `protocol/v1.rs:156-180`). Take **`"denied"`**, whose semantics are *"…should not execute it, **but it should continue the session and try something else**"*.
+  - ⚠️ v1 `ReviewDecision` is **snake_case** (`approved`/`approved_for_session`/`denied`/`timed_out`/`abort` + two payload-carrying objects); it **must not** reuse v2's `accept`/`decline`/`cancel`.
+  - ⚠️ **Do not** use `"abort"` (it aborts the turn).
+- **Observability**: `UnhandledServerRequestEvent{Method, ThreadID, TurnID, Action, Reason}` is delivered via `client.Events()` + logged.
+- **No** policy toggle.
+- **Regression test**: an inbound `applyPatchApproval` with no handler configured → assert ① the reply is `{"decision":"denied"}` ② no JSON-RPC error ③ the turn/session continues ④ the event is emitted.
 
 ---
 
-## 7. WS4 — 自动化验收与 CI 防回归
+## 6. WS3 — update README.md, examples and docs
 
-- **T4.1** `make sync`：T0.1 + T0.4 六条断言。
-- **T4.2** `make conformance`：T1.1 产出全部 `gen/*` 文件。
-- **T4.3** CI 门禁：
-  - `declared_stable − whitelist − implemented ≠ ∅` → 失败（**只查实现集，不查生成常量**）。
-  - T1.1 三条防造假校验任一失败 → 失败。
-  - T0.4 六条对账断言任一失败 → 失败并要求人工复核（防上游导出语义变化被静默吸收）。
-  - `gen/export-exclusions.json` 或白名单变化 → 提示复核。
-  - `gen/conformance-report.md` 不新鲜 → 失败。
-- **T4.4** 单测：D2/D4/D5 回归；reconnect 断连-恢复；**背压与退出专项**（含"完全不消费 + ≥ outCap 普通事件"、"**订阅后不发布任何事件直接 Close**"、"Close 与 stall/overflow 并发幂等"、`publish` 延迟不随饱和增长、goroutine 泄漏检查、`-race`）；§5.8 decline 回归。
-- **T4.5** 真实环境：`tests/real/` 补 reconnect、fs、mcp，以及"移除 `jsonrpc` 后仍可用"。
+- **T3.1 README**: the coverage table is **auto-generated** (`implemented-methods.json` against `method-surface.json`), with a header noting "aligned to codex `14c8b777`, scope=stable"; fix the D6 version inconsistency; state the three policies (R2/R3/R4) and link `gen/not-implemented.txt` and `gen/not-in-scope.txt`; add "upstream does not use `jsonrpc`"; add a Reliability section (reconnect boundaries + event-delivery semantics and `Err()`/`Done()` usage).
+- **T3.2 examples**: `reconnect-supervisor/`, `approval-over-websocket/`, `fs-and-mcp/`, `streaming-to-sse/` (demonstrating `Err()`/`Done()` and correct consumption under backpressure).
+- **T3.3 docs**: `docs/index.md` (reconnect + delivery semantics + transport table), `docs/api-reference.md` (new methods/types), `llms.txt`+`llms-full.txt` (fix D7, add the inventory, note the baseline), add `docs/reconnect.md`; clean up the stale `PHASE3_REVIEW.md`.
+  - ✅ **Method lists are now generated** (added during implementation): the Client/SessionThread method lists in `docs/api-reference.md` and `llms*.txt` are no longer hand-written; the Go tool `tools/gendocs` generates them by parsing the exported surface with `go/ast` (`make docs`), and `make docs-check` verifies the lists match the code and is folded into `conformance-strict`. Same rationale as the README coverage table: hand-written content describing machine-checkable data will always rot. Go rather than Python, so no Python toolchain needs to be introduced for this.
+
+**Acceptance**: the examples `go build` and are compiled by CI; the README numbers match the conformance report.
 
 ---
 
-## 8. 里程碑与交付顺序
+## 7. WS4 — automated acceptance and CI regression prevention
 
-> ⚠️ **里程碑是交付顺序，不是部分范围。** 每个里程碑的退出条件是**对应方法集 100% 完成并登记**；不存在"P2 只做 60%"。
+- **T4.1** `make sync`: T0.1 + T0.4's six assertions.
+- **T4.2** `make conformance`: T1.1 produces all `gen/*` files.
+- **T4.3** CI gates:
+  - `declared_stable − whitelist − implemented ≠ ∅` → fail (**check only the implemented set, not generated constants**).
+  - Any of T1.1's three anti-fraud checks fails → fail.
+  - Any of T0.4's six reconciliation assertions fails → fail and require human review (to prevent a silent absorption of changed upstream export semantics).
+  - `gen/export-exclusions.json` or the whitelist changes → prompt for review.
+  - `gen/conformance-report.md` is stale → fail.
+- **T4.4** Unit tests: D2/D4/D5 regressions; reconnect disconnect-recovery; **backpressure and exit specials** (including "consume nothing at all + ≥ outCap ordinary events", "**subscribe and publish nothing, then Close directly**", "Close concurrent with stall/overflow is idempotent", `publish` latency not growing with saturation, goroutine-leak checks, `-race`); §5.8 decline regression.
+- **T4.5** Real environment: `tests/real/` gains reconnect, fs, mcp, and "still works after removing `jsonrpc`".
 
-| 里程碑 | 交付集（全部完成才退出） | 依赖 | 预估 |
+---
+
+## 8. Milestones and delivery order
+
+> ⚠️ **Milestones are a delivery order, not a partial scope.** Each milestone's exit condition is that **the corresponding method set is 100% done and registered**; there is no "P2 does only 60%".
+
+| Milestone | Delivered set (all done before exit) | Depends on | Estimate |
 |---|---|---|---|
-| M0 | WS0：同步基础设施 + T0.4 六条断言 + T1.1/T1.1b 工具与 43 项审计 | — | 中 |
-| M1 | WS1：T1.2/T1.3/T1.4 全部修复与对齐 | M0 | 中 |
-| M2 | §5.2 fs（9+1） + §5.3 mcp（5+1+2） | M1 | 中 |
-| M3 | §5.1 reconnect（T2.1–T2.6） + §5.6 P1（12） | M1 | **大** |
-| M4 | §5.5 plugins/marketplace（15） | M1 | 中 |
-| M5 | §5.6 P2+P3（15） + 通知侧 61 目标 | M2/M4 | 中 |
-| M6 | WS3 文档/样例 + WS4 CI | 与 M2–M5 并行 | 小中 |
+| M0 | WS0: sync infrastructure + T0.4's six assertions + T1.1/T1.1b tooling and the 43-item audit | — | medium |
+| M1 | WS1: all of T1.2/T1.3/T1.4 fixed and aligned | M0 | medium |
+| M2 | §5.2 fs (9+1) + §5.3 mcp (5+1+2) | M1 | medium |
+| M3 | §5.1 reconnect (T2.1–T2.6) + §5.6 P1 (12) | M1 | **large** |
+| M4 | §5.5 plugins/marketplace (15) | M1 | medium |
+| M5 | §5.6 P2+P3 (15) + notifications' 61 target | M2/M4 | medium |
+| M6 | WS3 docs/examples + WS4 CI | parallel with M2–M5 | small-medium |
 
-顺序：**M0 → M1 → M2（fs/mcp）→ M4（plugins）→ M3（reconnect）→ M5 → M6**。
+Order: **M0 → M1 → M2 (fs/mcp) → M4 (plugins) → M3 (reconnect) → M5 → M6**.
 
 ---
 
-## 9. 风险与取舍
+## 9. Risks and trade-offs
 
-| 风险 | 说明 | 缓解 |
+| Risk | Note | Mitigation |
 |---|---|---|
-| R1 无版本锚点 | 上游 `0.0.0` | 以 commit(`14c8b777`)+sha256 为准 |
-| R2 experimental 不在 scope | ✅已决策。副作用：remote control 整组不可用 | `gen/not-in-scope.txt` 留档；变化时提示 |
-| R3 不兼容旧名 | ✅已决策。breaking change | CHANGELOG + README 标注；发 major |
-| R4 白名单 5 项（原 8，见 I11） | ✅已决策 | 白名单显式登记 + 理由 |
-| R9 未实现请求降级 | ✅已决策。未知方法只能回 `-32601` | decline 路径 + 事件留痕 |
-| **R10 Scope 权威错位**（已修） | 上一版误以导出为权威 → 会把"导出排除的 3 项"当成缺口、并把通知范围算错 | Scope 改由源码 non-experimental 定义；导出仅对账 |
-| **R11 差集漂移** | 导出排除集或通知过滤行为可能变化 | T0.4 断言 1/4/6 把该事实显式化，变化即失败并要求人工复核 |
-| **R12 预留槽位失真**（已修） | 仅声明"预留"而用直接 `select` 写会填满通道 | 用 `len(out)` 守卫把普通事件限到 `outCap-1`；专项测试覆盖"完全不消费" |
-| R5 codegen 成本 | 270+ 类型文件 | 先只生成方法名常量 + 缺口组类型 |
-| R6 reconnect 不透明 | 上游无重放，审批必丢 | 文档定位"至少一次 + 应用层幂等" |
+| R1 no version anchor | upstream `0.0.0` | Anchor on commit(`14c8b777`)+sha256 |
+| R2 experimental out of scope | ✅ decided. Side effect: the whole remote-control group is unavailable | `gen/not-in-scope.txt` on record; prompt on change |
+| R3 no compatibility for old names | ✅ decided. Breaking change | CHANGELOG + README note; major release |
+| R4 whitelist 5 entries (was 8, see I11) | ✅ decided | Explicit whitelist registration + reasons |
+| R9 degrade unimplemented requests | ✅ decided. An unknown method can only reply `-32601` | decline path + event trace |
+| **R10 scope authority misplaced** (fixed) | The previous version wrongly treated the export as authoritative → it would count "the 3 export-excluded methods" as gaps and miscompute the notification scope | Scope is now defined by source non-experimental; the export is only for reconciliation |
+| **R11 difference-set drift** | The export exclusion set or the notification filtering behaviour may change | T0.4 assertions 1/4/6 make that fact explicit; a change fails and requires human review |
+| **R12 reserved slot not honoured** (fixed) | Merely declaring "reserved" while writing directly with `select` fills the channel | Guard with `len(out)` to cap ordinary events at `outCap-1`; a dedicated test covers "consume nothing" |
+| R5 codegen cost | 270+ type files | Generate only method-name constants + gap-group types first |
+| R6 reconnect is not transparent | No replay upstream; approvals are inevitably lost | Document as "at-least-once + application-level idempotency" |
 
 ---
 
-## 10. 验收标准（Definition of Done）
+## 10. Definition of Done
 
-1. `make sync CODEX_SRC=<codex checkout>`（即 `scripts/codex_schema_surface.py sync`）幂等；`.codex-schema/manifest.json` 记录 `14c8b777` 与 sha256；`version.go` 由生成器书写。
-2. 不存在人工裁剪的 `v2.schema.json`。
-3. `gen/method-surface.json`、`gen/export-exclusions.json`（5 项）、`gen/not-in-scope.txt`（89 项）、`gen/not-implemented.txt`（5 项，`gen/whitelist.json` 的只读镜像）齐备；**T0.4 六条集合断言全绿**。
-4. `declared_stable − whitelist(5) − implemented == ∅`，且 T1.1 三条防造假校验通过（**覆盖判定基于实际接线，不基于生成常量**）；**kind 覆盖四个 face 且 face↔kind 满射**（`initialized` 以 `client_notification_sender` 合法登记）；T1.1b 的 43 项审计完成且遗留项已按 R2/R3 清理。
-5. **D1–D7 全部修复**，按 R3 不保留旧名/兼容分支（含 `item/mcp/requestApproval`、`jsonrpc` 字段）。
-6. reconnect：断开后自动完成 重拨 → initialize → thread/resume → 断连期结果回填；有自动化测试。
-7. **事件投递语义达标**：`publish` 永不阻塞（饱和专项测试 + 量化断言）；普通事件占用 ≤ `outCap-1`，终止事件靠预留槽位**立即写入**；`Err()`/`Done()` 必达；**`Close()` 后转发 goroutine 必定退出**（含"空闲订阅者直接 Close"与"Close 与终止并发"测试，无 goroutine 泄漏）；无静默丢弃路径。
-8. **缺口全量交付**：ClientRequest 62、ServerRequest 2、§5.6 P1/P2/P3 全部、通知侧 61 目标 —— 均实现、接线、测试并登记。**唯一允许未实现者为白名单 5 项（见 §0.3 I11）。**
-9. 未实现的 server-initiated request 不终止会话（§5.8 回归测试通过）。
-10. README/docs/llms/examples 更新完毕，样例可编译，覆盖率数字自动生成。
-11. CI 全绿，且门禁能在协议漂移或导出语义变化时失败。
+1. `make sync CODEX_SRC=<codex checkout>` (i.e. `scripts/codex_schema_surface.py sync`) is idempotent; `.codex-schema/manifest.json` records `14c8b777` and sha256; `version.go` is written by the generator.
+2. There is no manually cropped `v2.schema.json`.
+3. `gen/method-surface.json`, `gen/export-exclusions.json` (5), `gen/not-in-scope.txt` (89), `gen/not-implemented.txt` (5, a read-only mirror of `gen/whitelist.json`) are all present; **T0.4's six set assertions all pass**.
+4. `declared_stable − whitelist(5) − implemented == ∅`, and T1.1's three anti-fraud checks pass (**coverage is judged on real wiring, not generated constants**); **kind covers all four faces and face↔kind is surjective** (`initialized` is registered legally as `client_notification_sender`); T1.1b's 43-item audit is complete and the leftovers are cleaned per R2/R3.
+5. **D1–D7 all fixed**, leaving no old names / compatibility branches per R3 (including `item/mcp/requestApproval` and the `jsonrpc` field).
+6. reconnect: after a disconnect it automatically completes re-dial → initialize → thread/resume → backfill of results during the gap; with automated tests.
+7. **Event-delivery semantics met**: `publish` never blocks (saturation specials + quantitative assertions); ordinary occupancy ≤ `outCap-1`, the terminal event **written immediately** via the reserved slot; `Err()`/`Done()` guaranteed; **the forwarding goroutine always exits after `Close()`** (including the "idle subscriber closes directly" and "Close concurrent with termination" tests, with no goroutine leak); no silent-drop path.
+8. **Full gap delivery**: ClientRequest 62, ServerRequest 2, all of §5.6 P1/P2/P3, notifications' 61 target — all implemented, wired, tested and registered. **The only allowed unimplemented entries are the whitelist's 5 (see §0.3 I11).**
+9. An unimplemented server-initiated request does not terminate the session (§5.8 regression test passes).
+10. README/docs/llms/examples are updated, the examples compile, and the coverage numbers are auto-generated.
+11. CI is all green, and the gates fail on protocol drift or changed export semantics.
 
 ---
 
-## 11. 决议记录（全部关闭）
+## 11. Resolution log (all closed)
 
-| # | 议题 | 决议 |
+| # | Topic | Resolution |
 |---|---|---|
-| 1–6 | （第一轮）超时行为 / remote control 放弃 / v1 deprecated 跳过 / attestation 不实现 / 超时 5s / 静默 decline | 见 §0 决策记录 |
-| 7 | 复审 A1：覆盖门禁假阳性 | 采纳：声明集/实现集分离 + 三条防造假校验 |
-| 8 | 复审 A2：转发 goroutine 仍阻塞共享路径 | 采纳：`publish` 永不阻塞 |
-| 9 | 复审 A3：终止事件无交付机制 | 采纳：带外 `Err()`/`Done()` + 预留槽位 |
-| 10 | 复审 A4：stable 导出非纯 stable 集 | 采纳：Scope 改由源码分类定义 |
-| 11 | 复审 A5：阶段验收与 DoD 冲突 | 采纳：统一全量交付 |
-| 12 | 复审 A6：T0.4 断言在当前基线即失败；5 项导出排除 | 采纳：登记 5 项；断言改**集合相等**；**撤回"计数错误"结论**（R11） |
-| 13 | 复审 A7：缺口 59 重复扣除 legacy | 采纳：集合差计算 → 缺口 **62**；新增 T1.1b 审计 43 项（R10） |
-| 14 | 复审 A8：转发伪代码未落实槽位预留 | 采纳：`len(out)` 守卫 + 消费进展等待 + "完全不消费"测试（R12） |
-| 15 | 复审 A9：空闲订阅者 `Close()` 可能永不退出 | 采纳：一次性 `stop` 广播 + 两个等待点 select `stop` + 退出责任划分；补"空闲直接 Close"测试（R13） |
-| 16 | 复审 A10：登记遗漏 ClientNotification 发送路径 | 采纳：新增 `client_notification_sender` + face↔kind 满射校验（R14） |
-| 17 | 实施 I1：锚点被误设为 CLI | 采纳：锚点 = **codex 仓库 commit**；CLI 仅作 `diff-cli` 漂移守卫（实测 0.160.0 落后 1 个方法 + 1 个通知） |
-| 18 | 实施 I2：`GeneratedAt` 破坏幂等 | 采纳：`version.go` 不含时间戳，仅确定性值 |
-| 19 | 实施 I3：vendor 对象与理由证据 | 采纳：vendor 聚合 stable schema + 派生方法集；internal-only 排除理由已有上游注释背书 |
-| 20 | 实施 I5 的 `item/updated` | 采纳：删除该通知类型与解码分支，测试改为断言回退 `RawNotificationEvent` |
-| 21 | **`turn/diff` 的处置（用户决策）** | JSON-RPC 无 `turn/diff` 方法 → **SDK 侧不实现**。删除 `Client.TurnDiff`/`SessionThread.GitDiff`/`TurnDiffRequest`/`TurnDiffResult`/`MethodTurnDiff` 及相关文档引用；保留 `TurnDiffUpdatedEvent` 通知 |
-| 22 | **类型级清理（用户决策：先清理再推进）** | 采纳三条原则并落地：**① 消除良性命名差异**（16 个 `*Request`/`*Result` → 上游 `*Params`/`*Response`；`Capabilities` → `InitializeCapabilities`；`SchemaItem/Turn/Thread` → `ThreadItem/Turn/Thread`）；**② 不自造类型**（删除 `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification` 及零使用的别名，线上信封归 `internal/transport`）；**③ 删除真实孤儿**（`ThreadRollbackRequest`，并把 `thread/rollback` 迁移为真实存在的 `thread/revert`）。新增类型级门禁 `scripts/type_check.py` + `gen/type-allowlist.json`（I10） |
-| 23 | **`TokenUsage` 的处置** | **本轮不改名、保持未白名单**：I9 表明它是用法模型过时（usage 已迁至 `thread/tokenUsage/updated` + `ThreadTokenUsage`），改名会造成"已对齐"的假象。保留报警，待按其正确形状重构 |
+| 1–6 | (First round) timeout behaviour / abandoning remote control / skipping v1 deprecated / not implementing attestation / 5s timeout / silent decline | see §0 Decision Log |
+| 7 | Review A1: coverage-gate false positive | Adopted: declare/implement set separation + three anti-fraud checks |
+| 8 | Review A2: the forwarding goroutine still blocks the shared path | Adopted: `publish` never blocks |
+| 9 | Review A3: no delivery mechanism for the terminal event | Adopted: out-of-band `Err()`/`Done()` + reserved slot |
+| 10 | Review A4: the stable export is not a pure stable set | Adopted: scope defined by source classification |
+| 11 | Review A5: per-phase acceptance conflicts with the DoD | Adopted: unified full delivery |
+| 12 | Review A6: the T0.4 assertion fails at the current baseline; 5 export exclusions | Adopted: register the 5; the assertion becomes **set equality**; **withdraw the "counting error" conclusion** (R11) |
+| 13 | Review A7: gap 59 double-subtracted legacy | Adopted: set-difference computation → gap **62**; add T1.1b auditing the 43 (R10) |
+| 14 | Review A8: the forwarding pseudocode did not implement the slot reservation | Adopted: `len(out)` guard + wait for consumer progress + a "consume nothing" test (R12) |
+| 15 | Review A9: an idle subscriber's `Close()` may never exit | Adopted: one-shot `stop` broadcast + both wait points select on `stop` + division of exit responsibility; add an "idle direct Close" test (R13) |
+| 16 | Review A10: the registry missed the ClientNotification send path | Adopted: add `client_notification_sender` + face↔kind surjection check (R14) |
+| 17 | Implementation I1: the anchor was wrongly set to the CLI | Adopted: anchor = **a codex repo commit**; the CLI is only the `diff-cli` drift guard (measured 0.160.0 is one method + one notification behind) |
+| 18 | Implementation I2: `GeneratedAt` breaks idempotency | Adopted: `version.go` contains no timestamp, only deterministic values |
+| 19 | Implementation I3: vendor target and reason evidence | Adopted: vendor the aggregate stable schema + derived method sets; the internal-only exclusion reason is now backed by an upstream comment |
+| 20 | Implementation I5's `item/updated` | Adopted: delete the notification type and decode branch; the test now asserts the fallback to `RawNotificationEvent` |
+| 21 | **`turn/diff` disposition (user decision)** | JSON-RPC has no `turn/diff` → **the SDK does not implement it**. Delete `Client.TurnDiff`/`SessionThread.GitDiff`/`TurnDiffRequest`/`TurnDiffResult`/`MethodTurnDiff` and the related doc references; keep the `TurnDiffUpdatedEvent` notification |
+| 22 | **Type-level cleanup (user decision: clean up before advancing)** | Adopted and landed three principles: **① eliminate benign naming differences** (16 `*Request`/`*Result` → upstream `*Params`/`*Response`; `Capabilities` → `InitializeCapabilities`; `SchemaItem/Turn/Thread` → `ThreadItem/Turn/Thread`); **② invent no types** (delete `RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification` and the unused aliases; the wire envelope belongs to `internal/transport`); **③ delete the real orphan** (`ThreadRollbackRequest`, and migrate `thread/rollback` to the really-existing `thread/revert`). Added the type-level gate `scripts/type_check.py` + `gen/type-allowlist.json` (I10) |
+| 23 | **`TokenUsage` disposition** | **No rename this round, left not whitelisted**: I9 shows it is an outdated usage model (usage moved to `thread/tokenUsage/updated` + `ThreadTokenUsage`), and renaming would create a false impression of "aligned". Keep alarming until it is refactored to its correct shape |
 
-> 无遗留开放项。
+> No open items remain.
 
 ---
 
-## 附录 A：Scope 摘要（唯一机器可读来源为 `gen/*.json`）
+## Appendix A: Scope summary (the only machine-readable source is `gen/*.json`)
 
-> 本附录不再手工列举方法清单 —— 手工清单已多次引入偏差（A4/A6）。**权威为 T0.4 生成的 `gen/method-surface.json` + `gen/export-exclusions.json`。**
+> This appendix no longer lists methods by hand — hand-written lists have introduced deviations several times (A4/A6). **The authority is the `gen/method-surface.json` + `gen/export-exclusions.json` produced by T0.4.**
 
-| 面 | 源码总数 | experimental（非 scope） | declared_stable | 白名单 | 已实现 | **待实现** |
+| Face | Source total | experimental (out of scope) | declared_stable | Whitelist | Implemented | **To implement** |
 |---|---:|---:|---:|---:|---:|---:|
 | ClientRequest | 173 | 65 | 108 | 3 | 105 | **0** |
 | ServerRequest | 11 | 1 | 10 | 1 | 9 | **0** |
 | ServerNotification | 86 | 23 | 63 | 1 | 62 | **0** |
 | ClientNotification | 1 | 0 | 1 | 0 | 1 | 0 |
-| **合计** | **271** | **89** | **182** | **5** | **177** | **0** |
+| **Total** | **271** | **89** | **182** | **5** | **177** | **0** |
 
-> 白名单由 8 收敛为 5（见 §0.3 I11）；"已实现/待实现"为**实施完成后**的实测值（`gen/implemented-methods.json`），非开工前基线。
+> The whitelist narrowed from 8 to 5 (see §0.3 I11); "Implemented / To implement" are the **post-implementation** measured values (`gen/implemented-methods.json`), not the pre-work baseline.
 
-一致性：`173−65=108`；`108−3=105`；`11−1=10`；`10−1=9`；`86−23=63`；`63−1=62`；`84(导出 stable 通知)=63+23−2`；`105(导出 stable client)=108−3`；`170−105=65`（= 源码 experimental）；`182−5−177=0`。
+Consistency: `173−65=108`; `108−3=105`; `11−1=10`; `10−1=9`; `86−23=63`; `63−1=62`; `84 (export stable notifications)=63+23−2`; `105 (export stable client)=108−3`; `170−105=65` (= source experimental); `182−5−177=0`.
 
 ---
 
-## 附录 B：证据索引
+## Appendix B: Evidence index
 
-| 结论 | 证据路径 / 命令 |
+| Conclusion | Evidence path / command |
 |---|---|
-| 无协议版本号 | `codex-rs/Cargo.toml:163`、`codex-rs/app-server-protocol/src/rpc.rs:11` |
-| 不使用 `jsonrpc` 字段 | `codex-rs/app-server-protocol/src/rpc.rs:1-2,45-79` |
-| **源码方法面**（173 / 11 / 86 / 1） | `codex-rs/app-server-protocol/src/protocol/common.rs:499-1510,1780-1851,1935-2061,2082-2084` |
-| **导出方法面**（105/170、10/11、84/84、1/1） | 解压 `schema/precomputed/app-server-exports-{stable,experimental}.json.zst` → `json_schema[*]["method"].enum` |
-| **导出排除 5 项** | 上述源码集 − 导出（experimental）集；5 项在两份导出中均不存在（已复核） |
-| 通知未被 experimental 过滤 | `导出_stable(ServerNotification) == 导出_experimental(ServerNotification)`（集合相等） |
-| experimental 89 项 | `grep -o 'experimental("\([^"]*\)")' common.rs \| sort`（89 = 65 + 1 + 23） |
-| `remoteControl/*` 全 exp | `common.rs:1155-1193` |
-| `mcpServer/event/stream/*` exp | `common.rs:1257-1266`、`2001-2002` |
+| No protocol version number | `codex-rs/Cargo.toml:163`, `codex-rs/app-server-protocol/src/rpc.rs:11` |
+| Does not use the `jsonrpc` field | `codex-rs/app-server-protocol/src/rpc.rs:1-2,45-79` |
+| **Source method surface** (173 / 11 / 86 / 1) | `codex-rs/app-server-protocol/src/protocol/common.rs:499-1510,1780-1851,1935-2061,2082-2084` |
+| **Export method surface** (105/170, 10/11, 84/84, 1/1) | decompress `schema/precomputed/app-server-exports-{stable,experimental}.json.zst` → `json_schema[*]["method"].enum` |
+| **The 5 export exclusions** | the source set above − the export (experimental) set; the 5 are absent from both exports (re-checked) |
+| Notifications are not filtered by experimental | `export_stable(ServerNotification) == export_experimental(ServerNotification)` (set-equal) |
+| The 89 experimental entries | `grep -o 'experimental("\([^"]*\)")' common.rs \| sort` (89 = 65 + 1 + 23) |
+| `remoteControl/*` all exp | `common.rs:1155-1193` |
+| `mcpServer/event/stream/*` exp | `common.rs:1257-1266`, `2001-2002` |
 | `plugin/search` exp | `common.rs:916-917` |
-| `InitializeCapabilities` 字段 | `codex-rs/app-server-protocol/src/protocol/v1.rs:29-70` |
-| `ReviewDecision`（v1，snake_case） | `v1.rs:156-180` + `.codex-schema/ApplyPatchApprovalResponse.json:100-119` |
-| 通知信封 `emittedAtMs` | `common.rs:2063-2080` |
-| 无 HTTP/SSE、仅 stdio/unix/ws | `codex-rs/app-server-transport/src/transport/mod.rs:80-166` |
-| WS 帧级 ping | `codex-rs/app-server-transport/src/transport/websocket.rs:363-373` |
-| 订阅按连接 | `codex-rs/app-server/src/thread_state.rs:344-348,433`；`thread_processor.rs:3605` |
-| 无客户端事件重放 | `codex-rs/app-server/src/transport.rs:204-243` |
-| `thread/resume` = 重放替代 | `codex-rs/app-server/src/thread_state.rs:59-64` |
-| precomputed 解压分发 / fixtures | `precomputed_exports.rs:15-18`；`schema_fixtures.rs:95-153` |
-| schema 生成 CLI / `--experimental` | `codex-rs/cli/src/main.rs:727-735,1421-1425` |
-| SDK 发送 `jsonrpc` | `internal/transport/transport.go`（`requestEnvelope`/`notificationEnvelope`） |
-| SDK pinned 子集 schema | `internal/protocol/schema/v2.schema.json`、`version.go:3-10` |
-| SDK 方法常量（**不可作覆盖依据**） | `internal/protocol/envelope.go:12-168` |
-| SDK 旧 MCP 审批方法 | `internal/protocol/envelope.go:46`、`interaction.go:164,218`、`decode.go:34` |
-| SDK dispatcher 默认错误分支 | `interaction.go:232-237`、`client.go:574-576` |
-| SDK 背压静默丢事件（且在持锁遍历中） | `events.go:370-385` |
-| SDK `ErrClosed` 不可重试 | `internal/transport/retry.go:125-127` |
-| SDK 同步脚本路径失效 | `scripts/update-codex-go-schema.sh:6-7` |
-| 文档不一致 | `llms.txt:2-5`、`README.md:9,40,106`、`VERSION` |
+| `InitializeCapabilities` fields | `codex-rs/app-server-protocol/src/protocol/v1.rs:29-70` |
+| `ReviewDecision` (v1, snake_case) | `v1.rs:156-180` + `.codex-schema/ApplyPatchApprovalResponse.json:100-119` |
+| Notification envelope `emittedAtMs` | `common.rs:2063-2080` |
+| No HTTP/SSE, only stdio/unix/ws | `codex-rs/app-server-transport/src/transport/mod.rs:80-166` |
+| WS frame-level ping | `codex-rs/app-server-transport/src/transport/websocket.rs:363-373` |
+| Subscriptions are per connection | `codex-rs/app-server/src/thread_state.rs:344-348,433`; `thread_processor.rs:3605` |
+| No client event replay | `codex-rs/app-server/src/transport.rs:204-243` |
+| `thread/resume` = the replay replacement | `codex-rs/app-server/src/thread_state.rs:59-64` |
+| precomputed decompression/distribution / fixtures | `precomputed_exports.rs:15-18`; `schema_fixtures.rs:95-153` |
+| schema generation CLI / `--experimental` | `codex-rs/cli/src/main.rs:727-735,1421-1425` |
+| The SDK sends `jsonrpc` | `internal/transport/transport.go` (`requestEnvelope`/`notificationEnvelope`) |
+| The SDK's pinned subset schema | `internal/protocol/schema/v2.schema.json`, `version.go:3-10` |
+| SDK method constants (**not usable as a coverage basis**) | `internal/protocol/envelope.go:12-168` |
+| The SDK's old MCP approval method | `internal/protocol/envelope.go:46`, `interaction.go:164,218`, `decode.go:34` |
+| The SDK dispatcher's default error branch | `interaction.go:232-237`, `client.go:574-576` |
+| The SDK's silent backpressure drop (while iterating under a lock) | `events.go:370-385` |
+| The SDK's `ErrClosed` not retryable | `internal/transport/retry.go:125-127` |
+| The SDK's sync-script path is dead | `scripts/update-codex-go-schema.sh:6-7` |
+| Doc inconsistencies | `llms.txt:2-5`, `README.md:9,40,106`, `VERSION` |
 
 ---
 
-## 收尾动作（用户已决定，**待计划书完成后执行**）
+## Wrap-up actions (user-decided, **to be executed after the plan is complete**)
 
-### C1. 把所有 commit 压缩为单个，以从历史中移除两个二进制
+### C1. Squash all commits into one, to remove two binaries from history
 
-**背景**：`e2e.test`（4.4 MB）与 `simple`（6.4 MB）曾被提交进仓库，已在 `aff0245` 中从**索引与工作区**移除。但**两个 blob 仍在历史里**（由 initial commit 引入），因此已有 clone 的体积不会变小 —— 这正是本次要解决的。
+**Background**: `e2e.test` (4.4 MB) and `simple` (6.4 MB) were once committed to the repo and were removed from the **index and working tree** in `aff0245`. But **both blobs are still in history** (introduced by the initial commit), so the size of existing clones does not shrink — which is what this addresses.
 
-**做法**：计划书内工作全部完成后，把本分支的**全部 commit 压缩为一个**。压缩会生成一个**新的根提交**，其树里本就没有那两个文件，于是它们在新历史中**不可达**，重新 clone 便不会下载。等价做法是 `git checkout --orphan` 后单次提交，或 `git rebase -i --root` 折叠。
+**Approach**: once all the plan's work is done, squash the branch's **entire commit list into one**. The squash creates a **new root commit** whose tree never had those two files, so they become **unreachable** in the new history and a fresh clone will not download them. Equivalent approaches are `git checkout --orphan` followed by a single commit, or folding with `git rebase -i --root`.
 
-**必须一并处理的前提与后果**：
+**Prerequisites and consequences that must be handled together**:
 
-| 项 | 说明 |
+| Item | Note |
 |---|---|
-| **改写历史** | 压缩会改变**所有 commit 的哈希** ⇒ 任何**已有的 clone / 开放 PR / 他人的本地分支**都将失效，需要重新 clone 或 hard reset |
-| **远端对象不会立即消失** | 旧 blob 在远端仍是可达对象，直到远端执行 GC（GitHub 通常需触发或等待其自动 GC）。若要立即回收，需联系托管方或等待 |
-| **必须先确认无未推送依赖** | 若已有人基于本分支工作，需先通知；**不可在他人未知情时强推** |
-| **不得在压缩前丢弃工作** | 压缩是**最后一步**；一旦执行，就无法再用单个 commit 回溯某项改动 |
+| **Rewrites history** | The squash changes **every commit's hash** ⇒ any **existing clone / open PR / someone else's local branch** is invalidated, requiring a fresh clone or hard reset |
+| **Remote objects do not vanish immediately** | The old blobs remain reachable objects on the remote until it runs GC (GitHub usually needs a trigger, or its automatic GC to run). To reclaim immediately, contact the host or wait |
+| **There must be no unpushed dependents first** | If anyone is already working on top of this branch, notify them first; **never force-push without their knowledge** |
+| **Do not discard work before squashing** | The squash is the **last step**; once done, you can no longer use a single commit to trace a change back |
 
-**为什么值得**：一次性回收 ~10.8 MB，且此后 clone 不再携带无用的测试二进制。**为什么之前没做**：它让所有既有 clone 失效，属必须由仓库所有者明确决定的事 —— 现在已明确决定。
+**Why it is worth it**: it reclaims ~10.8 MB in one go, and clones thereafter no longer carry useless test binaries. **Why it was not done before**: it invalidates every existing clone, which is something only the repo owner can decide — and that decision has now been made.

@@ -207,6 +207,21 @@ type ThreadStartParams struct {
 	// (e.g. "model_providers.acme.base_url"), and a whole provider table can be passed as one
 	// nested object under "model_providers.<id>".
 	Config map[string]any `json:"config,omitempty"`
+
+	// BaseInstructions / DeveloperInstructions override the thread's instructions. They are the
+	// same override set ThreadResumeParams exposes; keeping the two in sync avoids a
+	// start-works-differently-from-resume surprise.
+	BaseInstructions      string `json:"baseInstructions,omitempty"`
+	DeveloperInstructions string `json:"developerInstructions,omitempty"`
+
+	// ServiceTier overrides the service tier for the thread.
+	ServiceTier string `json:"serviceTier,omitempty"`
+
+	// Sandbox overrides the sandbox MODE (a string such as "read-only"), NOT a policy object:
+	// upstream's thread/start `sandbox` is a SandboxMode, unlike turn/start's `sandboxPolicy`
+	// which is a tagged object. Upstream rejects `sandbox` together with `permissions`; the SDK
+	// does not expose `permissions`, so the two cannot collide here.
+	Sandbox *SandboxMode `json:"sandbox,omitempty"`
 }
 
 // ThreadResumeParams resumes a thread.

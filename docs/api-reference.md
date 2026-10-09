@@ -331,6 +331,10 @@ func WithThreadEphemeral(ephemeral bool) ThreadOption
 func WithThreadPersonality(personality string) ThreadOption
 func WithThreadModelProvider(id string) ThreadOption            // select a configured provider by id
 func WithThreadConfigOverride(key string, value any) ThreadOption // per-thread config overlay (e.g. model_providers.<id>)
+func WithThreadBaseInstructions(instructions string) ThreadOption
+func WithThreadDeveloperInstructions(instructions string) ThreadOption
+func WithThreadServiceTier(tier string) ThreadOption
+func WithThreadSandbox(mode SandboxMode) ThreadOption           // mode string, not a SandboxPolicy object
 func WithInitialInput(input string) ThreadOption // runs first turn immediately after start
 ```
 

@@ -181,6 +181,13 @@ ThreadOption values:
                 "wire_api": "responses", "experimental_bearer_token": os.Getenv("ACME_KEY"),
             })
         wire_api must be "responses": upstream's WireApi has only that variant.
+    codexgo.WithThreadBaseInstructions(instructions string)
+    codexgo.WithThreadDeveloperInstructions(instructions string)
+        Override the thread's base / developer instructions.
+    codexgo.WithThreadServiceTier(tier string)
+    codexgo.WithThreadSandbox(mode SandboxMode)
+        Set the thread's sandbox MODE (a string such as codexgo.SandboxReadOnly), not the
+        tagged SandboxPolicy object that turn input takes.
     codexgo.WithInitialInput(input string)
         When set, StartThread/ResumeThread block until the first turn completes.
 

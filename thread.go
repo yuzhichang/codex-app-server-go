@@ -92,6 +92,33 @@ func WithThreadConfigOverride(key string, value any) ThreadOption {
 	}
 }
 
+// WithThreadBaseInstructions overrides the thread's base instructions.
+func WithThreadBaseInstructions(instructions string) ThreadOption {
+	return func(c *threadConfig) { c.req.BaseInstructions = instructions }
+}
+
+// WithThreadDeveloperInstructions overrides the thread's developer instructions.
+func WithThreadDeveloperInstructions(instructions string) ThreadOption {
+	return func(c *threadConfig) { c.req.DeveloperInstructions = instructions }
+}
+
+// WithThreadServiceTier overrides the thread's service tier.
+func WithThreadServiceTier(tier string) ThreadOption {
+	return func(c *threadConfig) { c.req.ServiceTier = tier }
+}
+
+// WithThreadSandbox sets the thread's sandbox MODE (upstream thread/start `sandbox`).
+//
+// This is a mode such as codexgo.SandboxReadOnly, NOT the tagged SandboxPolicy object that turn
+// input takes -- upstream models the two differently. It also cannot be combined with
+// `permissions` upstream; the SDK does not expose `permissions`, so there is no conflict.
+func WithThreadSandbox(mode SandboxMode) ThreadOption {
+	return func(c *threadConfig) {
+		m := mode
+		c.req.Sandbox = &m
+	}
+}
+
 // WithInitialInput sets a prompt to run immediately after the thread starts.
 // If set, StartThread / ResumeThread return only after the first turn completes.
 func WithInitialInput(input string) ThreadOption {

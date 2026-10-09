@@ -22,6 +22,10 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		Metadata              json.RawMessage    `json:"metadata,omitempty"`
 		ModelProvider         string             `json:"modelProvider,omitempty"`
 		Config                map[string]any     `json:"config,omitempty"`
+		BaseInstructions      string             `json:"baseInstructions,omitempty"`
+		DeveloperInstructions string             `json:"developerInstructions,omitempty"`
+		ServiceTier           string             `json:"serviceTier,omitempty"`
+		Sandbox               *SandboxMode       `json:"sandbox,omitempty"`
 	}
 	return json.Marshal(alias{
 		Model:                 r.Model,
@@ -34,5 +38,9 @@ func (r ThreadStartParams) MarshalJSON() ([]byte, error) {
 		Metadata:              r.Metadata,
 		ModelProvider:         r.ModelProvider,
 		Config:                r.Config,
+		BaseInstructions:      r.BaseInstructions,
+		DeveloperInstructions: r.DeveloperInstructions,
+		ServiceTier:           r.ServiceTier,
+		Sandbox:               r.Sandbox,
 	})
 }

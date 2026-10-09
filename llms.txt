@@ -41,6 +41,8 @@ thread.Close()  // release semaphore slot
 #         "experimental_bearer_token":"..."})
 #     The app-server deep-merges it for this thread only, so a shared server can
 #     serve callers that each bring their own provider without editing server config.
+#   WithThreadBaseInstructions(s), WithThreadDeveloperInstructions(s),
+#   WithThreadServiceTier(tier), WithThreadSandbox(SandboxMode)  // sandbox is a mode string
 
 result, err := thread.Run(ctx, "prompt", opts...)     // synchronous turn, string input
 result, err := thread.RunInputs(ctx, []UserInput{...}, opts...)   // structured input

@@ -96,3 +96,45 @@ func TestThreadConfigOverrideKeepsDottedKeys(t *testing.T) {
 		t.Fatalf("dotted overrides did not reach the wire: %v", cfg)
 	}
 }
+
+// The thread/start override set must mirror ThreadResumeParams' for these four fields; setting
+// them on Start must reach the wire. In particular `sandbox` is a MODE STRING (upstream
+// SandboxMode), not the tagged policy object turn input takes.
+func TestThreadStartSendsSandboxAndInstructionOverrides(t *testing.T) {
+	client, mock := newClientFromMock(t)
+
+	var got map[string]any
+	mock.Handle("thread/start", func(params json.RawMessage) (any, error) {
+		if err := json.Unmarshal(params, &got); err != nil {
+			return nil, err
+		}
+		return map[string]any{"thread": map[string]any{"id": "t1"}}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	thread, err := client.StartThread(ctx,
+		codexgo.WithThreadSandbox(codexgo.SandboxReadOnly),
+		codexgo.WithThreadServiceTier("priority"),
+		codexgo.WithThreadBaseInstructions("be terse"),
+		codexgo.WithThreadDeveloperInstructions("no tools"),
+	)
+	if err != nil {
+		t.Fatalf("StartThread: %v", err)
+	}
+	defer thread.Close()
+
+	sandbox, ok := got["sandbox"].(string)
+	if !ok {
+		t.Fatalf("sandbox = %#v, want a mode string (not a policy object)", got["sandbox"])
+	}
+	if sandbox != string(codexgo.SandboxReadOnly) {
+		t.Fatalf("sandbox = %q, want %q", sandbox, codexgo.SandboxReadOnly)
+	}
+	if got["serviceTier"] != "priority" {
+		t.Fatalf("serviceTier = %v", got["serviceTier"])
+	}
+	if got["baseInstructions"] != "be terse" || got["developerInstructions"] != "no tools" {
+		t.Fatalf("instruction overrides did not reach the wire: %v", got)
+	}
+}

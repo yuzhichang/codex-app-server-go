@@ -37,7 +37,7 @@
   {
     "name": "ThreadStartParams",
     "status": "deliberate",
-    "reason": "Diverges on field set, not on the wire shape of what is sent: the hand-written MarshalJSON owns serialisation and TestMarshalledParamsSendEveryField proves every settable field reaches the wire, so nothing is silently dropped. The sdk-only fields (dynamicTools, runtimeWorkspaceRoots) are real upstream fields the vendored aggregate omits -- confirmed against thread.rs -- and `metadata` is genuinely invented (upstream ThreadStartParams has no such field); nothing sets it. The aggregate-only fields are capabilities the SDK does not expose."
+    "reason": "Diverges on field set, not on the wire shape of what is sent: the hand-written MarshalJSON owns serialisation and TestMarshalledParamsSendEveryField proves every settable field reaches the wire, so nothing is silently dropped. The sdk-only fields (dynamicTools, runtimeWorkspaceRoots) are real upstream fields the vendored aggregate omits -- confirmed against thread.rs -- and `metadata` is genuinely invented (upstream ThreadStartParams has no such field); nothing sets it. The remaining aggregate-only fields are `serviceName`, `sessionStartSource` and `threadSource` -- analytics/telemetry classification, not the model/sandbox override set (which the SDK now mirrors from ThreadResumeParams); they remain settable through the per-thread config overlay (WithThreadConfigOverride)."
   },
   {
     "name": "TurnStartParams",

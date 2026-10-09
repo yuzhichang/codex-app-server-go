@@ -719,6 +719,7 @@
 - **T3.1 README**：覆盖率表**自动生成**（`implemented-methods.json` 对 `method-surface.json`），表头注明"对齐 codex `14c8b777`，scope=stable"；修正 D6 版本不一致；声明三条策略（R2/R3/R4）并链接 `gen/not-implemented.txt` 与 `gen/not-in-scope.txt`；补"上游不使用 `jsonrpc`"；新增 Reliability 小节（reconnect 边界 + 事件投递语义与 `Err()`/`Done()` 用法）。
 - **T3.2 样例**：`reconnect-supervisor/`、`approval-over-websocket/`、`fs-and-mcp/`、`streaming-to-sse/`（展示 `Err()`/`Done()` 与背压下的正确消费）。
 - **T3.3 文档**：`docs/index.md`（reconnect + 投递语义 + transport 表）、`docs/api-reference.md`（新方法/类型）、`llms.txt`+`llms-full.txt`（修 D7、补清单、标注基线）、新增 `docs/reconnect.md`；清理过时的 `PHASE3_REVIEW.md`。
+  - ✅ **方法清单改为生成**（实施期增补）：`docs/api-reference.md` 与 `llms*.txt` 里的 Client/SessionThread 方法清单不再手写，由 Go 工具 `tools/gendocs` 用 `go/ast` 解析导出面生成（`make docs`），`make docs-check` 校验方法清单与代码一致、纳入 `conformance-strict`。理由与 README 覆盖率表相同：手写的、描述机器可校验数据的内容必然腐化。用 Go 而非 Python，避免为此再引入 Python 工具链。
 
 **验收**：样例 `go build` 通过并被 CI 编译；README 数字与 conformance report 一致。
 

@@ -8,3 +8,6 @@ __pycache__/
 *.test
 /simple
 /examples/*/simple
+
+# `go build ./tools/...` writes the tool binary into the cwd, not into tools/gendocs.
+/gendocs

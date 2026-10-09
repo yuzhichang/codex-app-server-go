@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage coverage-write typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
+.PHONY: sync verify diff-cli coverage coverage-write typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage docs docs-check conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -108,11 +108,23 @@ conformance-strict: verify
 	@python3 $(SDK_DIR)/scripts/export_check.py check
 	@python3 $(SDK_DIR)/scripts/enum_value_check.py check
 	@python3 $(SDK_DIR)/scripts/gen_readme_coverage.py --check
+	@$(MAKE) --no-print-directory docs-check
 
 # Rewrite the README's coverage tables from the audited artifacts. A hand-written table
 # describing machine-checked data always rots; this one is generated and CI-verified.
 readme-coverage:
 	python3 $(SDK_DIR)/scripts/gen_readme_coverage.py
+
+# Regenerate the API index embedded in docs/api-reference.md and llms*.txt. The generator
+# parses the exported surface with go/ast, so the method lists cannot drift from the code
+# (the same reason the README coverage table is generated). Go, not Python, so no extra
+# toolchain is needed to keep the docs honest.
+docs:
+	cd $(SDK_DIR) && go run ./tools/gendocs
+
+# Fail if any marked docs region is stale (the CI mode).
+docs-check:
+	cd $(SDK_DIR) && go run ./tools/gendocs -check
 
 # Everything CI runs. Kept as one target so the workflow and a local run cannot drift.
 # The generator steps are re-run and then diffed: if they are not idempotent, or if someone
@@ -124,6 +136,7 @@ ci: build
 	$(MAKE) typecheck
 	$(MAKE) generate-types generate-client
 	$(MAKE) readme-coverage
+	$(MAKE) docs
 	@git diff --exit-code --stat || { \
 		echo "ERROR: generated artifacts are stale or were hand-edited."; \
 		echo "       Run 'make generate' and 'make readme-coverage', then commit the result."; \

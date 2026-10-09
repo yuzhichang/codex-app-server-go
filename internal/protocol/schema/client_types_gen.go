@@ -152,10 +152,16 @@ type Thread struct {
 
 // --- Initialize ---
 
+// ClientInfo identifies the client in the initialize handshake.
+//
+// `name` and `version` are REQUIRED upstream, so they carry no omitempty: with it, an empty
+// name or version was dropped from the payload entirely and the server rejected the handshake.
+// The auto-init path defaults both, but Client.Initialize is public and a direct caller could
+// pass ClientInfo{} -- the type silently allowed it.
 type ClientInfo struct {
-	Name    string `json:"name,omitempty"`
+	Name    string `json:"name"`
 	Title   string `json:"title,omitempty"`
-	Version string `json:"version,omitempty"`
+	Version string `json:"version"`
 }
 
 // InitializeCapabilities mirrors the upstream InitializeCapabilities

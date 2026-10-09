@@ -111,10 +111,16 @@ def divergences() -> dict[str, list[str]]:
         hf = {f[0]: (f[1], f[2]) for f in h if f[0] != "<embedded>"}
         gf = {f[0]: (f[1], f[2]) for f in g if f[0] != "<embedded>"}
         notes: list[str] = []
+        # `sdk-only` deliberately does NOT say "invented". The comparison is against the
+        # vendored aggregate, which is a SUBSET of upstream: it omits fields that exist in the
+        # Rust source (thread/start.runtimeWorkspaceRoots, turn/start.collaborationMode,
+        # dynamicTools, multiAgentMode, permissions are all real and all absent from it). A
+        # field being sdk-only is therefore a question -- "is this real?" -- and the answer has
+        # to come from the Rust source, not from the aggregate.
         for k in sorted(set(hf) - set(gf)):
-            notes.append(f"only-hand-written {k} {hf[k][0]} `{hf[k][1]}`")
+            notes.append(f"sdk-only         {k} {hf[k][0]} `{hf[k][1]}`  (absent from the aggregate)")
         for k in sorted(set(gf) - set(hf)):
-            notes.append(f"only-upstream    {k} {gf[k][0]} `{gf[k][1]}`")
+            notes.append(f"aggregate-only   {k} {gf[k][0]} `{gf[k][1]}`")
         for k in sorted(set(hf) & set(gf)):
             if hf[k] != gf[k]:
                 notes.append(f"differs          {k}: hand={hf[k][0]} upstream={gf[k][0]}")

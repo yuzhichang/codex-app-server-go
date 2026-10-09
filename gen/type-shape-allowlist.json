@@ -1,10 +1,5 @@
 [
   {
-    "name": "ClientInfo",
-    "status": "deliberate",
-    "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
-  },
-  {
     "name": "SkillSummary",
     "status": "deliberate",
     "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
@@ -52,11 +47,11 @@
   {
     "name": "ThreadStartParams",
     "status": "deliberate",
-    "reason": "Hand-written marshaller owns the wire shape; the differences are the SDK's ergonomic field types on input fields."
+    "reason": "Diverges on field set, not on the wire shape of what is sent: the hand-written MarshalJSON owns serialisation and TestMarshalledParamsSendEveryField proves every settable field reaches the wire, so nothing is silently dropped. The sdk-only fields (dynamicTools, runtimeWorkspaceRoots) are real upstream fields the vendored aggregate omits -- confirmed against thread.rs -- and `metadata` is genuinely invented (upstream ThreadStartParams has no such field); nothing sets it. The aggregate-only fields are capabilities the SDK does not expose."
   },
   {
     "name": "TurnStartParams",
     "status": "deliberate",
-    "reason": "Input is a string encoded by the hand-written wireInput marshaller, which emits the required [{\"type\":\"text\",...}] array."
+    "reason": "Diverges on field set, not on the wire shape of what is sent. There is no hand-written marshaller any more: wireInput was removed when Input became []UserInput, so the struct encodes directly. The sdk-only fields (collaborationMode, multiAgentMode, permissions) are real upstream fields that the vendored aggregate omits -- confirmed against codex-rs/protocol/v2/turn.rs, so they are not invented. The aggregate-only fields (disabledPluginIds, parentTurnId, rootTurnId, toolOutput, turnTrigger, personality, serviceTierForTurn) are real capabilities the SDK does not expose yet."
   }
 ]

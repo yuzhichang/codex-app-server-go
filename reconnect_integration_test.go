@@ -23,6 +23,16 @@ type fakeAppServer struct {
 	methods []string
 	conn    *websocket.Conn
 	conns   int
+
+	// Test hooks, all nil in the default harness.
+	//
+	// blockInit, when non-nil, makes the handler hold the `initialize` reply until it is
+	// closed -- so a test can suspend re-initialization and observe what the client does
+	// meanwhile. initBlocked is closed once initialize actually starts blocking. onMethod
+	// receives every recorded method in order (buffered; drops if the test is not reading).
+	blockInit   chan struct{}
+	initBlocked chan struct{}
+	onMethod    chan string
 }
 
 func (s *fakeAppServer) record(method string) {
@@ -40,6 +50,14 @@ func (s *fakeAppServer) called() []string {
 func (s *fakeAppServer) reset() {
 	s.mu.Lock()
 	s.methods = nil
+	s.mu.Unlock()
+}
+
+// setBlockInit installs (or clears) the initialize-reply suspension. Set it only after the
+// initial handshake has completed, or the very first initialize would block too.
+func (s *fakeAppServer) setBlockInit(ch chan struct{}) {
+	s.mu.Lock()
+	s.blockInit = ch
 	s.mu.Unlock()
 }
 
@@ -73,6 +91,31 @@ func (s *fakeAppServer) handler() http.HandlerFunc {
 				continue // a reply to a server-initiated request
 			}
 			s.record(msg.Method)
+
+			s.mu.Lock()
+			onMethod, blockInit, initBlocked := s.onMethod, s.blockInit, s.initBlocked
+			s.mu.Unlock()
+			if onMethod != nil {
+				select {
+				case onMethod <- msg.Method:
+				default:
+				}
+			}
+			if msg.Method == "initialize" && blockInit != nil {
+				if initBlocked != nil {
+					select {
+					case <-initBlocked:
+					default:
+						close(initBlocked)
+					}
+				}
+				select {
+				case <-blockInit:
+				case <-ctx.Done():
+					return
+				}
+			}
+
 			if len(msg.ID) == 0 {
 				continue // notification: no reply
 			}

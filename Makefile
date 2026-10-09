@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck type-shape-check export-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
+.PHONY: sync verify diff-cli coverage typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -55,6 +55,13 @@ type-shape-check:
 export-check:
 	python3 $(SDK_DIR)/scripts/export_check.py report
 
+# Value-level check. type_check compares type NAMES, which cannot see the ApprovalMode bug: the
+# SDK's enum was called something upstream does not have, so there was nothing to compare it to,
+# while its VALUES merged two upstream enums and added one valid in neither. Comparing value sets
+# catches that, and it is the only check here that can.
+enum-value-check:
+	python3 $(SDK_DIR)/scripts/enum_value_check.py report
+
 # Regenerate the schema-derived Go types. Deterministic: a no-op re-run leaves git clean.
 # (Currently scoped to the definitions the SDK was missing; see the script's header.)
 generate-types:
@@ -85,6 +92,7 @@ conformance: verify
 	@python3 $(SDK_DIR)/scripts/type_check.py report
 	@python3 $(SDK_DIR)/scripts/type_shape_check.py report
 	@python3 $(SDK_DIR)/scripts/export_check.py report
+	@python3 $(SDK_DIR)/scripts/enum_value_check.py report
 
 # Final gate: no gap, no untested wiring, no stale methods, no unlisted type drift.
 # This is the CI target once the work in tasks/plan-schema-alignment-and-coverage.md is done.
@@ -92,6 +100,7 @@ conformance-strict: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
 	@python3 $(SDK_DIR)/scripts/type_check.py check
 	@python3 $(SDK_DIR)/scripts/export_check.py check
+	@python3 $(SDK_DIR)/scripts/enum_value_check.py check
 	@python3 $(SDK_DIR)/scripts/gen_readme_coverage.py --check
 
 # Rewrite the README's coverage tables from the audited artifacts. A hand-written table

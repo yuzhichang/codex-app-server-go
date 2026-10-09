@@ -37,6 +37,39 @@ const (
 	AccountTypeAmazonBedrock = "amazonBedrock"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u Account) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case AccountTypeAPIKey:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case AccountTypeChatgpt:
+		return json.Marshal(struct {
+			Type     string   `json:"type"`
+			Email    string   `json:"email"`
+			PlanType PlanType `json:"planType"`
+		}{
+			Type:     u.Type,
+			Email:    u.Email,
+			PlanType: u.PlanType,
+		})
+	case AccountTypeAmazonBedrock:
+		return json.Marshal(struct {
+			Type                        string `json:"type"`
+			UsesCodexManagedCredentials bool   `json:"usesCodexManagedCredentials,omitempty"`
+		}{
+			Type:                        u.Type,
+			UsesCodexManagedCredentials: u.UsesCodexManagedCredentials,
+		})
+	}
+	type plain Account
+	return json.Marshal(plain(u))
+}
+
 // AccountLoginCompletedNotification mirrors the upstream `AccountLoginCompletedNotification` definition.
 type AccountLoginCompletedNotification struct {
 	Error                string                       `json:"error,omitempty"`
@@ -135,6 +168,31 @@ const (
 	AgentMessageInputContentTypeInputText        = "input_text"
 	AgentMessageInputContentTypeEncryptedContent = "encrypted_content"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u AgentMessageInputContent) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case AgentMessageInputContentTypeInputText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	case AgentMessageInputContentTypeEncryptedContent:
+		return json.Marshal(struct {
+			Type             string `json:"type"`
+			EncryptedContent string `json:"encrypted_content"`
+		}{
+			Type:             u.Type,
+			EncryptedContent: u.EncryptedContent,
+		})
+	}
+	type plain AgentMessageInputContent
+	return json.Marshal(plain(u))
+}
 
 // AgentPath mirrors the upstream `AgentPath` definition.
 type AgentPath = string
@@ -362,6 +420,57 @@ const (
 	CommandActionTypeSearch    = "search"
 	CommandActionTypeUnknown   = "unknown"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u CommandAction) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case CommandActionTypeRead:
+		return json.Marshal(struct {
+			Type    string          `json:"type"`
+			Command string          `json:"command"`
+			Name    string          `json:"name"`
+			Path    json.RawMessage `json:"path"`
+		}{
+			Type:    u.Type,
+			Command: u.Command,
+			Name:    u.Name,
+			Path:    u.Path,
+		})
+	case CommandActionTypeListFiles:
+		return json.Marshal(struct {
+			Type    string          `json:"type"`
+			Command string          `json:"command"`
+			Path    json.RawMessage `json:"path,omitempty"`
+		}{
+			Type:    u.Type,
+			Command: u.Command,
+			Path:    u.Path,
+		})
+	case CommandActionTypeSearch:
+		return json.Marshal(struct {
+			Type    string          `json:"type"`
+			Command string          `json:"command"`
+			Path    json.RawMessage `json:"path,omitempty"`
+			Query   string          `json:"query,omitempty"`
+		}{
+			Type:    u.Type,
+			Command: u.Command,
+			Path:    u.Path,
+			Query:   u.Query,
+		})
+	case CommandActionTypeUnknown:
+		return json.Marshal(struct {
+			Type    string `json:"type"`
+			Command string `json:"command"`
+		}{
+			Type:    u.Type,
+			Command: u.Command,
+		})
+	}
+	type plain CommandAction
+	return json.Marshal(plain(u))
+}
 
 // CommandExecOutputDeltaNotification mirrors the upstream `CommandExecOutputDeltaNotification` definition.
 type CommandExecOutputDeltaNotification struct {
@@ -614,6 +723,89 @@ const (
 	ConfigLayerSourceTypeLegacyManagedConfigTomlFromMdm  = "legacyManagedConfigTomlFromMdm"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ConfigLayerSource) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ConfigLayerSourceTypePackagedDefaults:
+		return json.Marshal(struct {
+			Type string          `json:"type"`
+			File AbsolutePathBuf `json:"file"`
+		}{
+			Type: u.Type,
+			File: u.File,
+		})
+	case ConfigLayerSourceTypeMdm:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			Domain string `json:"domain"`
+			Key    string `json:"key"`
+		}{
+			Type:   u.Type,
+			Domain: u.Domain,
+			Key:    u.Key,
+		})
+	case ConfigLayerSourceTypeSystem:
+		return json.Marshal(struct {
+			Type string          `json:"type"`
+			File AbsolutePathBuf `json:"file"`
+		}{
+			Type: u.Type,
+			File: u.File,
+		})
+	case ConfigLayerSourceTypeEnterpriseManaged:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}{
+			Type: u.Type,
+			ID:   u.ID,
+			Name: u.Name,
+		})
+	case ConfigLayerSourceTypeUser:
+		return json.Marshal(struct {
+			Type    string          `json:"type"`
+			File    AbsolutePathBuf `json:"file"`
+			Profile string          `json:"profile,omitempty"`
+		}{
+			Type:    u.Type,
+			File:    u.File,
+			Profile: u.Profile,
+		})
+	case ConfigLayerSourceTypeProject:
+		return json.Marshal(struct {
+			Type           string          `json:"type"`
+			DotCodexFolder AbsolutePathBuf `json:"dotCodexFolder"`
+		}{
+			Type:           u.Type,
+			DotCodexFolder: u.DotCodexFolder,
+		})
+	case ConfigLayerSourceTypeSessionFlags:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case ConfigLayerSourceTypeLegacyManagedConfigTomlFromFile:
+		return json.Marshal(struct {
+			Type string          `json:"type"`
+			File AbsolutePathBuf `json:"file"`
+		}{
+			Type: u.Type,
+			File: u.File,
+		})
+	case ConfigLayerSourceTypeLegacyManagedConfigTomlFromMdm:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	}
+	type plain ConfigLayerSource
+	return json.Marshal(plain(u))
+}
+
 // ConfigReadParams mirrors the upstream `ConfigReadParams` definition.
 type ConfigReadParams struct {
 	CWD           string `json:"cwd,omitempty"`
@@ -743,6 +935,51 @@ const (
 	ContentItemTypeOutputText = "output_text"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ContentItem) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ContentItemTypeInputText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	case ContentItemTypeInputImage:
+		return json.Marshal(struct {
+			Type     string      `json:"type"`
+			ImageURL string      `json:"image_url,omitempty"`
+			FileID   string      `json:"file_id,omitempty"`
+			Detail   ImageDetail `json:"detail,omitempty"`
+		}{
+			Type:     u.Type,
+			ImageURL: u.ImageURL,
+			FileID:   u.FileID,
+			Detail:   u.Detail,
+		})
+	case ContentItemTypeInputAudio:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			AudioURL string `json:"audio_url"`
+		}{
+			Type:     u.Type,
+			AudioURL: u.AudioURL,
+		})
+	case ContentItemTypeOutputText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	}
+	type plain ContentItem
+	return json.Marshal(plain(u))
+}
+
 // ContextCompactedNotification mirrors the upstream `ContextCompactedNotification` definition.
 type ContextCompactedNotification struct {
 	ThreadID string `json:"threadId"`
@@ -800,6 +1037,39 @@ const (
 	DynamicToolCallOutputContentItemTypeInputImage = "inputImage"
 	DynamicToolCallOutputContentItemTypeInputAudio = "inputAudio"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u DynamicToolCallOutputContentItem) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case DynamicToolCallOutputContentItemTypeInputText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	case DynamicToolCallOutputContentItemTypeInputImage:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			ImageURL string `json:"imageUrl"`
+		}{
+			Type:     u.Type,
+			ImageURL: u.ImageURL,
+		})
+	case DynamicToolCallOutputContentItemTypeInputAudio:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			AudioURL string `json:"audioUrl"`
+		}{
+			Type:     u.Type,
+			AudioURL: u.AudioURL,
+		})
+	}
+	type plain DynamicToolCallOutputContentItem
+	return json.Marshal(plain(u))
+}
 
 // DynamicToolCallStatus mirrors the upstream `DynamicToolCallStatus` enum.
 type DynamicToolCallStatus string
@@ -1095,6 +1365,39 @@ const (
 	FileSystemPathTypeSpecial     = "special"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u FileSystemPath) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case FileSystemPathTypePath:
+		return json.Marshal(struct {
+			Type string              `json:"type"`
+			Path LegacyAppPathString `json:"path"`
+		}{
+			Type: u.Type,
+			Path: u.Path,
+		})
+	case FileSystemPathTypeGlobPattern:
+		return json.Marshal(struct {
+			Type    string `json:"type"`
+			Pattern string `json:"pattern"`
+		}{
+			Type:    u.Type,
+			Pattern: u.Pattern,
+		})
+	case FileSystemPathTypeSpecial:
+		return json.Marshal(struct {
+			Type  string                `json:"type"`
+			Value FileSystemSpecialPath `json:"value"`
+		}{
+			Type:  u.Type,
+			Value: u.Value,
+		})
+	}
+	type plain FileSystemPath
+	return json.Marshal(plain(u))
+}
+
 // FileSystemSandboxEntry mirrors the upstream `FileSystemSandboxEntry` definition.
 type FileSystemSandboxEntry struct {
 	Access FileSystemAccessMode `json:"access"`
@@ -1125,6 +1428,57 @@ const (
 	FileSystemSpecialPathKindSlashTmp     = "slash_tmp"
 	FileSystemSpecialPathKindUnknown      = "unknown"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u FileSystemSpecialPath) MarshalJSON() ([]byte, error) {
+	switch u.Kind {
+	case FileSystemSpecialPathKindRoot:
+		return json.Marshal(struct {
+			Kind string `json:"kind"`
+		}{
+			Kind: u.Kind,
+		})
+	case FileSystemSpecialPathKindMinimal:
+		return json.Marshal(struct {
+			Kind string `json:"kind"`
+		}{
+			Kind: u.Kind,
+		})
+	case FileSystemSpecialPathKindProjectRoots:
+		return json.Marshal(struct {
+			Kind    string              `json:"kind"`
+			Subpath LegacyAppPathString `json:"subpath,omitempty"`
+		}{
+			Kind:    u.Kind,
+			Subpath: u.Subpath,
+		})
+	case FileSystemSpecialPathKindTmpdir:
+		return json.Marshal(struct {
+			Kind string `json:"kind"`
+		}{
+			Kind: u.Kind,
+		})
+	case FileSystemSpecialPathKindSlashTmp:
+		return json.Marshal(struct {
+			Kind string `json:"kind"`
+		}{
+			Kind: u.Kind,
+		})
+	case FileSystemSpecialPathKindUnknown:
+		return json.Marshal(struct {
+			Kind    string              `json:"kind"`
+			Subpath LegacyAppPathString `json:"subpath,omitempty"`
+			Path    string              `json:"path"`
+		}{
+			Kind:    u.Kind,
+			Subpath: u.Subpath,
+			Path:    u.Path,
+		})
+	}
+	type plain FileSystemSpecialPath
+	return json.Marshal(plain(u))
+}
 
 // FileUpdateChange mirrors the upstream `FileUpdateChange` definition.
 type FileUpdateChange struct {
@@ -1310,6 +1664,51 @@ const (
 	FunctionCallOutputContentItemTypeEncryptedContent = "encrypted_content"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u FunctionCallOutputContentItem) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case FunctionCallOutputContentItemTypeInputText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	case FunctionCallOutputContentItemTypeInputImage:
+		return json.Marshal(struct {
+			Type     string      `json:"type"`
+			ImageURL string      `json:"image_url,omitempty"`
+			FileID   string      `json:"file_id,omitempty"`
+			Detail   ImageDetail `json:"detail,omitempty"`
+		}{
+			Type:     u.Type,
+			ImageURL: u.ImageURL,
+			FileID:   u.FileID,
+			Detail:   u.Detail,
+		})
+	case FunctionCallOutputContentItemTypeInputAudio:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			AudioURL string `json:"audio_url"`
+		}{
+			Type:     u.Type,
+			AudioURL: u.AudioURL,
+		})
+	case FunctionCallOutputContentItemTypeEncryptedContent:
+		return json.Marshal(struct {
+			Type             string `json:"type"`
+			EncryptedContent string `json:"encrypted_content"`
+		}{
+			Type:             u.Type,
+			EncryptedContent: u.EncryptedContent,
+		})
+	}
+	type plain FunctionCallOutputContentItem
+	return json.Marshal(plain(u))
+}
+
 // FuzzyFileSearchMatchType mirrors the upstream `FuzzyFileSearchMatchType` enum.
 type FuzzyFileSearchMatchType string
 
@@ -1483,6 +1882,105 @@ const (
 	GuardianApprovalReviewActionTypeMcpToolCall        = "mcpToolCall"
 	GuardianApprovalReviewActionTypeRequestPermissions = "requestPermissions"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u GuardianApprovalReviewAction) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case GuardianApprovalReviewActionTypeCommand:
+		return json.Marshal(struct {
+			Type    string                `json:"type"`
+			Command string                `json:"command"`
+			CWD     json.RawMessage       `json:"cwd"`
+			Source  GuardianCommandSource `json:"source"`
+		}{
+			Type:    u.Type,
+			Command: u.Command,
+			CWD:     u.CWD,
+			Source:  u.Source,
+		})
+	case GuardianApprovalReviewActionTypeExecve:
+		return json.Marshal(struct {
+			Type    string                `json:"type"`
+			CWD     json.RawMessage       `json:"cwd"`
+			Source  GuardianCommandSource `json:"source"`
+			Argv    []string              `json:"argv"`
+			Program string                `json:"program"`
+		}{
+			Type:    u.Type,
+			CWD:     u.CWD,
+			Source:  u.Source,
+			Argv:    u.Argv,
+			Program: u.Program,
+		})
+	case GuardianApprovalReviewActionTypeWriteStdin:
+		return json.Marshal(struct {
+			Type       string          `json:"type"`
+			CWD        json.RawMessage `json:"cwd"`
+			ApprovalID string          `json:"approvalId"`
+			ProcessID  string          `json:"processId"`
+			Stdin      string          `json:"stdin"`
+		}{
+			Type:       u.Type,
+			CWD:        u.CWD,
+			ApprovalID: u.ApprovalID,
+			ProcessID:  u.ProcessID,
+			Stdin:      u.Stdin,
+		})
+	case GuardianApprovalReviewActionTypeApplyPatch:
+		return json.Marshal(struct {
+			Type  string                `json:"type"`
+			CWD   json.RawMessage       `json:"cwd"`
+			Files []LegacyAppPathString `json:"files"`
+		}{
+			Type:  u.Type,
+			CWD:   u.CWD,
+			Files: u.Files,
+		})
+	case GuardianApprovalReviewActionTypeNetworkAccess:
+		return json.Marshal(struct {
+			Type     string                  `json:"type"`
+			Host     string                  `json:"host"`
+			Port     int64                   `json:"port"`
+			Protocol NetworkApprovalProtocol `json:"protocol"`
+			Target   string                  `json:"target"`
+		}{
+			Type:     u.Type,
+			Host:     u.Host,
+			Port:     u.Port,
+			Protocol: u.Protocol,
+			Target:   u.Target,
+		})
+	case GuardianApprovalReviewActionTypeMcpToolCall:
+		return json.Marshal(struct {
+			Type          string `json:"type"`
+			ConnectorID   string `json:"connectorId,omitempty"`
+			ConnectorName string `json:"connectorName,omitempty"`
+			Server        string `json:"server"`
+			ToolName      string `json:"toolName"`
+			ToolTitle     string `json:"toolTitle,omitempty"`
+		}{
+			Type:          u.Type,
+			ConnectorID:   u.ConnectorID,
+			ConnectorName: u.ConnectorName,
+			Server:        u.Server,
+			ToolName:      u.ToolName,
+			ToolTitle:     u.ToolTitle,
+		})
+	case GuardianApprovalReviewActionTypeRequestPermissions:
+		return json.Marshal(struct {
+			Type        string                   `json:"type"`
+			Permissions RequestPermissionProfile `json:"permissions"`
+			Reason      string                   `json:"reason,omitempty"`
+		}{
+			Type:        u.Type,
+			Permissions: u.Permissions,
+			Reason:      u.Reason,
+		})
+	}
+	type plain GuardianApprovalReviewAction
+	return json.Marshal(plain(u))
+}
 
 // GuardianApprovalReviewStatus mirrors the upstream `GuardianApprovalReviewStatus` enum.
 type GuardianApprovalReviewStatus string
@@ -1725,6 +2223,25 @@ const (
 	ImageGenerationFailureTypeUsageLimitExceeded = "usageLimitExceeded"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ImageGenerationFailure) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ImageGenerationFailureTypeUsageLimitExceeded:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			LimitID  string `json:"limitId"`
+			ResetsAt int64  `json:"resetsAt,omitempty"`
+		}{
+			Type:     u.Type,
+			LimitID:  u.LimitID,
+			ResetsAt: u.ResetsAt,
+		})
+	}
+	type plain ImageGenerationFailure
+	return json.Marshal(plain(u))
+}
+
 // InAppBrowserRequirements mirrors the upstream `InAppBrowserRequirements` definition.
 type InAppBrowserRequirements struct {
 	AllowExternalBrowserSettingsImport bool `json:"allowExternalBrowserSettingsImport,omitempty"`
@@ -1810,6 +2327,31 @@ const (
 	LocalShellActionTypeExec = "exec"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u LocalShellAction) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case LocalShellActionTypeExec:
+		return json.Marshal(struct {
+			Type             string            `json:"type"`
+			Command          []string          `json:"command"`
+			Env              map[string]string `json:"env,omitempty"`
+			TimeoutMs        int64             `json:"timeout_ms,omitempty"`
+			User             string            `json:"user,omitempty"`
+			WorkingDirectory string            `json:"working_directory,omitempty"`
+		}{
+			Type:             u.Type,
+			Command:          u.Command,
+			Env:              u.Env,
+			TimeoutMs:        u.TimeoutMs,
+			User:             u.User,
+			WorkingDirectory: u.WorkingDirectory,
+		})
+	}
+	type plain LocalShellAction
+	return json.Marshal(plain(u))
+}
+
 // LocalShellStatus mirrors the upstream `LocalShellStatus` enum.
 type LocalShellStatus string
 
@@ -1853,6 +2395,77 @@ const (
 	LoginAccountParamsTypeAmazonBedrockAccessKeys = "amazonBedrockAccessKeys"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u LoginAccountParams) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case LoginAccountParamsTypeAPIKey:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			APIKey string `json:"apiKey"`
+		}{
+			Type:   u.Type,
+			APIKey: u.APIKey,
+		})
+	case LoginAccountParamsTypeChatgpt:
+		return json.Marshal(struct {
+			Type                      string        `json:"type"`
+			AppBrand                  LoginAppBrand `json:"appBrand,omitempty"`
+			CodexStreamlinedLogin     bool          `json:"codexStreamlinedLogin,omitempty"`
+			UseHostedLoginSuccessPage bool          `json:"useHostedLoginSuccessPage,omitempty"`
+		}{
+			Type:                      u.Type,
+			AppBrand:                  u.AppBrand,
+			CodexStreamlinedLogin:     u.CodexStreamlinedLogin,
+			UseHostedLoginSuccessPage: u.UseHostedLoginSuccessPage,
+		})
+	case LoginAccountParamsTypeChatgptDeviceCode:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case LoginAccountParamsTypeChatgptAuthTokens:
+		return json.Marshal(struct {
+			Type             string `json:"type"`
+			AccessToken      string `json:"accessToken"`
+			ChatgptAccountID string `json:"chatgptAccountId"`
+			ChatgptPlanType  string `json:"chatgptPlanType,omitempty"`
+		}{
+			Type:             u.Type,
+			AccessToken:      u.AccessToken,
+			ChatgptAccountID: u.ChatgptAccountID,
+			ChatgptPlanType:  u.ChatgptPlanType,
+		})
+	case LoginAccountParamsTypeAmazonBedrock:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			APIKey string `json:"apiKey"`
+			Region string `json:"region"`
+		}{
+			Type:   u.Type,
+			APIKey: u.APIKey,
+			Region: u.Region,
+		})
+	case LoginAccountParamsTypeAmazonBedrockAccessKeys:
+		return json.Marshal(struct {
+			Type            string `json:"type"`
+			Region          string `json:"region"`
+			AccessKeyID     string `json:"accessKeyId"`
+			SecretAccessKey string `json:"secretAccessKey"`
+			SessionToken    string `json:"sessionToken,omitempty"`
+		}{
+			Type:            u.Type,
+			Region:          u.Region,
+			AccessKeyID:     u.AccessKeyID,
+			SecretAccessKey: u.SecretAccessKey,
+			SessionToken:    u.SessionToken,
+		})
+	}
+	type plain LoginAccountParams
+	return json.Marshal(plain(u))
+}
+
 // LoginAccountResponse mirrors the upstream `LoginAccountResponse` definition.
 //
 // Upstream declares it as a `type`-tagged union of 5 variants (amazonBedrock, apiKey, chatgpt, chatgptAuthTokens, chatgptDeviceCode).
@@ -1878,6 +2491,55 @@ const (
 	LoginAccountResponseTypeChatgptAuthTokens = "chatgptAuthTokens"
 	LoginAccountResponseTypeAmazonBedrock     = "amazonBedrock"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u LoginAccountResponse) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case LoginAccountResponseTypeAPIKey:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case LoginAccountResponseTypeChatgpt:
+		return json.Marshal(struct {
+			Type    string `json:"type"`
+			AuthURL string `json:"authUrl"`
+			LoginID string `json:"loginId"`
+		}{
+			Type:    u.Type,
+			AuthURL: u.AuthURL,
+			LoginID: u.LoginID,
+		})
+	case LoginAccountResponseTypeChatgptDeviceCode:
+		return json.Marshal(struct {
+			Type            string `json:"type"`
+			LoginID         string `json:"loginId"`
+			UserCode        string `json:"userCode"`
+			VerificationURL string `json:"verificationUrl"`
+		}{
+			Type:            u.Type,
+			LoginID:         u.LoginID,
+			UserCode:        u.UserCode,
+			VerificationURL: u.VerificationURL,
+		})
+	case LoginAccountResponseTypeChatgptAuthTokens:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case LoginAccountResponseTypeAmazonBedrock:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	}
+	type plain LoginAccountResponse
+	return json.Marshal(plain(u))
+}
 
 // LoginAppBrand mirrors the upstream `LoginAppBrand` enum.
 type LoginAppBrand string
@@ -2157,6 +2819,35 @@ const (
 	PatchChangeKindTypeUpdate = "update"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u PatchChangeKind) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case PatchChangeKindTypeAdd:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case PatchChangeKindTypeDelete:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case PatchChangeKindTypeUpdate:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			MovePath string `json:"move_path,omitempty"`
+		}{
+			Type:     u.Type,
+			MovePath: u.MovePath,
+		})
+	}
+	type plain PatchChangeKind
+	return json.Marshal(plain(u))
+}
+
 // PermissionProfileListParams mirrors the upstream `PermissionProfileListParams` definition.
 type PermissionProfileListParams struct {
 	Cursor string `json:"cursor,omitempty"`
@@ -2330,6 +3021,31 @@ const (
 	ReasoningItemContentTypeText          = "text"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ReasoningItemContent) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ReasoningItemContentTypeReasoningText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	case ReasoningItemContentTypeText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	}
+	type plain ReasoningItemContent
+	return json.Marshal(plain(u))
+}
+
 // ReasoningItemReasoningSummary mirrors the upstream `ReasoningItemReasoningSummary` definition.
 //
 // Upstream declares it as a `type`-tagged union of 1 variants (summary_text).
@@ -2348,6 +3064,23 @@ type ReasoningItemReasoningSummary struct {
 const (
 	ReasoningItemReasoningSummaryTypeSummaryText = "summary_text"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ReasoningItemReasoningSummary) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ReasoningItemReasoningSummaryTypeSummaryText:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			Text: u.Text,
+		})
+	}
+	type plain ReasoningItemReasoningSummary
+	return json.Marshal(plain(u))
+}
 
 // ReasoningSummary mirrors the upstream `ReasoningSummary` enum.
 type ReasoningSummary string
@@ -2549,6 +3282,275 @@ const (
 	ResponseItemTypeOther                = "other"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ResponseItem) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ResponseItemTypeAdditionalTools:
+		return json.Marshal(struct {
+			Type  string            `json:"type"`
+			ID    string            `json:"id,omitempty"`
+			Role  string            `json:"role"`
+			Tools []json.RawMessage `json:"tools"`
+		}{
+			Type:  u.Type,
+			ID:    u.ID,
+			Role:  u.Role,
+			Tools: u.Tools,
+		})
+	case ResponseItemTypeMessage:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			Role                                   string                                 `json:"role"`
+			Content                                json.RawMessage                        `json:"content"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Phase                                  MessagePhase                           `json:"phase,omitempty"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			Role:                                   u.Role,
+			Content:                                u.Content,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Phase:                                  u.Phase,
+		})
+	case ResponseItemTypeAgentMessage:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			Content                                json.RawMessage                        `json:"content"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Author                                 string                                 `json:"author"`
+			Recipient                              string                                 `json:"recipient"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			Content:                                u.Content,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Author:                                 u.Author,
+			Recipient:                              u.Recipient,
+		})
+	case ResponseItemTypeReasoning:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			Content                                json.RawMessage                        `json:"content,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
+			Summary                                []ReasoningItemReasoningSummary        `json:"summary"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			Content:                                u.Content,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			EncryptedContent:                       u.EncryptedContent,
+			Summary:                                u.Summary,
+		})
+	case ResponseItemTypeLocalShellCall:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Action                                 json.RawMessage                        `json:"action"`
+			CallID                                 string                                 `json:"call_id,omitempty"`
+			Status                                 json.RawMessage                        `json:"status"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Action:                                 u.Action,
+			CallID:                                 u.CallID,
+			Status:                                 u.Status,
+		})
+	case ResponseItemTypeFunctionCall:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			CallID                                 string                                 `json:"call_id"`
+			Arguments                              json.RawMessage                        `json:"arguments"`
+			EncryptedFunctionArgs                  []string                               `json:"encrypted_function_args,omitempty"`
+			Name                                   string                                 `json:"name"`
+			Namespace                              string                                 `json:"namespace,omitempty"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			CallID:                                 u.CallID,
+			Arguments:                              u.Arguments,
+			EncryptedFunctionArgs:                  u.EncryptedFunctionArgs,
+			Name:                                   u.Name,
+			Namespace:                              u.Namespace,
+		})
+	case ResponseItemTypeToolSearchCall:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			CallID                                 string                                 `json:"call_id,omitempty"`
+			Status                                 json.RawMessage                        `json:"status,omitempty"`
+			Arguments                              json.RawMessage                        `json:"arguments"`
+			Execution                              string                                 `json:"execution"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			CallID:                                 u.CallID,
+			Status:                                 u.Status,
+			Arguments:                              u.Arguments,
+			Execution:                              u.Execution,
+		})
+	case ResponseItemTypeFunctionCallOutput:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			CallID                                 string                                 `json:"call_id,omitempty"`
+			Name                                   string                                 `json:"name,omitempty"`
+			Namespace                              string                                 `json:"namespace,omitempty"`
+			Output                                 FunctionCallOutputBody                 `json:"output"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			CallID:                                 u.CallID,
+			Name:                                   u.Name,
+			Namespace:                              u.Namespace,
+			Output:                                 u.Output,
+		})
+	case ResponseItemTypeCustomToolCall:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			CallID                                 string                                 `json:"call_id"`
+			Status                                 json.RawMessage                        `json:"status,omitempty"`
+			Name                                   string                                 `json:"name"`
+			Namespace                              string                                 `json:"namespace,omitempty"`
+			Input                                  string                                 `json:"input"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			CallID:                                 u.CallID,
+			Status:                                 u.Status,
+			Name:                                   u.Name,
+			Namespace:                              u.Namespace,
+			Input:                                  u.Input,
+		})
+	case ResponseItemTypeCustomToolCallOutput:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			CallID                                 string                                 `json:"call_id"`
+			Name                                   string                                 `json:"name,omitempty"`
+			Output                                 FunctionCallOutputBody                 `json:"output"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			CallID:                                 u.CallID,
+			Name:                                   u.Name,
+			Output:                                 u.Output,
+		})
+	case ResponseItemTypeToolSearchOutput:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			Tools                                  []json.RawMessage                      `json:"tools"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			CallID                                 string                                 `json:"call_id,omitempty"`
+			Status                                 json.RawMessage                        `json:"status"`
+			Execution                              string                                 `json:"execution"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			Tools:                                  u.Tools,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			CallID:                                 u.CallID,
+			Status:                                 u.Status,
+			Execution:                              u.Execution,
+		})
+	case ResponseItemTypeWebSearchCall:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Action                                 json.RawMessage                        `json:"action,omitempty"`
+			Status                                 json.RawMessage                        `json:"status,omitempty"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Action:                                 u.Action,
+			Status:                                 u.Status,
+		})
+	case ResponseItemTypeImageGenerationCall:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Status                                 json.RawMessage                        `json:"status"`
+			Result                                 string                                 `json:"result"`
+			RevisedPrompt                          string                                 `json:"revised_prompt,omitempty"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Status:                                 u.Status,
+			Result:                                 u.Result,
+			RevisedPrompt:                          u.RevisedPrompt,
+		})
+	case ResponseItemTypeCompaction:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			EncryptedContent:                       u.EncryptedContent,
+		})
+	case ResponseItemTypeConfigurationUpdate:
+		return json.Marshal(struct {
+			Type      string                 `json:"type"`
+			Reasoning ConfigurationReasoning `json:"reasoning"`
+		}{
+			Type:      u.Type,
+			Reasoning: u.Reasoning,
+		})
+	case ResponseItemTypeCompactionTrigger:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case ResponseItemTypeContextCompaction:
+		return json.Marshal(struct {
+			Type                                   string                                 `json:"type"`
+			ID                                     string                                 `json:"id,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
+		}{
+			Type:                                   u.Type,
+			ID:                                     u.ID,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			EncryptedContent:                       u.EncryptedContent,
+		})
+	case ResponseItemTypeOther:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	}
+	type plain ResponseItem
+	return json.Marshal(plain(u))
+}
+
 // ResponseUsageMetadata mirrors the upstream `ResponseUsageMetadata` definition.
 type ResponseUsageMetadata struct {
 	Amount   string          `json:"amount,omitempty"`
@@ -2579,6 +3581,49 @@ const (
 	ResponsesApiWebSearchActionTypeFindInPage = "find_in_page"
 	ResponsesApiWebSearchActionTypeOther      = "other"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ResponsesApiWebSearchAction) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ResponsesApiWebSearchActionTypeSearch:
+		return json.Marshal(struct {
+			Type    string   `json:"type"`
+			Queries []string `json:"queries,omitempty"`
+			Query   string   `json:"query,omitempty"`
+		}{
+			Type:    u.Type,
+			Queries: u.Queries,
+			Query:   u.Query,
+		})
+	case ResponsesApiWebSearchActionTypeOpenPage:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			URL  string `json:"url,omitempty"`
+		}{
+			Type: u.Type,
+			URL:  u.URL,
+		})
+	case ResponsesApiWebSearchActionTypeFindInPage:
+		return json.Marshal(struct {
+			Type    string `json:"type"`
+			URL     string `json:"url,omitempty"`
+			Pattern string `json:"pattern,omitempty"`
+		}{
+			Type:    u.Type,
+			URL:     u.URL,
+			Pattern: u.Pattern,
+		})
+	case ResponsesApiWebSearchActionTypeOther:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	}
+	type plain ResponsesApiWebSearchAction
+	return json.Marshal(plain(u))
+}
 
 // ReviewDelivery mirrors the upstream `ReviewDelivery` enum.
 type ReviewDelivery string
@@ -2619,6 +3664,47 @@ const (
 	ReviewTargetTypeCustom             = "custom"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ReviewTarget) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ReviewTargetTypeUncommittedChanges:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case ReviewTargetTypeBaseBranch:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			Branch string `json:"branch"`
+		}{
+			Type:   u.Type,
+			Branch: u.Branch,
+		})
+	case ReviewTargetTypeCommit:
+		return json.Marshal(struct {
+			Type  string `json:"type"`
+			Sha   string `json:"sha"`
+			Title string `json:"title,omitempty"`
+		}{
+			Type:  u.Type,
+			Sha:   u.Sha,
+			Title: u.Title,
+		})
+	case ReviewTargetTypeCustom:
+		return json.Marshal(struct {
+			Type         string `json:"type"`
+			Instructions string `json:"instructions"`
+		}{
+			Type:         u.Type,
+			Instructions: u.Instructions,
+		})
+	}
+	type plain ReviewTarget
+	return json.Marshal(plain(u))
+}
+
 // SandboxMode mirrors the upstream `SandboxMode` enum.
 type SandboxMode string
 
@@ -2652,6 +3738,51 @@ const (
 	SandboxPolicyTypeExternalSandbox  = "externalSandbox"
 	SandboxPolicyTypeWorkspaceWrite   = "workspaceWrite"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u SandboxPolicy) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case SandboxPolicyTypeDangerFullAccess:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	case SandboxPolicyTypeReadOnly:
+		return json.Marshal(struct {
+			Type          string          `json:"type"`
+			NetworkAccess json.RawMessage `json:"networkAccess,omitempty"`
+		}{
+			Type:          u.Type,
+			NetworkAccess: u.NetworkAccess,
+		})
+	case SandboxPolicyTypeExternalSandbox:
+		return json.Marshal(struct {
+			Type          string          `json:"type"`
+			NetworkAccess json.RawMessage `json:"networkAccess,omitempty"`
+		}{
+			Type:          u.Type,
+			NetworkAccess: u.NetworkAccess,
+		})
+	case SandboxPolicyTypeWorkspaceWrite:
+		return json.Marshal(struct {
+			Type                string            `json:"type"`
+			NetworkAccess       json.RawMessage   `json:"networkAccess,omitempty"`
+			ExcludeSlashTmp     bool              `json:"excludeSlashTmp,omitempty"`
+			ExcludeTmpdirEnvVar bool              `json:"excludeTmpdirEnvVar,omitempty"`
+			WritableRoots       []AbsolutePathBuf `json:"writableRoots,omitempty"`
+		}{
+			Type:                u.Type,
+			NetworkAccess:       u.NetworkAccess,
+			ExcludeSlashTmp:     u.ExcludeSlashTmp,
+			ExcludeTmpdirEnvVar: u.ExcludeTmpdirEnvVar,
+			WritableRoots:       u.WritableRoots,
+		})
+	}
+	type plain SandboxPolicy
+	return json.Marshal(plain(u))
+}
 
 // SandboxWorkspaceWrite mirrors the upstream `SandboxWorkspaceWrite` definition.
 type SandboxWorkspaceWrite struct {
@@ -3037,6 +4168,38 @@ type TextRange struct {
 	Start TextPosition `json:"start"`
 }
 
+// Thread mirrors the upstream `Thread` definition.
+type Thread struct {
+	AgentNickname    string            `json:"agentNickname,omitempty"`
+	AgentRole        string            `json:"agentRole,omitempty"`
+	CliVersion       string            `json:"cliVersion"`
+	CreatedAt        int64             `json:"createdAt"`
+	CWD              AbsolutePathBuf   `json:"cwd"`
+	Ephemeral        bool              `json:"ephemeral"`
+	ForkedFromID     string            `json:"forkedFromId,omitempty"`
+	GitInfo          *GitInfo          `json:"gitInfo,omitempty"`
+	HistoryMode      ThreadHistoryMode `json:"historyMode,omitempty"`
+	ID               string            `json:"id"`
+	Model            string            `json:"model,omitempty"`
+	ModelProvider    string            `json:"modelProvider"`
+	Name             string            `json:"name,omitempty"`
+	Originator       string            `json:"originator,omitempty"`
+	ParentThreadID   string            `json:"parentThreadId,omitempty"`
+	Path             string            `json:"path,omitempty"`
+	Preview          string            `json:"preview"`
+	ProjectID        string            `json:"projectId"`
+	ReasoningEffort  *ReasoningEffort  `json:"reasoningEffort,omitempty"`
+	RecencyAt        int64             `json:"recencyAt,omitempty"`
+	Section          *ThreadSection    `json:"section,omitempty"`
+	SectionEnteredAt int64             `json:"sectionEnteredAt,omitempty"`
+	SessionID        string            `json:"sessionId"`
+	Source           SessionSource     `json:"source"`
+	Status           ThreadStatus      `json:"status"`
+	ThreadSource     *ThreadSource     `json:"threadSource,omitempty"`
+	Turns            []Turn            `json:"turns"`
+	UpdatedAt        int64             `json:"updatedAt"`
+}
+
 // ThreadActiveFlag mirrors the upstream `ThreadActiveFlag` enum.
 type ThreadActiveFlag string
 
@@ -3299,6 +4462,401 @@ type ThreadInjectItemsParams struct {
 // ThreadInjectItemsResponse mirrors the upstream `ThreadInjectItemsResponse` definition.
 type ThreadInjectItemsResponse = struct{}
 
+// ThreadItem mirrors the upstream `ThreadItem` definition.
+//
+// Upstream declares it as a `type`-tagged union of 19 variants (agentMessage, collabAgentToolCall, commandExecution, contextCompaction, dynamicToolCall, enteredReviewMode, exitedReviewMode, fileChange, functionCallOutput, hookPrompt, imageGeneration, imageView, mcpToolCall, plan, reasoning, sleep, subAgentActivity, userMessage, webSearch).
+// It is modelled as one flat struct with an explicit Type discriminator
+// plus the union of every variant's fields, so no field is dropped and no variant is
+// rejected.
+//
+// Fields that disagree in type across variants, or that are themselves unions, are passed
+// through as json.RawMessage rather than guessed at.
+type ThreadItem struct {
+	Type                  string                             `json:"type"`
+	ClientID              string                             `json:"clientId,omitempty"`
+	Content               json.RawMessage                    `json:"content,omitempty"`
+	ID                    string                             `json:"id,omitempty"`
+	Fragments             []HookPromptFragment               `json:"fragments,omitempty"`
+	Delivery              AgentMessageDelivery               `json:"delivery,omitempty"`
+	MemoryCitation        MemoryCitation                     `json:"memoryCitation,omitempty"`
+	Phase                 MessagePhase                       `json:"phase,omitempty"`
+	Questions             []AsyncUserInputQuestion           `json:"questions,omitempty"`
+	Text                  string                             `json:"text,omitempty"`
+	Name                  string                             `json:"name,omitempty"`
+	Namespace             string                             `json:"namespace,omitempty"`
+	Output                FunctionCallOutputBody             `json:"output,omitempty"`
+	Summary               []string                           `json:"summary,omitempty"`
+	AggregatedOutput      string                             `json:"aggregatedOutput,omitempty"`
+	Command               string                             `json:"command,omitempty"`
+	CommandActions        []CommandAction                    `json:"commandActions,omitempty"`
+	CWD                   LegacyAppPathString                `json:"cwd,omitempty"`
+	DurationMs            int64                              `json:"durationMs,omitempty"`
+	ExitCode              int64                              `json:"exitCode,omitempty"`
+	PluginID              string                             `json:"pluginId,omitempty"`
+	ProcessID             string                             `json:"processId,omitempty"`
+	ScriptPath            string                             `json:"scriptPath,omitempty"`
+	Source                CommandExecutionSource             `json:"source,omitempty"`
+	Status                json.RawMessage                    `json:"status,omitempty"`
+	Changes               []FileUpdateChange                 `json:"changes,omitempty"`
+	AppContext            McpToolCallAppContext              `json:"appContext,omitempty"`
+	Arguments             json.RawMessage                    `json:"arguments,omitempty"`
+	Error                 McpToolCallError                   `json:"error,omitempty"`
+	McpAppResourceURI     string                             `json:"mcpAppResourceUri,omitempty"`
+	McpAppUI              McpAppUi                           `json:"mcpAppUi,omitempty"`
+	ReadOnlyHint          bool                               `json:"readOnlyHint,omitempty"`
+	Result                json.RawMessage                    `json:"result,omitempty"`
+	Server                string                             `json:"server,omitempty"`
+	Tool                  json.RawMessage                    `json:"tool,omitempty"`
+	ContentItems          []DynamicToolCallOutputContentItem `json:"contentItems,omitempty"`
+	Success               bool                               `json:"success,omitempty"`
+	AgentsStates          map[string]CollabAgentState        `json:"agentsStates,omitempty"`
+	Model                 string                             `json:"model,omitempty"`
+	Prompt                string                             `json:"prompt,omitempty"`
+	ReasoningEffort       ReasoningEffort                    `json:"reasoningEffort,omitempty"`
+	ReceiverThreadIDs     []string                           `json:"receiverThreadIds,omitempty"`
+	SenderThreadID        string                             `json:"senderThreadId,omitempty"`
+	AgentPath             string                             `json:"agentPath,omitempty"`
+	AgentThreadID         string                             `json:"agentThreadId,omitempty"`
+	Kind                  SubAgentActivityKind               `json:"kind,omitempty"`
+	Action                WebSearchAction                    `json:"action,omitempty"`
+	Query                 string                             `json:"query,omitempty"`
+	Results               []json.RawMessage                  `json:"results,omitempty"`
+	Path                  LegacyAppPathString                `json:"path,omitempty"`
+	Failure               ImageGenerationFailure             `json:"failure,omitempty"`
+	RevisedPrompt         string                             `json:"revisedPrompt,omitempty"`
+	SavedPath             AbsolutePathBuf                    `json:"savedPath,omitempty"`
+	TransparentBackground bool                               `json:"transparentBackground,omitempty"`
+	Review                string                             `json:"review,omitempty"`
+}
+
+// ThreadItem discriminator values, matching the upstream variant tags.
+const (
+	ThreadItemTypeUserMessage         = "userMessage"
+	ThreadItemTypeHookPrompt          = "hookPrompt"
+	ThreadItemTypeAgentMessage        = "agentMessage"
+	ThreadItemTypeFunctionCallOutput  = "functionCallOutput"
+	ThreadItemTypePlan                = "plan"
+	ThreadItemTypeReasoning           = "reasoning"
+	ThreadItemTypeCommandExecution    = "commandExecution"
+	ThreadItemTypeFileChange          = "fileChange"
+	ThreadItemTypeMcpToolCall         = "mcpToolCall"
+	ThreadItemTypeDynamicToolCall     = "dynamicToolCall"
+	ThreadItemTypeCollabAgentToolCall = "collabAgentToolCall"
+	ThreadItemTypeSubAgentActivity    = "subAgentActivity"
+	ThreadItemTypeWebSearch           = "webSearch"
+	ThreadItemTypeImageView           = "imageView"
+	ThreadItemTypeSleep               = "sleep"
+	ThreadItemTypeImageGeneration     = "imageGeneration"
+	ThreadItemTypeEnteredReviewMode   = "enteredReviewMode"
+	ThreadItemTypeExitedReviewMode    = "exitedReviewMode"
+	ThreadItemTypeContextCompaction   = "contextCompaction"
+)
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ThreadItem) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ThreadItemTypeUserMessage:
+		return json.Marshal(struct {
+			Type     string          `json:"type"`
+			ClientID string          `json:"clientId,omitempty"`
+			Content  json.RawMessage `json:"content"`
+			ID       string          `json:"id"`
+		}{
+			Type:     u.Type,
+			ClientID: u.ClientID,
+			Content:  u.Content,
+			ID:       u.ID,
+		})
+	case ThreadItemTypeHookPrompt:
+		return json.Marshal(struct {
+			Type      string               `json:"type"`
+			ID        string               `json:"id"`
+			Fragments []HookPromptFragment `json:"fragments"`
+		}{
+			Type:      u.Type,
+			ID:        u.ID,
+			Fragments: u.Fragments,
+		})
+	case ThreadItemTypeAgentMessage:
+		return json.Marshal(struct {
+			Type           string                   `json:"type"`
+			ID             string                   `json:"id"`
+			Delivery       AgentMessageDelivery     `json:"delivery,omitempty"`
+			MemoryCitation MemoryCitation           `json:"memoryCitation,omitempty"`
+			Phase          MessagePhase             `json:"phase,omitempty"`
+			Questions      []AsyncUserInputQuestion `json:"questions,omitempty"`
+			Text           string                   `json:"text"`
+		}{
+			Type:           u.Type,
+			ID:             u.ID,
+			Delivery:       u.Delivery,
+			MemoryCitation: u.MemoryCitation,
+			Phase:          u.Phase,
+			Questions:      u.Questions,
+			Text:           u.Text,
+		})
+	case ThreadItemTypeFunctionCallOutput:
+		return json.Marshal(struct {
+			Type      string                 `json:"type"`
+			ID        string                 `json:"id"`
+			Name      string                 `json:"name"`
+			Namespace string                 `json:"namespace,omitempty"`
+			Output    FunctionCallOutputBody `json:"output"`
+		}{
+			Type:      u.Type,
+			ID:        u.ID,
+			Name:      u.Name,
+			Namespace: u.Namespace,
+			Output:    u.Output,
+		})
+	case ThreadItemTypePlan:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			ID   string `json:"id"`
+			Text string `json:"text"`
+		}{
+			Type: u.Type,
+			ID:   u.ID,
+			Text: u.Text,
+		})
+	case ThreadItemTypeReasoning:
+		return json.Marshal(struct {
+			Type    string          `json:"type"`
+			Content json.RawMessage `json:"content,omitempty"`
+			ID      string          `json:"id"`
+			Summary []string        `json:"summary,omitempty"`
+		}{
+			Type:    u.Type,
+			Content: u.Content,
+			ID:      u.ID,
+			Summary: u.Summary,
+		})
+	case ThreadItemTypeCommandExecution:
+		return json.Marshal(struct {
+			Type             string                 `json:"type"`
+			ID               string                 `json:"id"`
+			AggregatedOutput string                 `json:"aggregatedOutput,omitempty"`
+			Command          string                 `json:"command"`
+			CommandActions   []CommandAction        `json:"commandActions"`
+			CWD              LegacyAppPathString    `json:"cwd"`
+			DurationMs       int64                  `json:"durationMs,omitempty"`
+			ExitCode         int64                  `json:"exitCode,omitempty"`
+			PluginID         string                 `json:"pluginId,omitempty"`
+			ProcessID        string                 `json:"processId,omitempty"`
+			ScriptPath       string                 `json:"scriptPath,omitempty"`
+			Source           CommandExecutionSource `json:"source,omitempty"`
+			Status           json.RawMessage        `json:"status"`
+		}{
+			Type:             u.Type,
+			ID:               u.ID,
+			AggregatedOutput: u.AggregatedOutput,
+			Command:          u.Command,
+			CommandActions:   u.CommandActions,
+			CWD:              u.CWD,
+			DurationMs:       u.DurationMs,
+			ExitCode:         u.ExitCode,
+			PluginID:         u.PluginID,
+			ProcessID:        u.ProcessID,
+			ScriptPath:       u.ScriptPath,
+			Source:           u.Source,
+			Status:           u.Status,
+		})
+	case ThreadItemTypeFileChange:
+		return json.Marshal(struct {
+			Type    string             `json:"type"`
+			ID      string             `json:"id"`
+			Status  json.RawMessage    `json:"status"`
+			Changes []FileUpdateChange `json:"changes"`
+		}{
+			Type:    u.Type,
+			ID:      u.ID,
+			Status:  u.Status,
+			Changes: u.Changes,
+		})
+	case ThreadItemTypeMcpToolCall:
+		return json.Marshal(struct {
+			Type              string                `json:"type"`
+			ID                string                `json:"id"`
+			DurationMs        int64                 `json:"durationMs,omitempty"`
+			PluginID          string                `json:"pluginId,omitempty"`
+			Status            json.RawMessage       `json:"status"`
+			AppContext        McpToolCallAppContext `json:"appContext,omitempty"`
+			Arguments         json.RawMessage       `json:"arguments"`
+			Error             McpToolCallError      `json:"error,omitempty"`
+			McpAppResourceURI string                `json:"mcpAppResourceUri,omitempty"`
+			McpAppUI          McpAppUi              `json:"mcpAppUi,omitempty"`
+			ReadOnlyHint      bool                  `json:"readOnlyHint,omitempty"`
+			Result            json.RawMessage       `json:"result,omitempty"`
+			Server            string                `json:"server"`
+			Tool              json.RawMessage       `json:"tool"`
+		}{
+			Type:              u.Type,
+			ID:                u.ID,
+			DurationMs:        u.DurationMs,
+			PluginID:          u.PluginID,
+			Status:            u.Status,
+			AppContext:        u.AppContext,
+			Arguments:         u.Arguments,
+			Error:             u.Error,
+			McpAppResourceURI: u.McpAppResourceURI,
+			McpAppUI:          u.McpAppUI,
+			ReadOnlyHint:      u.ReadOnlyHint,
+			Result:            u.Result,
+			Server:            u.Server,
+			Tool:              u.Tool,
+		})
+	case ThreadItemTypeDynamicToolCall:
+		return json.Marshal(struct {
+			Type         string                             `json:"type"`
+			ID           string                             `json:"id"`
+			Namespace    string                             `json:"namespace,omitempty"`
+			DurationMs   int64                              `json:"durationMs,omitempty"`
+			Status       json.RawMessage                    `json:"status"`
+			Arguments    json.RawMessage                    `json:"arguments"`
+			Tool         json.RawMessage                    `json:"tool"`
+			ContentItems []DynamicToolCallOutputContentItem `json:"contentItems,omitempty"`
+			Success      bool                               `json:"success,omitempty"`
+		}{
+			Type:         u.Type,
+			ID:           u.ID,
+			Namespace:    u.Namespace,
+			DurationMs:   u.DurationMs,
+			Status:       u.Status,
+			Arguments:    u.Arguments,
+			Tool:         u.Tool,
+			ContentItems: u.ContentItems,
+			Success:      u.Success,
+		})
+	case ThreadItemTypeCollabAgentToolCall:
+		return json.Marshal(struct {
+			Type              string                      `json:"type"`
+			ID                string                      `json:"id"`
+			Status            json.RawMessage             `json:"status"`
+			Tool              json.RawMessage             `json:"tool"`
+			AgentsStates      map[string]CollabAgentState `json:"agentsStates"`
+			Model             string                      `json:"model,omitempty"`
+			Prompt            string                      `json:"prompt,omitempty"`
+			ReasoningEffort   ReasoningEffort             `json:"reasoningEffort,omitempty"`
+			ReceiverThreadIDs []string                    `json:"receiverThreadIds"`
+			SenderThreadID    string                      `json:"senderThreadId"`
+		}{
+			Type:              u.Type,
+			ID:                u.ID,
+			Status:            u.Status,
+			Tool:              u.Tool,
+			AgentsStates:      u.AgentsStates,
+			Model:             u.Model,
+			Prompt:            u.Prompt,
+			ReasoningEffort:   u.ReasoningEffort,
+			ReceiverThreadIDs: u.ReceiverThreadIDs,
+			SenderThreadID:    u.SenderThreadID,
+		})
+	case ThreadItemTypeSubAgentActivity:
+		return json.Marshal(struct {
+			Type            string               `json:"type"`
+			ID              string               `json:"id"`
+			Model           string               `json:"model,omitempty"`
+			ReasoningEffort ReasoningEffort      `json:"reasoningEffort,omitempty"`
+			AgentPath       string               `json:"agentPath"`
+			AgentThreadID   string               `json:"agentThreadId"`
+			Kind            SubAgentActivityKind `json:"kind"`
+		}{
+			Type:            u.Type,
+			ID:              u.ID,
+			Model:           u.Model,
+			ReasoningEffort: u.ReasoningEffort,
+			AgentPath:       u.AgentPath,
+			AgentThreadID:   u.AgentThreadID,
+			Kind:            u.Kind,
+		})
+	case ThreadItemTypeWebSearch:
+		return json.Marshal(struct {
+			Type    string            `json:"type"`
+			ID      string            `json:"id"`
+			Action  WebSearchAction   `json:"action,omitempty"`
+			Query   string            `json:"query"`
+			Results []json.RawMessage `json:"results,omitempty"`
+		}{
+			Type:    u.Type,
+			ID:      u.ID,
+			Action:  u.Action,
+			Query:   u.Query,
+			Results: u.Results,
+		})
+	case ThreadItemTypeImageView:
+		return json.Marshal(struct {
+			Type string              `json:"type"`
+			ID   string              `json:"id"`
+			Path LegacyAppPathString `json:"path"`
+		}{
+			Type: u.Type,
+			ID:   u.ID,
+			Path: u.Path,
+		})
+	case ThreadItemTypeSleep:
+		return json.Marshal(struct {
+			Type       string `json:"type"`
+			ID         string `json:"id"`
+			DurationMs int64  `json:"durationMs"`
+		}{
+			Type:       u.Type,
+			ID:         u.ID,
+			DurationMs: u.DurationMs,
+		})
+	case ThreadItemTypeImageGeneration:
+		return json.Marshal(struct {
+			Type                  string                 `json:"type"`
+			ID                    string                 `json:"id"`
+			Status                json.RawMessage        `json:"status"`
+			Result                json.RawMessage        `json:"result"`
+			Failure               ImageGenerationFailure `json:"failure,omitempty"`
+			RevisedPrompt         string                 `json:"revisedPrompt,omitempty"`
+			SavedPath             AbsolutePathBuf        `json:"savedPath,omitempty"`
+			TransparentBackground bool                   `json:"transparentBackground,omitempty"`
+		}{
+			Type:                  u.Type,
+			ID:                    u.ID,
+			Status:                u.Status,
+			Result:                u.Result,
+			Failure:               u.Failure,
+			RevisedPrompt:         u.RevisedPrompt,
+			SavedPath:             u.SavedPath,
+			TransparentBackground: u.TransparentBackground,
+		})
+	case ThreadItemTypeEnteredReviewMode:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			ID     string `json:"id"`
+			Review string `json:"review"`
+		}{
+			Type:   u.Type,
+			ID:     u.ID,
+			Review: u.Review,
+		})
+	case ThreadItemTypeExitedReviewMode:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			ID     string `json:"id"`
+			Review string `json:"review"`
+		}{
+			Type:   u.Type,
+			ID:     u.ID,
+			Review: u.Review,
+		})
+	case ThreadItemTypeContextCompaction:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			ID   string `json:"id"`
+		}{
+			Type: u.Type,
+			ID:   u.ID,
+		})
+	}
+	type plain ThreadItem
+	return json.Marshal(plain(u))
+}
+
 // ThreadItemEntry mirrors the upstream `ThreadItemEntry` definition.
 type ThreadItemEntry struct {
 	CompletedAtMs int64      `json:"completedAtMs,omitempty"`
@@ -3325,6 +4883,23 @@ type ThreadItemsListAnchor struct {
 const (
 	ThreadItemsListAnchorTypeItem = "item"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ThreadItemsListAnchor) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ThreadItemsListAnchorTypeItem:
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			ItemID string `json:"itemId"`
+		}{
+			Type:   u.Type,
+			ItemID: u.ItemID,
+		})
+	}
+	type plain ThreadItemsListAnchor
+	return json.Marshal(plain(u))
+}
 
 // ThreadItemsListCursor is a union of a string, a ThreadItemsListAnchor.
 //
@@ -3935,6 +5510,83 @@ const (
 	UserInputTypeMention    = "mention"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u UserInput) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case UserInputTypeText:
+		return json.Marshal(struct {
+			Type         string        `json:"type"`
+			Text         string        `json:"text"`
+			TextElements []TextElement `json:"text_elements,omitempty"`
+		}{
+			Type:         u.Type,
+			Text:         u.Text,
+			TextElements: u.TextElements,
+		})
+	case UserInputTypeImage:
+		return json.Marshal(struct {
+			Type   string      `json:"type"`
+			URL    string      `json:"url,omitempty"`
+			FileID string      `json:"fileId,omitempty"`
+			Detail ImageDetail `json:"detail,omitempty"`
+		}{
+			Type:   u.Type,
+			URL:    u.URL,
+			FileID: u.FileID,
+			Detail: u.Detail,
+		})
+	case UserInputTypeLocalImage:
+		return json.Marshal(struct {
+			Type   string      `json:"type"`
+			Detail ImageDetail `json:"detail,omitempty"`
+			Path   string      `json:"path"`
+		}{
+			Type:   u.Type,
+			Detail: u.Detail,
+			Path:   u.Path,
+		})
+	case UserInputTypeAudio:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			URL  string `json:"url"`
+		}{
+			Type: u.Type,
+			URL:  u.URL,
+		})
+	case UserInputTypeLocalAudio:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Path string `json:"path"`
+		}{
+			Type: u.Type,
+			Path: u.Path,
+		})
+	case UserInputTypeSkill:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Path string `json:"path"`
+			Name string `json:"name"`
+		}{
+			Type: u.Type,
+			Path: u.Path,
+			Name: u.Name,
+		})
+	case UserInputTypeMention:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Path string `json:"path"`
+			Name string `json:"name"`
+		}{
+			Type: u.Type,
+			Path: u.Path,
+			Name: u.Name,
+		})
+	}
+	type plain UserInput
+	return json.Marshal(plain(u))
+}
+
 // Verbosity mirrors the upstream `Verbosity` enum.
 type Verbosity string
 
@@ -3974,6 +5626,49 @@ const (
 	WebSearchActionTypeFindInPage = "findInPage"
 	WebSearchActionTypeOther      = "other"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u WebSearchAction) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case WebSearchActionTypeSearch:
+		return json.Marshal(struct {
+			Type    string   `json:"type"`
+			Queries []string `json:"queries,omitempty"`
+			Query   string   `json:"query,omitempty"`
+		}{
+			Type:    u.Type,
+			Queries: u.Queries,
+			Query:   u.Query,
+		})
+	case WebSearchActionTypeOpenPage:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			URL  string `json:"url,omitempty"`
+		}{
+			Type: u.Type,
+			URL:  u.URL,
+		})
+	case WebSearchActionTypeFindInPage:
+		return json.Marshal(struct {
+			Type    string `json:"type"`
+			URL     string `json:"url,omitempty"`
+			Pattern string `json:"pattern,omitempty"`
+		}{
+			Type:    u.Type,
+			URL:     u.URL,
+			Pattern: u.Pattern,
+		})
+	case WebSearchActionTypeOther:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	}
+	type plain WebSearchAction
+	return json.Marshal(plain(u))
+}
 
 // WebSearchContextSize mirrors the upstream `WebSearchContextSize` enum.
 type WebSearchContextSize string

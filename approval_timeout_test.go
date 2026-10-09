@@ -81,7 +81,46 @@ func TestApprovalTimeoutRefusesRatherThanHanging(t *testing.T) {
 	}
 }
 
-// A handler that answers in time is unaffected, and its answer is relayed.
+// lateAcceptHandler ignores its context and returns "accept" only after the deadline has
+// passed. The dispatcher must not relay that answer: it used to call the handler
+// synchronously and treat only a returned DeadlineExceeded as a timeout, so a handler that
+// ignored its context could still grant the request.
+type lateAcceptHandler struct{ delay time.Duration }
+
+func (h lateAcceptHandler) HandleCommandExecutionApproval(context.Context, codexgo.CommandExecutionApprovalRequest) (codexgo.CommandExecutionApprovalResult, error) {
+	time.Sleep(h.delay)
+	return codexgo.CommandExecutionApprovalResult{Decision: codexgo.CommandExecutionApprovalDecisionAccept}, nil
+}
+
+func TestApprovalTimeoutRejectsLateAccept(t *testing.T) {
+	dispatcher := &codexgo.Dispatcher{
+		Exec:            lateAcceptHandler{delay: 400 * time.Millisecond},
+		ApprovalTimeout: 100 * time.Millisecond,
+	}
+
+	_, mock := newClientFromMock(t, codexgo.WithRequestHandler(dispatcher))
+	time.Sleep(20 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := mock.RequestAndWait(ctx, 403, "item/commandExecution/requestApproval", map[string]any{
+		"threadId": "t-late", "turnId": "turn-late", "itemId": "i-late",
+	})
+	if err != nil {
+		t.Fatalf("RequestAndWait: %v", err)
+	}
+	var resp struct {
+		Decision string `json:"decision"`
+	}
+	if err := json.Unmarshal(result, &resp); err != nil {
+		t.Fatalf("unmarshal: %v (raw: %s)", err, result)
+	}
+	if resp.Decision != string(codexgo.CommandExecutionApprovalDecisionDecline) {
+		t.Fatalf("a late accept was relayed (%q): a timeout must never grant", resp.Decision)
+	}
+}
+
 func TestApprovalTimeoutLeavesPromptHandlersAlone(t *testing.T) {
 	dispatcher := &codexgo.Dispatcher{
 		Exec:            permissiveExecHandler{},

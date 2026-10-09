@@ -372,7 +372,23 @@ func enumFindings() []enumFinding {
 	var out []enumFinding
 	for _, name := range names {
 		values := sdk[name]
-		if _, ok := up[name]; ok {
+		if uvalues, ok := up[name]; ok {
+			// Same name upstream: compare the value sets directly. This used to `continue`
+			// on the theory that type_check covers it -- but type_check compares type NAMES
+			// only, so a value added to a same-named SDK enum was completely invisible.
+			var shared, foreign []string
+			for v := range values {
+				if _, ok := uvalues[v]; ok {
+					shared = append(shared, v)
+				} else {
+					foreign = append(foreign, v)
+				}
+			}
+			if len(foreign) > 0 {
+				sort.Strings(shared)
+				sort.Strings(foreign)
+				out = append(out, enumFinding{name, name, shared, foreign})
+			}
 			continue
 		}
 		bestName := ""
@@ -416,9 +432,13 @@ func cmdEnumValue(args []string) int {
 		fmt.Println("enum value check: no SDK enum carries values upstream does not accept")
 		return 0
 	}
-	fmt.Printf("enum value check: %d SDK enum(s) that look like an upstream concept under a different name:\n\n", len(found))
+	fmt.Printf("enum value check: %d SDK enum(s) carry values upstream does not accept:\n\n", len(found))
 	for _, f := range found {
-		fmt.Printf("  %s ~ upstream `%s`\n", f.name, f.upstream)
+		if f.name == f.upstream {
+			fmt.Printf("  %s (same name upstream)\n", f.name)
+		} else {
+			fmt.Printf("  %s ~ upstream `%s`\n", f.name, f.upstream)
+		}
 		fmt.Printf("      shared : %v\n", pyStringList(f.shared))
 		fmt.Printf("      FOREIGN: %v\n", pyStringList(f.foreign))
 		if len(f.foreign) > 0 {

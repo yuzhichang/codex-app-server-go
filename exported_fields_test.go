@@ -61,7 +61,7 @@ func TestExportedStructFieldsAreNameable(t *testing.T) {
 		t.Fatalf("ThreadSourceKind = %q", kind)
 	}
 	var item codexgo.ThreadItem
-	item.Type = codexgo.ItemKindContextCompaction
+	item.Type = "contextCompaction"
 	if item.Type != "contextCompaction" {
 		t.Fatalf("ThreadItem not usable: %+v", item)
 	}

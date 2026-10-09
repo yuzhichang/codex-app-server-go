@@ -16,6 +16,28 @@ type taggedVariant struct {
 	tag       string
 	props     *oObj
 	flattened *oObj
+	// required is the set of field names this variant requires, unioned across the variant's
+	// own `required` and the `required` of any flattened (sibling anyOf/oneOf) arm.
+	required map[string]bool
+}
+
+// armRequired collects the field names a tagged-union variant marks required.
+//
+// Only the variant's OWN `required` counts. A variant's sibling anyOf/oneOf arms (serde
+// flatten) express *alternatives* -- e.g. an image input takes a url OR a fileId -- so
+// unioning their `required` would mark both mandatory and emit an empty one alongside the
+// set one, which upstream rejects. A field is therefore kept without omitempty only when the
+// variant truly requires it.
+func armRequired(variant *oObj) map[string]bool {
+	out := map[string]bool{}
+	if arr, ok := asArr(mustGet(variant, "required")); ok {
+		for _, x := range arr {
+			if s, ok := asStr(x); ok {
+				out[s] = true
+			}
+		}
+	}
+	return out
 }
 
 func taggedUnion(spec *oObj) []taggedVariant {
@@ -56,7 +78,7 @@ func taggedUnion(spec *oObj) []taggedVariant {
 				}
 			}
 			if len(values) == 1 {
-				out = append(out, taggedVariant{field, values[0], props, flattenedProps(vo)})
+				out = append(out, taggedVariant{field, values[0], props, flattenedProps(vo), armRequired(vo)})
 				matched = true
 				break
 			}
@@ -231,6 +253,57 @@ func emitTaggedUnion(name string, variants []taggedVariant, defs map[string]any,
 		lines = append(lines, fmt.Sprintf("\t%s = \"%s\"", padRight(constName, pad), tag))
 	}
 	lines = append(lines, ")", "")
+
+	// MarshalJSON writes only the active variant's fields, so a field that variant REQUIRES is
+	// present even when it is the zero value. The flat struct tags every variant field
+	// omitempty (a single struct cannot know which variant is in effect), which would
+	// otherwise drop a required empty value -- e.g. UserInput{Type:"text", Text:""} must still
+	// send "text", and upstream rejects the payload without it. An unknown discriminator falls
+	// back to the flat struct so nothing is silently discarded.
+	lines = append(lines,
+		"// MarshalJSON writes the fields belonging to the active variant, so a field required by",
+		"// that variant survives an empty/zero value (the flat struct's omitempty would drop it).",
+		fmt.Sprintf("func (u %s) MarshalJSON() ([]byte, error) {", name),
+		fmt.Sprintf("\tswitch u.%s {", goName(tagField)),
+	)
+	for _, v := range variants {
+		lines = append(lines, fmt.Sprintf("\tcase %s%s%s:", name, goName(tagField), goName(v.tag)))
+		var armFields []string
+		for _, field := range order {
+			if field == tagField {
+				continue
+			}
+			if v.flattened.Has(field) || v.props.Has(field) {
+				armFields = append(armFields, field)
+			}
+		}
+		lines = append(lines, "\t\treturn json.Marshal(struct {")
+		lines = append(lines, fmt.Sprintf("\t\t\t%s string `json:\"%s\"`", goName(tagField), tagField))
+		for _, field := range armFields {
+			gofield := "json.RawMessage"
+			if merged[field].sig.ok {
+				gofield = merged[field].sig.typ
+			}
+			tag := field
+			if !v.required[field] {
+				tag += ",omitempty"
+			}
+			lines = append(lines, fmt.Sprintf("\t\t\t%s %s `json:\"%s\"`", goName(field), gofield, tag))
+		}
+		lines = append(lines, "\t\t}{")
+		lines = append(lines, fmt.Sprintf("\t\t\t%s: u.%s,", goName(tagField), goName(tagField)))
+		for _, field := range armFields {
+			lines = append(lines, fmt.Sprintf("\t\t\t%s: u.%s,", goName(field), goName(field)))
+		}
+		lines = append(lines, "\t\t})")
+	}
+	lines = append(lines,
+		"\t}",
+		fmt.Sprintf("\ttype plain %s", name),
+		"\treturn json.Marshal(plain(u))",
+		"}",
+		"",
+	)
 	return lines
 }
 

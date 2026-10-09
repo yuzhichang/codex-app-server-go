@@ -25,7 +25,13 @@ const modelCatalogTTL = 5 * time.Minute
 
 type Client struct {
 	transport Transport
-	events    *eventBroker
+	// rawTransport is the transport without the session gate, used only by the supervisor's
+	// recovery calls (which must not wait on the barrier they are about to release).
+	rawTransport Transport
+	// gate blocks normal RPCs while the supervisor re-establishes the protocol session after a
+	// reconnect. Non-nil only when WithAutoReconnect was supplied.
+	gate   *sessionGate
+	events *eventBroker
 
 	modelMu         sync.Mutex
 	modelCatalog    map[string]struct{}
@@ -100,7 +106,7 @@ func New(opts ...Option) (*Client, error) {
 		dispatcher = d
 	}
 
-	client := &Client{transport: cfg.transport, proc: proc}
+	client := &Client{transport: cfg.transport, rawTransport: cfg.transport, proc: proc}
 	if source, ok := cfg.transport.(notificationSource); ok {
 		brokerCfg := defaultEventBrokerConfig()
 		if cfg.eventStallTimeout > 0 {
@@ -141,6 +147,17 @@ func New(opts ...Option) (*Client, error) {
 					"(such as WithReconnectingWSTransport); %T cannot", cfg.transport)
 		}
 		client.supervisor = newSessionSupervisor(client)
+		// Wrap the transport in the session gate, and let the transport arm it before it
+		// publishes a re-dialed socket, so a normal call cannot slip onto a connection that
+		// has not been re-initialized yet.
+		client.gate = newSessionGate(cfg.transport)
+		client.transport = client.gate
+		for _, candidate := range []any{cfg.innerTransport, cfg.transport} {
+			if armer, ok := candidate.(interface{ SetOnReconnect(func()) }); ok {
+				armer.SetOnReconnect(client.gate.arm)
+				break
+			}
+		}
 		if cfg.backfillTurns != nil {
 			// Set before the goroutine starts: the supervisor reads this field, so mutating
 			// it afterwards would be a data race.

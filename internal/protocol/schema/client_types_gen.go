@@ -14,7 +14,6 @@ package schema
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 )
 
 // --- Enum types ---
@@ -104,43 +103,17 @@ const (
 
 // --- Core data models (schema-faithful; runtime types with custom decoders live in protocol) ---
 
-// ThreadItem mirrors the Item definition from the schema.
-// For the full runtime type with payload encoding, see protocol.Item.
-type ThreadItem struct {
-	ID   string   `json:"id,omitempty"`
-	Type ItemKind `json:"type"`
-}
-
-// Turn mirrors the upstream Turn definition.
-// For the full runtime type with flexible time parsing, see protocol.Turn.
+// Thread and ThreadItem are generated (generated_surface.go). They used to be hand-written
+// subsets, which caused two real bugs:
 //
-// There is deliberately no Usage field: upstream Turn carries none, and turn/completed
-// sends only {threadId, turn}. Usage arrives on thread/tokenUsage/updated as
-// ThreadTokenUsage.
-// Thread mirrors the Thread definition from the schema.
-// For the full runtime type with flexible status decoding, see protocol.Thread.
-type Thread struct {
-	ID             string       `json:"id,omitempty"`
-	SessionID      string       `json:"sessionId,omitempty"`
-	ForkedFromID   string       `json:"forkedFromId,omitempty"`
-	ParentThreadID string       `json:"parentThreadId,omitempty"`
-	Preview        string       `json:"preview,omitempty"`
-	Ephemeral      bool         `json:"ephemeral,omitempty"`
-	ModelProvider  string       `json:"modelProvider,omitempty"`
-	CreatedAt      *time.Time   `json:"createdAt,omitempty"`
-	UpdatedAt      *time.Time   `json:"updatedAt,omitempty"`
-	Status         ThreadStatus `json:"status,omitempty"`
-	Path           string       `json:"path,omitempty"`
-	CWD            string       `json:"cwd,omitempty"`
-	CliVersion     string       `json:"cliVersion,omitempty"`
-	Source         string       `json:"source,omitempty"`
-	ThreadSource   string       `json:"threadSource,omitempty"`
-	AgentNickname  string       `json:"agentNickname,omitempty"`
-	AgentRole      string       `json:"agentRole,omitempty"`
-	GitInfo        *GitInfo     `json:"gitInfo,omitempty"`
-	Name           string       `json:"name,omitempty"`
-	Turns          []Turn       `json:"turns,omitempty"`
-}
+//   - ThreadItem kept only id/type, so thread/items/list and turn items dropped their bodies
+//     (text, diff, ...), and history backfilled after a reconnect could not restore message
+//     text.
+//   - Thread typed createdAt/updatedAt as *time.Time, but upstream sends integer seconds, so
+//     thread/revert failed to decode its response.
+//
+// Letting the generator own them keeps the shapes faithful; the runtime types with custom
+// decoding remain protocol.Thread / protocol.Turn / protocol.Item.
 
 // NOTE: the SDK deliberately declares NO JSON-RPC envelope types here.
 //

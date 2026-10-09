@@ -275,10 +275,10 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		hctx, cancel := d.boundHandlerContext(ctx)
-		defer cancel()
-		result, err := d.Permissions.HandlePermissionsApproval(hctx, r)
-		if errors.Is(err, context.DeadlineExceeded) {
+		result, timedOut, err := runBounded(ctx, d.ApprovalTimeout, func(hctx context.Context) (PermissionsApprovalResult, error) {
+			return d.Permissions.HandlePermissionsApproval(hctx, r)
+		})
+		if timedOut {
 			// Same answer as no handler configured: a timeout can never grant anything.
 			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
 			return serverResponseFrom(protocol.DenyPermissions())
@@ -299,10 +299,10 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		hctx, cancel := d.boundHandlerContext(ctx)
-		defer cancel()
-		result, err := d.UserInput.HandleUserInput(hctx, r)
-		if errors.Is(err, context.DeadlineExceeded) {
+		result, timedOut, err := runBounded(ctx, d.ApprovalTimeout, func(hctx context.Context) (UserInputResult, error) {
+			return d.UserInput.HandleUserInput(hctx, r)
+		})
+		if timedOut {
 			// Same answer as no handler configured: a timeout can never grant anything.
 			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
 			return serverResponseFrom(protocol.DeclineUserInput())
@@ -321,10 +321,10 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		hctx, cancel := d.boundHandlerContext(ctx)
-		defer cancel()
-		result, err := d.Exec.HandleCommandExecutionApproval(hctx, r)
-		if errors.Is(err, context.DeadlineExceeded) {
+		result, timedOut, err := runBounded(ctx, d.ApprovalTimeout, func(hctx context.Context) (CommandExecutionApprovalResult, error) {
+			return d.Exec.HandleCommandExecutionApproval(hctx, r)
+		})
+		if timedOut {
 			// Same answer as no handler configured: a timeout can never grant anything.
 			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
 			return serverResponseFrom(CommandExecutionApprovalResult{Decision: CommandExecutionApprovalDecisionDecline})
@@ -343,10 +343,10 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		hctx, cancel := d.boundHandlerContext(ctx)
-		defer cancel()
-		result, err := d.File.HandleFileChangeApproval(hctx, r)
-		if errors.Is(err, context.DeadlineExceeded) {
+		result, timedOut, err := runBounded(ctx, d.ApprovalTimeout, func(hctx context.Context) (FileChangeApprovalResult, error) {
+			return d.File.HandleFileChangeApproval(hctx, r)
+		})
+		if timedOut {
 			// Same answer as no handler configured: a timeout can never grant anything.
 			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
 			return serverResponseFrom(FileChangeApprovalResult{Decision: FileChangeApprovalDecisionDecline})
@@ -382,10 +382,10 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 		if err := json.Unmarshal(req.Params, &r); err != nil {
 			return ServerResponse{}, err
 		}
-		hctx, cancel := d.boundHandlerContext(ctx)
-		defer cancel()
-		result, err := d.Elicitation.HandleElicitation(hctx, r)
-		if errors.Is(err, context.DeadlineExceeded) {
+		result, timedOut, err := runBounded(ctx, d.ApprovalTimeout, func(hctx context.Context) (McpServerElicitationRequestResponse, error) {
+			return d.Elicitation.HandleElicitation(hctx, r)
+		})
+		if timedOut {
 			// Same answer as no handler configured: a timeout can never grant anything.
 			d.notifyUnhandled(req, "timedOut", "handler exceeded ApprovalTimeout")
 			return serverResponseFrom(protocol.DeclineElicitation())
@@ -430,12 +430,43 @@ func (d *Dispatcher) HandleServerRequest(ctx context.Context, req ServerRequest)
 //
 // The dispatcher is constructed by the caller and has no back-reference to the client, so it
 // reports through a callback the client installs on it.
-// boundHandlerContext applies ApprovalTimeout to a handler call, if one is configured.
-func (d *Dispatcher) boundHandlerContext(ctx context.Context) (context.Context, context.CancelFunc) {
-	if d == nil || d.ApprovalTimeout <= 0 {
-		return ctx, func() {}
+// runBounded runs a configured approval / user-input / elicitation handler under
+// ApprovalTimeout.
+//
+// The dispatcher -- not the handler -- owns the deadline. It used to call the handler
+// synchronously and only treat a returned context.DeadlineExceeded as a timeout, which has
+// two holes: a handler that ignores its context is never bounded at all, and one that
+// returns "accept" after the deadline (with a nil error) still grants the request. So the
+// handler runs on its own goroutine and the dispatcher returns the timeout decision the
+// moment the deadline fires, discarding whatever the handler eventually says. The buffered
+// channel lets a late handler finish and exit rather than leak.
+func runBounded[T any](ctx context.Context, timeout time.Duration, fn func(context.Context) (T, error)) (res T, timedOut bool, err error) {
+	if timeout <= 0 {
+		r, e := fn(ctx)
+		return r, false, e
 	}
-	return context.WithTimeout(ctx, d.ApprovalTimeout)
+	hctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	type outcome struct {
+		res T
+		err error
+	}
+	ch := make(chan outcome, 1)
+	go func() {
+		r, e := fn(hctx)
+		ch <- outcome{r, e}
+	}()
+	select {
+	case o := <-ch:
+		// The handler finished on its own; if it reports that it exceeded the deadline, that
+		// still counts as a timeout.
+		if errors.Is(o.err, context.DeadlineExceeded) {
+			return res, true, nil
+		}
+		return o.res, false, o.err
+	case <-hctx.Done():
+		return res, true, nil
+	}
 }
 
 func (d *Dispatcher) notifyUnhandled(req ServerRequest, action, reason string) {

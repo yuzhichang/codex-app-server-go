@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/zealbase/codex-app-server-go/internal/protocol"
 	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
 )
 
@@ -219,6 +220,9 @@ func (s *sessionSupervisor) run(ctx context.Context, signals <-chan struct{}) {
 			return
 		case <-signals:
 		}
+		// Hold normal RPCs for the whole recovery. The transport usually armed the gate already
+		// (before publishing the socket); this covers a transport that cannot.
+		s.setGate(true)
 		for {
 			s.mu.Lock()
 			s.attempt++
@@ -234,6 +238,7 @@ func (s *sessionSupervisor) run(ctx context.Context, signals <-chan struct{}) {
 				s.emit(EventMethodReconnectSucceeded, ReconnectSucceededEvent{
 					Attempt: attempt, ThreadsResumed: len(resumed), ThreadsFailed: failed,
 				})
+				s.setGate(false)
 				backoff = s.baseBackoff
 				break
 			}
@@ -262,7 +267,7 @@ func (s *sessionSupervisor) recoverOnce(ctx context.Context, attempt int) (resum
 
 	// 1. Handshake. Required even though the transport is connected: without it the server
 	//    has no session for this connection.
-	if _, err := s.client.Initialize(attemptCtx, req); err != nil {
+	if err := s.recoverInitialize(attemptCtx, req); err != nil {
 		return nil, nil, fmt.Errorf("re-initialize: %w", err)
 	}
 
@@ -270,7 +275,7 @@ func (s *sessionSupervisor) recoverOnce(ctx context.Context, attempt int) (resum
 	//    subscriptions with the connection and offers no replay, so resumption is the only
 	//    way back.
 	for _, id := range s.trackedThreads() {
-		if _, err := s.client.ThreadResume(attemptCtx, ThreadResumeParams{ThreadID: id}); err != nil {
+		if err := s.recoverResume(attemptCtx, id); err != nil {
 			// One thread that refuses to resume must not cost the others their recovery.
 			failed = append(failed, id)
 			continue
@@ -290,10 +295,14 @@ func (s *sessionSupervisor) backfill(ctx context.Context, threadID string) {
 	if s.backfillLimit <= 0 {
 		return
 	}
-	resp, err := s.client.ThreadTurnsList(ctx, ThreadTurnsListParams{
-		ThreadID: threadID,
-		Limit:    s.backfillLimit,
-	})
+	resp, err := func() (ThreadTurnsListResponse, error) {
+		var r ThreadTurnsListResponse
+		err := s.client.rawTransport.Call(ctx, protocol.MethodThreadTurnsList, ThreadTurnsListParams{
+			ThreadID: threadID,
+			Limit:    s.backfillLimit,
+		}, &r)
+		return r, err
+	}()
 	if err != nil {
 		s.emit(EventMethodReconnectFailed, ReconnectFailedEvent{
 			Attempt: s.currentAttempt(),
@@ -338,8 +347,38 @@ func turnsFromSchema(in []schematypes.Turn) ([]Turn, error) {
 	return out, nil
 }
 
-func (s *sessionSupervisor) currentAttempt() int {
-	s.mu.Lock()
+// setGate arms (armed=true) or releases the session gate. No-op when auto-reconnect is off.
+func (s *sessionSupervisor) setGate(armed bool) {
+	if s == nil || s.client == nil || s.client.gate == nil {
+		return
+	}
+	if armed {
+		s.client.gate.arm()
+	} else {
+		s.client.gate.release()
+	}
+}
+
+// recoverInitialize replays the handshake over the RAW transport. Recovery must bypass the
+// session gate: routing it through the gated transport would wait on the very barrier the
+// recovery is meant to release, and deadlock.
+func (s *sessionSupervisor) recoverInitialize(ctx context.Context, req InitializeParams) error {
+	var result InitializeResponse
+	if err := s.client.rawTransport.Call(ctx, protocol.MethodInitialize, req, &result); err != nil {
+		return err
+	}
+	return s.client.rawTransport.Notify(ctx, protocol.MethodInitialized, nil)
+}
+
+// recoverResume re-opens one thread over the RAW transport (see recoverInitialize).
+func (s *sessionSupervisor) recoverResume(ctx context.Context, threadID string) error {
+	var resp struct {
+		Thread Thread `json:"thread"`
+	}
+	return s.client.rawTransport.Call(ctx, protocol.MethodThreadResume, ThreadResumeParams{ThreadID: threadID}, &resp)
+}
+
+func (s *sessionSupervisor) currentAttempt() int {	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.attempt
 }

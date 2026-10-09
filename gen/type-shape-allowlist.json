@@ -15,19 +15,9 @@
     "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
   },
   {
-    "name": "Thread",
-    "status": "deliberate",
-    "reason": "Not reachable: the runtime type is protocol.Thread, which carries the custom UnmarshalJSON for flexible timestamps. Nothing aliases or decodes this copy."
-  },
-  {
     "name": "ThreadGoal",
     "status": "deliberate",
     "reason": "Identical JSON representation: the difference is Go type naming, pointer-vs-value, or a `= string` alias. Changing it would alter the public API without changing a single byte on the wire."
-  },
-  {
-    "name": "ThreadItem",
-    "status": "deliberate",
-    "reason": "ThreadItem is upstream a oneOf of every item variant, and the SDK only ever needs the item's id and kind -- it decodes {id, type} and ignores the rest, which is what the per-kind event types are for. Modelling the full union would add a large flat struct whose fields are all optional and which nothing reads. This only became visible once the generator could emit a struct for a union at all; before that it degraded to json.RawMessage and was never compared."
   },
   {
     "name": "ThreadListResponse",

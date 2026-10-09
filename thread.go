@@ -297,6 +297,10 @@ func (t *SessionThread) Fork(ctx context.Context, turnID string, opts ...ThreadO
 		return nil, err
 	}
 	_ = opts // reserved for future use
+	// Register the fork for auto-recovery, exactly like StartThread/ResumeThread. Without
+	// this a reconnecting client resumes only the parent, so the fork is silently left
+	// unsubscribed and never backfilled after a drop.
+	t.client.supervisor.trackThread(thread.ID)
 	return &SessionThread{client: t.client, threadID: thread.ID, release: release}, nil
 }
 

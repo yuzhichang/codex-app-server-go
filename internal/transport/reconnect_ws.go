@@ -32,6 +32,29 @@ type ReconnectingWS struct {
 
 	closedMu sync.Mutex
 	closed   bool
+
+	// onReconnect, if set, runs synchronously before a newly re-dialed socket is published to
+	// Call. It lets a session layer raise a recovery barrier first.
+	hookMu      sync.Mutex
+	onReconnect func()
+}
+
+// SetOnReconnect installs a callback invoked synchronously before a newly re-dialed socket
+// becomes visible to Call. The session layer uses it to block normal RPCs until the protocol
+// handshake has been replayed, so no call reaches a connection the server has no session for.
+func (r *ReconnectingWS) SetOnReconnect(fn func()) {
+	r.hookMu.Lock()
+	r.onReconnect = fn
+	r.hookMu.Unlock()
+}
+
+func (r *ReconnectingWS) invokeOnReconnect() {
+	r.hookMu.Lock()
+	fn := r.onReconnect
+	r.hookMu.Unlock()
+	if fn != nil {
+		fn()
+	}
 }
 
 // NewReconnectingWS dials url and returns a transport that re-dials on drop,
@@ -113,6 +136,13 @@ func (r *ReconnectingWS) watchLoop() {
 
 		r.mu.Lock()
 		r.current = next
+		r.mu.Unlock()
+
+		// Raise the session layer's barrier BEFORE the new socket is visible to Call, so a
+		// normal RPC cannot reach the connection before the handshake is replayed.
+		r.invokeOnReconnect()
+
+		r.mu.Lock()
 		close(r.ready)
 		r.mu.Unlock()
 

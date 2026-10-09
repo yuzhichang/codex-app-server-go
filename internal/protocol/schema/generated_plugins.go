@@ -697,6 +697,55 @@ const (
 	PluginSourceTypeRemote = "remote"
 )
 
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u PluginSource) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case PluginSourceTypeLocal:
+		return json.Marshal(struct {
+			Type string          `json:"type"`
+			Path json.RawMessage `json:"path"`
+		}{
+			Type: u.Type,
+			Path: u.Path,
+		})
+	case PluginSourceTypeGit:
+		return json.Marshal(struct {
+			Type    string          `json:"type"`
+			Path    json.RawMessage `json:"path,omitempty"`
+			RefName string          `json:"refName,omitempty"`
+			Sha     string          `json:"sha,omitempty"`
+			URL     string          `json:"url"`
+		}{
+			Type:    u.Type,
+			Path:    u.Path,
+			RefName: u.RefName,
+			Sha:     u.Sha,
+			URL:     u.URL,
+		})
+	case PluginSourceTypeNpm:
+		return json.Marshal(struct {
+			Type     string `json:"type"`
+			Package  string `json:"package"`
+			Registry string `json:"registry,omitempty"`
+			Version  string `json:"version,omitempty"`
+		}{
+			Type:     u.Type,
+			Package:  u.Package,
+			Registry: u.Registry,
+			Version:  u.Version,
+		})
+	case PluginSourceTypeRemote:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
+		})
+	}
+	type plain PluginSource
+	return json.Marshal(plain(u))
+}
+
 // PluginSummary mirrors the upstream `PluginSummary` definition.
 type PluginSummary struct {
 	AuthPolicy                       PluginAuthPolicy           `json:"authPolicy"`
@@ -757,6 +806,51 @@ const (
 	ScheduledTaskScheduleTypeWeekdays = "weekdays"
 	ScheduledTaskScheduleTypeWeekly   = "weekly"
 )
+
+// MarshalJSON writes the fields belonging to the active variant, so a field required by
+// that variant survives an empty/zero value (the flat struct's omitempty would drop it).
+func (u ScheduledTaskSchedule) MarshalJSON() ([]byte, error) {
+	switch u.Type {
+	case ScheduledTaskScheduleTypeHourly:
+		return json.Marshal(struct {
+			Type          string                 `json:"type"`
+			Days          []ScheduledTaskWeekday `json:"days,omitempty"`
+			IntervalHours int64                  `json:"intervalHours"`
+		}{
+			Type:          u.Type,
+			Days:          u.Days,
+			IntervalHours: u.IntervalHours,
+		})
+	case ScheduledTaskScheduleTypeDaily:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Time string `json:"time"`
+		}{
+			Type: u.Type,
+			Time: u.Time,
+		})
+	case ScheduledTaskScheduleTypeWeekdays:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			Time string `json:"time"`
+		}{
+			Type: u.Type,
+			Time: u.Time,
+		})
+	case ScheduledTaskScheduleTypeWeekly:
+		return json.Marshal(struct {
+			Type string                 `json:"type"`
+			Days []ScheduledTaskWeekday `json:"days"`
+			Time string                 `json:"time"`
+		}{
+			Type: u.Type,
+			Days: u.Days,
+			Time: u.Time,
+		})
+	}
+	type plain ScheduledTaskSchedule
+	return json.Marshal(plain(u))
+}
 
 // ScheduledTaskSummary mirrors the upstream `ScheduledTaskSummary` definition.
 type ScheduledTaskSummary struct {

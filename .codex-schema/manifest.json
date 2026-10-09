@@ -1,10 +1,10 @@
 {
   "codex_commit": "14c8b7771ab2b617a131f5d8e55e98d18e56ed09",
-  "generated_by": "scripts/codex_schema_surface.py sync",
+  "generated_by": "tools/codexgen sync",
   "scope_model": "declared_stable = source non-experimental; exports used for reconciliation",
   "artifacts": {
     "internal/protocol/schema/codex_app_server_protocol.v2.schemas.json": "9e39bb66909635ed7794878429e683a097d479b4a9bf969891642be23b797d74",
-    "internal/protocol/schema/version.go": "fab44e0fe6f9c064e0672e88aed1b564c356c5fd9654c5bf180d20d61d5de34f",
+    "internal/protocol/schema/version.go": "ccc71343348fbe6825936547f0d6973e9ac17d99f4db71150cdeec6d8019a050",
     ".codex-schema/exports/stable-methods.json": "ebf4bddce59d064913d4ab3fb51a7626e366808b5155193f097018f2bc87aa1f",
     ".codex-schema/exports/experimental-methods.json": "2a6122845b2f7eb1857b39a60affa509786520c83a8f8c8b3743d34f58b6f4e2",
     "gen/method-surface.json": "9bfa964223be83ac7f128c0b8856d373e3a84e4415106129c4c05dc342aeb284",

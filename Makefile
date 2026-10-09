@@ -14,19 +14,19 @@ GO_TOOL = cd $(SDK_DIR) && go run ./tools/codexgen
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
 sync:
-	python3 $(SDK_DIR)/scripts/codex_schema_surface.py sync --codex-src $(CODEX_SRC)
+	$(GO_TOOL) sync --codex-src $(CODEX_SRC)
 	gofmt -w $(SDK_DIR)/internal/protocol/schema/version.go
 
-# CI-safe reconciliation: needs no codex checkout, no `zstandard`, no network. Runs the six
+# CI-safe reconciliation: needs no codex checkout, no `zstd`, no network. Runs the six
 # set assertions over the checked-in gen/*.json + .codex-schema/exports/*.
 verify:
-	python3 $(SDK_DIR)/scripts/codex_schema_surface.py verify
+	$(GO_TOOL) verify
 
 # Guard: compare a CLI-generated bundle against the pinned anchor and fail on drift.
 diff-cli:
 	@TMPDIR=$$(mktemp -d) && \
 	codex app-server generate-json-schema --out "$$TMPDIR" 2>/dev/null && \
-	python3 $(SDK_DIR)/scripts/codex_schema_surface.py diff-cli --bundle "$$TMPDIR"
+	$(GO_TOOL) diff-cli --bundle "$$TMPDIR"
 
 # Implementation coverage. `report` is informational (safe mid-implementation); the gate
 # itself lives in `check`, which is what CI must run once the surface is complete.

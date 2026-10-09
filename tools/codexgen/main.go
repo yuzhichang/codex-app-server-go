@@ -57,6 +57,12 @@ func main() {
 		code = cmdEnumValue(args)
 	case "typeshape":
 		code = cmdTypeShape(args)
+	case "sync":
+		code = cmdSync(args)
+	case "verify":
+		code = cmdVerify(args)
+	case "diff-cli":
+		code = cmdDiffCLI(args)
 	case "gen-types":
 		code = cmdGenTypes(args)
 	case "gen-client":

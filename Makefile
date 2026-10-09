@@ -52,7 +52,7 @@ typecheck:
 # `deliberate` (reviewed and correct) or `pending` (known, awaiting a decision). Only an
 # UNLISTED divergence fails, so a new one cannot appear silently.
 type-shape-check:
-	python3 $(SDK_DIR)/scripts/type_shape_check.py report
+	$(GO_TOOL) typeshape report
 
 # A *Params field whose type cannot be named from outside the module is a field a caller cannot
 # set: the generated types live in internal/protocol/schema, so they have to be re-exported.
@@ -74,21 +74,15 @@ enum-value-check:
 # Regenerate the schema-derived Go types. Deterministic: a no-op re-run leaves git clean.
 # (Currently scoped to the definitions the SDK was missing; see the script's header.)
 generate-types:
-	python3 $(SDK_DIR)/scripts/gen_go_types.py \
-		--match '^(Fs|Mcp|ListMcp|ConfigMcpServerReload)' \
-		--out internal/protocol/schema/generated_fs_mcp.go
-	python3 $(SDK_DIR)/scripts/gen_go_types.py \
-		--match '^(App|Plugin|Marketplace)' \
-		--out internal/protocol/schema/generated_plugins.go
-	python3 $(SDK_DIR)/scripts/gen_go_types.py \
-		--from-surface \
-		--out internal/protocol/schema/generated_surface.go
+	$(GO_TOOL) gen-types --match '^(Fs|Mcp|ListMcp|ConfigMcpServerReload)' --out internal/protocol/schema/generated_fs_mcp.go
+	$(GO_TOOL) gen-types --match '^(App|Plugin|Marketplace)' --out internal/protocol/schema/generated_plugins.go
+	$(GO_TOOL) gen-types --from-surface --out internal/protocol/schema/generated_surface.go
 	gofmt -w $(SDK_DIR)/internal/protocol/schema/generated_*.go
 
 # Generate typed Client bindings (plus their tests) for stable requests that have no
 # hand-written method. Deterministic: a no-op re-run leaves git clean.
 generate-client:
-	python3 $(SDK_DIR)/scripts/gen_go_client.py
+	$(GO_TOOL) gen-client
 	gofmt -w $(SDK_DIR)/generated_client_methods.go \
 		$(SDK_DIR)/generated_client_methods_test.go \
 		$(SDK_DIR)/internal/protocol/generated_methods.go
@@ -99,7 +93,7 @@ generate: generate-types generate-client
 conformance: verify
 	@$(GO_TOOL) coverage report
 	@$(GO_TOOL) typecheck report
-	@python3 $(SDK_DIR)/scripts/type_shape_check.py report
+	@$(GO_TOOL) typeshape report
 	@$(GO_TOOL) exportcheck report
 	@$(GO_TOOL) enumvalue report
 
@@ -108,7 +102,7 @@ conformance: verify
 conformance-strict: verify
 	@$(GO_TOOL) coverage check --strict
 	@$(GO_TOOL) typecheck check
-	@python3 $(SDK_DIR)/scripts/type_shape_check.py check
+	@$(GO_TOOL) typeshape check
 	@$(GO_TOOL) exportcheck check
 	@$(GO_TOOL) enumvalue check
 	@$(GO_TOOL) readme-coverage --check

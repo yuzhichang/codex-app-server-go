@@ -55,6 +55,12 @@ func main() {
 		code = cmdExportCheck(args)
 	case "enumvalue":
 		code = cmdEnumValue(args)
+	case "typeshape":
+		code = cmdTypeShape(args)
+	case "gen-types":
+		code = cmdGenTypes(args)
+	case "gen-client":
+		code = cmdGenClient(args)
 	default:
 		fmt.Fprintf(os.Stderr, "codexgen: unknown command %q\n", cmd)
 		usage()

@@ -5,6 +5,10 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
+# Single Go entry point for the generation/conformance tooling (replaces the former
+# per-script Python invocations one command at a time).
+GO_TOOL = cd $(SDK_DIR) && go run ./tools/codexgen
+
 .PHONY: sync verify diff-cli coverage coverage-write typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage docs docs-check conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
@@ -27,17 +31,17 @@ diff-cli:
 # Implementation coverage. `report` is informational (safe mid-implementation); the gate
 # itself lives in `check`, which is what CI must run once the surface is complete.
 coverage:
-	python3 $(SDK_DIR)/scripts/coverage_gate.py report
+	$(GO_TOOL) coverage report
 
 # Regenerate the committed coverage registry + derived lists (implemented-methods.json,
 # unknown-methods.txt, not-implemented.txt). Deterministic: a no-op re-run leaves git clean.
 coverage-write:
-	python3 $(SDK_DIR)/scripts/coverage_gate.py write
+	$(GO_TOOL) coverage write
 
 # Type-level reconciliation: every SDK type must match an upstream definition by name, or
 # be allow-listed with a reason (see gen/type-allowlist.json).
 typecheck:
-	python3 $(SDK_DIR)/scripts/type_check.py report
+	$(GO_TOOL) typecheck report
 
 # Field-level reconciliation. Names matching is not the same as shapes matching: 23 structs
 # carry hand-written field shapes that differ from the schema, and name comparison was blind
@@ -58,14 +62,14 @@ type-shape-check:
 # Scoped to *Params on purpose: output fields are only read, and type inference means their
 # types never have to be named, so requiring that would be ~52 unfixable warnings.
 export-check:
-	python3 $(SDK_DIR)/scripts/export_check.py report
+	$(GO_TOOL) exportcheck report
 
 # Value-level check. type_check compares type NAMES, which cannot see the ApprovalMode bug: the
 # SDK's enum was called something upstream does not have, so there was nothing to compare it to,
 # while its VALUES merged two upstream enums and added one valid in neither. Comparing value sets
 # catches that, and it is the only check here that can.
 enum-value-check:
-	python3 $(SDK_DIR)/scripts/enum_value_check.py report
+	$(GO_TOOL) enumvalue report
 
 # Regenerate the schema-derived Go types. Deterministic: a no-op re-run leaves git clean.
 # (Currently scoped to the definitions the SDK was missing; see the script's header.)
@@ -93,27 +97,27 @@ generate: generate-types generate-client
 
 # Mid-implementation: reconciliation must pass; coverage gaps are reported but not fatal.
 conformance: verify
-	@python3 $(SDK_DIR)/scripts/coverage_gate.py report
-	@python3 $(SDK_DIR)/scripts/type_check.py report
+	@$(GO_TOOL) coverage report
+	@$(GO_TOOL) typecheck report
 	@python3 $(SDK_DIR)/scripts/type_shape_check.py report
-	@python3 $(SDK_DIR)/scripts/export_check.py report
-	@python3 $(SDK_DIR)/scripts/enum_value_check.py report
+	@$(GO_TOOL) exportcheck report
+	@$(GO_TOOL) enumvalue report
 
 # Final gate: no gap, no untested wiring, no stale methods, no unlisted type drift.
 # This is the CI target once the work in tasks/plan-schema-alignment-and-coverage.md is done.
 conformance-strict: verify
-	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
-	@python3 $(SDK_DIR)/scripts/type_check.py check
+	@$(GO_TOOL) coverage check --strict
+	@$(GO_TOOL) typecheck check
 	@python3 $(SDK_DIR)/scripts/type_shape_check.py check
-	@python3 $(SDK_DIR)/scripts/export_check.py check
-	@python3 $(SDK_DIR)/scripts/enum_value_check.py check
-	@python3 $(SDK_DIR)/scripts/gen_readme_coverage.py --check
+	@$(GO_TOOL) exportcheck check
+	@$(GO_TOOL) enumvalue check
+	@$(GO_TOOL) readme-coverage --check
 	@$(MAKE) --no-print-directory docs-check
 
 # Rewrite the README's coverage tables from the audited artifacts. A hand-written table
 # describing machine-checked data always rots; this one is generated and CI-verified.
 readme-coverage:
-	python3 $(SDK_DIR)/scripts/gen_readme_coverage.py
+	$(GO_TOOL) readme-coverage
 
 # Regenerate the API index embedded in docs/api-reference.md and llms*.txt. The generator
 # parses the exported surface with go/ast, so the method lists cannot drift from the code

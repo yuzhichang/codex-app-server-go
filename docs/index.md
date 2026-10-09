@@ -38,8 +38,9 @@ func main() {
 
 	ctx := context.Background()
 	_, _ = client.Initialize(ctx, codexgo.InitializeParams{
-		ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-		InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
+		ClientInfo: codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
+		// Capabilities is optional; leaving it nil sends none (the SDK does not
+		// request experimentalApi by default).
 	})
 
 	thread, _ := client.StartThread(ctx, codexgo.WithThreadModel("gpt-5.4"))
@@ -63,8 +64,7 @@ client, _ := codexgo.New(
 defer client.Close()
 
 _, _ = client.Initialize(ctx, codexgo.InitializeParams{
-    ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-    InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
+    ClientInfo: codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
 })
 ```
 
@@ -76,7 +76,7 @@ _, _ = client.Initialize(ctx, codexgo.InitializeParams{
 // Start a new thread (blocks until semaphore slot is available if WithMaxThreads is set).
 thread, err := client.StartThread(ctx,
     codexgo.WithThreadModel("gpt-5.4"),
-    codexgo.WithThreadApprovalMode(codexgo.ApprovalModeNever),
+    codexgo.WithThreadApprovalPolicy(codexgo.ApprovalNever()),
     codexgo.WithInitialInput("You are a Go assistant."),
 )
 if err != nil {
@@ -90,7 +90,9 @@ if err != nil {
     log.Fatal(err)
 }
 fmt.Println(result.FinalAgentText())
-fmt.Printf("input tokens: %d\n", result.Usage.InputTokens)
+if result.Usage != nil { // from thread/tokenUsage/updated
+    fmt.Printf("input tokens: %d\n", result.Usage.Total.InputTokens)
+}
 
 // Resume an existing thread by ID.
 resumed, err := client.ResumeThread(ctx, thread.ID())
@@ -103,11 +105,11 @@ defer resumed.Close()
 
 ```go
 type TurnResult struct {
-    Turn      Turn        // final turn state from the server
-    Items     []Item      // items captured via streaming events
-    Usage     *TokenUsage // token usage; may be nil if server does not report it
-    Error     *TurnError  // non-nil when turn status is "failed"
-    DeltaText string      // reconstructed text from deltas when Items are absent
+    Turn      Turn              // final turn state from the server
+    Items     []Item            // items captured via streaming events
+    Usage     *ThreadTokenUsage // from thread/tokenUsage/updated; nil until it arrives
+    Error     *TurnError        // non-nil when turn status is "failed"
+    DeltaText string            // reconstructed text from deltas when Items are absent
 }
 
 func (r *TurnResult) FinalAgentText() string
@@ -128,7 +130,7 @@ for ev := range events {
 
 ## Event Subscription
 
-`Events()` returns a live notification subscription. Events are not replayed to late subscribers; subscribe before starting a turn to avoid missing events.
+`Events()` returns a live notification subscription. Events are not replayed to late subscribers; subscribe before starting a turn to avoid missing events. The publisher never blocks: a slow subscriber is terminated (via `Err()`/`Done()`) rather than silently dropped, so handle termination explicitly — see [reconnect.md](reconnect.md) for the full delivery contract.
 
 ```go
 sub := client.Events()
@@ -138,7 +140,7 @@ for {
     select {
     case event, ok := <-sub.C():
         if !ok {
-            return // broker closed
+            return // subscription terminated; see sub.Err()
         }
         switch v := event.Value.(type) {
         case codexgo.TurnCompletedEvent:
@@ -146,6 +148,8 @@ for {
         case codexgo.ItemAgentMessageDeltaEvent:
             fmt.Print(v.Text)
         }
+    case <-sub.Done():
+        return // terminated (e.g. stalled consumer); sub.Err() has the reason
     case <-ctx.Done():
         return
     }
@@ -230,10 +234,15 @@ client, _ := codexgo.New(
 | Option | Description |
 |---|---|
 | `WithStdioTransport(r, w)` | Reads from r, writes to w (local binary) |
+| `WithStdioProcess(binaryPath, args...)` | Spawn the codex binary and speak stdio to it |
 | `WithWSTransport(dialCtx, endpoint)` | WebSocket (recommended for remote servers) |
+| `WithReconnectingWSTransport(ctx, url)` | WebSocket that transparently re-dials dropped connections |
+| `WithUnixSocketWSTransport(ctx, socketPath)` | WebSocket over a unix domain socket |
 | `WithHTTPTransport(endpoint)` | **WIP** — HTTP+SSE; requires the ws-http-bridge sidecar |
 | `WithReconnectingHTTPTransport(endpoint)` | **WIP** — HTTP with auto-reconnect (same bridge requirement) |
 | `WithRetry(cfg)` | Wrap existing transport with retry logic |
+| `WithAutoReconnect()` | Re-handshake + re-subscribe threads after a reconnect |
+| `WithSessionBackfill(n)` | Turns per thread to backfill after a reconnect (default 20; 0 disables) |
 | `WithHTTPBearerToken(token)` | Auth header for HTTP transports |
 | `WithWSBearerToken(token)` | Auth header for WebSocket transport |
 
@@ -245,4 +254,5 @@ client, _ := codexgo.New(
 ## More
 
 - [API Reference](api-reference.md)
+- [Reconnection and event delivery](reconnect.md)
 - [llms.txt](../llms.txt)

@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
+.PHONY: sync verify diff-cli coverage coverage-write typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -28,6 +28,11 @@ diff-cli:
 # itself lives in `check`, which is what CI must run once the surface is complete.
 coverage:
 	python3 $(SDK_DIR)/scripts/coverage_gate.py report
+
+# Regenerate the committed coverage registry + derived lists (implemented-methods.json,
+# unknown-methods.txt, not-implemented.txt). Deterministic: a no-op re-run leaves git clean.
+coverage-write:
+	python3 $(SDK_DIR)/scripts/coverage_gate.py write
 
 # Type-level reconciliation: every SDK type must match an upstream definition by name, or
 # be allow-listed with a reason (see gen/type-allowlist.json).
@@ -99,6 +104,7 @@ conformance: verify
 conformance-strict: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
 	@python3 $(SDK_DIR)/scripts/type_check.py check
+	@python3 $(SDK_DIR)/scripts/type_shape_check.py check
 	@python3 $(SDK_DIR)/scripts/export_check.py check
 	@python3 $(SDK_DIR)/scripts/enum_value_check.py check
 	@python3 $(SDK_DIR)/scripts/gen_readme_coverage.py --check

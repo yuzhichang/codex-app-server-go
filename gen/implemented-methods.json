@@ -1564,7 +1564,7 @@
     "wiring": [
       "interaction.go"
     ],
-    "test": "unhandled_request_test.go"
+    "test": "lost_request_internal_test.go"
   },
   {
     "method": "execCommandApproval",

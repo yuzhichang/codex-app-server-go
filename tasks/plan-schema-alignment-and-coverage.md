@@ -70,6 +70,7 @@
 
 | **I9** | **`TokenUsage` 不只是命名问题，而是整个 usage 模型过时**：上游 `TurnCompletedNotification` 的字段只有 `{threadId, turn}`（**没有 `usage`**），`Turn` 结构体也没有 usage 字段；usage 现由独立通知 `thread/tokenUsage/updated` 承载，类型为 `ThreadTokenUsage { last: TokenUsageBreakdown, total: TokenUsageBreakdown, modelContextWindow? }`，而 `TokenUsageBreakdown` 的字段是 `{cachedInputTokens, cacheWriteInputTokens, inputTokens, outputTokens, reasoningOutputTokens, totalTokens}`（注意是 **reasoningOutputTokens**，SDK 现叫 `reasoningTokens`，且缺 2 个 cached 字段）。因此 SDK 的 `TurnCompletedEvent.Usage` / `TurnResult.Usage` 建模了**上游不发送的东西** | **不能靠改名解决**。需：① 新增 `ThreadTokenUsage`/`TokenUsageBreakdown`（按上游名与字段）；② 把 usage 来源改为 `thread/tokenUsage/updated`；③ 从 `TurnCompletedEvent`/`TurnResult` 移除 `Usage`（破坏性）。已记为待办，未实施 |
 | **I10** | **类型级清理已完成（27 → 2 漂移）**：16 个纯命名差异已重命名为上游名（`*Request`/`*Result` → `*Params`/`*Response`，`Capabilities` → `InitializeCapabilities`）；`SchemaItem`/`SchemaTurn`/`SchemaThread` → 上游的 `ThreadItem`/`Turn`/`Thread`；删除 5 个 SDK 自造类型（`RPCRequest`/`RPCResponse`/`RPCNotification`/`RPCError`/`InitializedNotification`，上游根本不定义 JSON-RPC 信封，线上信封归 `internal/transport`）及其 `rpc_ext.go` 与 `envelope.go` 别名（`Request`/`Response`/`Notification`/`ErrorObject` 本就零使用）；删除真实孤儿 `ThreadRollbackRequest` 并把 `thread/rollback` 迁移为**真实存在**的 `thread/revert`（`ThreadRevertParams{threadId, beforeTurnId}` + `ThreadRevertResponse{thread, turnsBackwardsCursor, itemsBackwardsCursor}`） | 新增 `scripts/type_check.py` + `gen/type-allowlist.json`，纳入 `make typecheck` / `conformance` / `conformance-strict`：**任何不在白名单内的类型漂移都会让门禁失败**，防止再次腐化。剩余 2 项漂移：`InitializeResponse`（名字正确，仅 v2 聚合未收录 → 已白名单说明）、`TokenUsage`（见 I9，故意保持**未白名单**以持续报警） |
+| **I11** | **白名单由 8 项收敛为 5 项（实施期修正）**。计划原列 8 项（R4 v1 3 项 + server-initiated 3 项 + internal-only 通知 2 项），但实现把其中 3 项变成了**真实接线**：`applyPatchApproval`/`execCommandApproval` 由 `interaction.go` 依 §5.8 作 protocol-valid decline（正是 §5.8 要求的行为），`rawResponseItem/completed` 早已有类型化解码器（`events_extra.go`）。门禁的"白名单项不得与接线矛盾"检查禁止二者并存，故这 3 项移出白名单、登记为已实现。实际白名单（`gen/whitelist.json`）= `getAuthStatus`/`getConversationSummary`/`gitDiffToRemote`（v1 deprecated）+ `attestation/generate` + `rawResponse/completed` | §5.7 / §10.3 / §10.4 / §10.8 / 附录 A 的 "8 项" 更新为 **5 项**；新增**生成的**只读镜像 `gen/not-implemented.txt`（由 `gen/whitelist.json` 派生，`make conformance-strict` 校验其新鲜度） |
 
 > 附带结论 1：M0 的机械提取（`scripts/codex_schema_surface.py`）**独立复现了计划书的全部计数**（173/65/108、11/1/10、86/23/63、1/0/1），且 6 条集合断言全绿 —— 此前手工推导的数字现已变为**机器验证**。
 >
@@ -83,7 +84,7 @@
 2. **Scope 权威是源码的 `#[experimental]` 分类，不是导出模式**（R10）。导出**会排除** 5 个方法、且**不按 experimental 过滤通知**。
 3. **`declared_stable`**：ClientRequest **108**、ServerRequest **10**、ServerNotification **63**、ClientNotification **1**。
 4. **本期需实现缺口**（集合差，见 §2.2）：ClientRequest **62**、ServerRequest **2**、通知侧达成 **61** 目标。
-5. **不实现基线（声明为 stable 但本期不实现）= 8 项**（R4 6 项 + 内部通知 2 项）；experimental 89 项**因非 stable 而不在 scope**，二者须分开登记。
+5. **不实现基线（声明为 stable 但本期不实现）= 5 项**（v1 deprecated 3 项 + `attestation/generate` + internal-only 通知 1 项；由 8 收敛而来，见 §0.3 I11）；experimental 89 项**因非 stable 而不在 scope**，二者须分开登记。
 6. **`fs/*`(9)、`plugin/*`(12) + `marketplace/*`(3)、`mcpServer/*`(5) 全部为 0**，是主要补齐对象。
 7. **reconnect 上游无协议级支持**，须 SDK 侧实现会话监督器（§5.1）。
 
@@ -255,7 +256,7 @@
     ```
     `kind` ∈ `client_method` | `server_request_handler` | `notification_decoder` | `client_notification_sender`。
 - **face ↔ kind 必须一一覆盖（修 A10）**：`client_request` → `client_method`；`server_request` → `server_request_handler`；`server_notification` → `notification_decoder`；`client_notification` → **`client_notification_sender`**（client → server 的**发送**路径，不是解码路径）。四者构成满射，校验器需断言「任一 face 都有对应 kind 可用于登记」，否则 `declared_stable` 中的 `initialized`（ClientNotification）将无法合法登记，门禁永远无法归零。
-- **门禁**：`declared_stable − whitelist(§5.7, 8 项) − implemented == ∅`。
+- **门禁**：`declared_stable − whitelist(§5.7, 5 项) − implemented == ∅`。
 - **三条防造假校验（必须同时满足，否则该条视为未实现）**：
   1. **接线证据（按 kind 分派）**：
      - `client_method` → 某 `Client`/`SessionThread` 方法体内出现该 `Method*` 调用点（**排除**常量定义文件与生成物）；
@@ -663,25 +664,26 @@
 | P3 | `fuzzyFileSearch` | 1 | 仅基础方法 |
 | — | 通知侧 | 达成 **61** | 按 §5.7 分类实现到 61 项（现有 65 typed 基于旧 schema，须重新基线化） |
 
-**验收**：上表全部实现、接线、测试并登记；通知达成 61 项。**唯一允许未实现者为 §5.7 白名单（8 项）。**
+**验收**：上表全部实现、接线、测试并登记；通知达成 61 项。**唯一允许未实现者为 §5.7 白名单（5 项，见 §0.3 I11）。**
 
-### 5.7 不实现基线（**8 项**，CI 白名单）
+### 5.7 不实现基线（**5 项**，CI 白名单 —— 原列 8 项，见 §0.3 I11）
 
-> **范围澄清**：白名单只收录**「`declared_stable` 内但本期不实现」**的方法（8 项）。experimental 89 项**因不是 stable 而不在 scope**，属另一类，**不计入白名单**（否则会在门禁中对非 scope 项做无意义扣除）。
+> **范围澄清**：白名单只收录**「`declared_stable` 内但本期不实现」**的方法（**实施后为 5 项**；计划初稿为 8 项，其中 3 项在实施中变为真实接线，见 I11）。experimental 89 项**因不是 stable 而不在 scope**，属另一类，**不计入白名单**（否则会在门禁中对非 scope 项做无意义扣除）。
 
 **白名单 A — v1 deprecated（R4，ClientRequest 3 项）**：`getAuthStatus`、`getConversationSummary`、`gitDiffToRemote`
 （注：这 3 项**也被导出排除**，见 §2.2；它们仍属 `declared_stable`，故需登记。）
 
-**白名单 B — R4 server-initiated（3 项）**：
+**白名单 B — R4 server-initiated（实施后 1 项）**：
 
 | 方法 | 处置 |
 |---|---|
-| `applyPatchApproval` | 跳过审批流程；**入站按 §5.8 回 `{"decision":"denied"}`**；需常量 + `ReviewDecision` 响应类型 |
-| `execCommandApproval` | 同上 |
 | `attestation/generate` | D5b 默认不宣告 `requestAttestation`；**入站按 §5.8 回 `-32601` + 记录** |
+| ~~`applyPatchApproval`~~ | ✅ **已移出白名单**：由 `interaction.go` 依 §5.8 作 protocol-valid decline（真实接线），故登记为已实现（见 I11） |
+| ~~`execCommandApproval`~~ | ✅ **已移出白名单**：同上 |
 
-**白名单 C — internal-only 通知（2 项）**：`rawResponse/completed`、`rawResponseItem/completed`
+**白名单 C — internal-only 通知（实施后 1 项）**：`rawResponse/completed`
 （源码存在但**导出排除**，不对客户端暴露；不实现解码器。）
+> `rawResponseItem/completed` **已移出白名单**：它已有类型化解码器（`events_extra.go` 的 `RawResponseItemCompletedEvent`），属真实接线，按门禁"白名单项不得与接线矛盾"登记为已实现（见 I11）。
 
 **非 scope 集（另一类，登记于 `gen/not-in-scope.txt`）**：experimental 89 项 = 65 ClientRequest + 1 ServerRequest（`currentTime/read`）+ 23 通知。依据：源码 `#[experimental("...")]` 标注。
 
@@ -762,7 +764,7 @@
 | R1 无版本锚点 | 上游 `0.0.0` | 以 commit(`14c8b777`)+sha256 为准 |
 | R2 experimental 不在 scope | ✅已决策。副作用：remote control 整组不可用 | `gen/not-in-scope.txt` 留档；变化时提示 |
 | R3 不兼容旧名 | ✅已决策。breaking change | CHANGELOG + README 标注；发 major |
-| R4 白名单 8 项 | ✅已决策 | 白名单显式登记 + 理由 |
+| R4 白名单 5 项（原 8，见 I11） | ✅已决策 | 白名单显式登记 + 理由 |
 | R9 未实现请求降级 | ✅已决策。未知方法只能回 `-32601` | decline 路径 + 事件留痕 |
 | **R10 Scope 权威错位**（已修） | 上一版误以导出为权威 → 会把"导出排除的 3 项"当成缺口、并把通知范围算错 | Scope 改由源码 non-experimental 定义；导出仅对账 |
 | **R11 差集漂移** | 导出排除集或通知过滤行为可能变化 | T0.4 断言 1/4/6 把该事实显式化，变化即失败并要求人工复核 |
@@ -774,14 +776,14 @@
 
 ## 10. 验收标准（Definition of Done）
 
-1. `bash scripts/sync-codex-schema.sh <codex>` 幂等；`.codex-schema/manifest.json` 记录 `14c8b777` 与 sha256；`version.go` 由生成器书写。
+1. `make sync CODEX_SRC=<codex checkout>`（即 `scripts/codex_schema_surface.py sync`）幂等；`.codex-schema/manifest.json` 记录 `14c8b777` 与 sha256；`version.go` 由生成器书写。
 2. 不存在人工裁剪的 `v2.schema.json`。
-3. `gen/method-surface.json`、`gen/export-exclusions.json`（5 项）、`gen/not-in-scope.txt`（89 项）、`gen/not-implemented.txt`（8 项）齐备；**T0.4 六条集合断言全绿**。
-4. `declared_stable − whitelist(8) − implemented == ∅`，且 T1.1 三条防造假校验通过（**覆盖判定基于实际接线，不基于生成常量**）；**kind 覆盖四个 face 且 face↔kind 满射**（`initialized` 以 `client_notification_sender` 合法登记）；T1.1b 的 43 项审计完成且遗留项已按 R2/R3 清理。
+3. `gen/method-surface.json`、`gen/export-exclusions.json`（5 项）、`gen/not-in-scope.txt`（89 项）、`gen/not-implemented.txt`（5 项，`gen/whitelist.json` 的只读镜像）齐备；**T0.4 六条集合断言全绿**。
+4. `declared_stable − whitelist(5) − implemented == ∅`，且 T1.1 三条防造假校验通过（**覆盖判定基于实际接线，不基于生成常量**）；**kind 覆盖四个 face 且 face↔kind 满射**（`initialized` 以 `client_notification_sender` 合法登记）；T1.1b 的 43 项审计完成且遗留项已按 R2/R3 清理。
 5. **D1–D7 全部修复**，按 R3 不保留旧名/兼容分支（含 `item/mcp/requestApproval`、`jsonrpc` 字段）。
 6. reconnect：断开后自动完成 重拨 → initialize → thread/resume → 断连期结果回填；有自动化测试。
 7. **事件投递语义达标**：`publish` 永不阻塞（饱和专项测试 + 量化断言）；普通事件占用 ≤ `outCap-1`，终止事件靠预留槽位**立即写入**；`Err()`/`Done()` 必达；**`Close()` 后转发 goroutine 必定退出**（含"空闲订阅者直接 Close"与"Close 与终止并发"测试，无 goroutine 泄漏）；无静默丢弃路径。
-8. **缺口全量交付**：ClientRequest 62、ServerRequest 2、§5.6 P1/P2/P3 全部、通知侧 61 目标 —— 均实现、接线、测试并登记。**唯一允许未实现者为白名单 8 项。**
+8. **缺口全量交付**：ClientRequest 62、ServerRequest 2、§5.6 P1/P2/P3 全部、通知侧 61 目标 —— 均实现、接线、测试并登记。**唯一允许未实现者为白名单 5 项（见 §0.3 I11）。**
 9. 未实现的 server-initiated request 不终止会话（§5.8 回归测试通过）。
 10. README/docs/llms/examples 更新完毕，样例可编译，覆盖率数字自动生成。
 11. CI 全绿，且门禁能在协议漂移或导出语义变化时失败。
@@ -821,13 +823,15 @@
 
 | 面 | 源码总数 | experimental（非 scope） | declared_stable | 白名单 | 已实现 | **待实现** |
 |---|---:|---:|---:|---:|---:|---:|
-| ClientRequest | 173 | 65 | 108 | 3 | 43 | **62** |
-| ServerRequest | 11 | 1 | 10 | 3 | 5 | **2** |
-| ServerNotification | 86 | 23 | 63 | 2 | 待重基线 | 达成 **61** 目标 |
+| ClientRequest | 173 | 65 | 108 | 3 | 105 | **0** |
+| ServerRequest | 11 | 1 | 10 | 1 | 9 | **0** |
+| ServerNotification | 86 | 23 | 63 | 1 | 62 | **0** |
 | ClientNotification | 1 | 0 | 1 | 0 | 1 | 0 |
-| **合计** | **271** | **89** | **182** | **8** | — | — |
+| **合计** | **271** | **89** | **182** | **5** | **177** | **0** |
 
-一致性：`173−65=108`；`108−3−43=62`；`11−1=10`；`10−3−5=2`；`86−23=63`；`63−2=61`；`84(导出 stable 通知)=63+23−2`；`105(导出 stable client)=108−3`；`170−105=65`（= 源码 experimental）。
+> 白名单由 8 收敛为 5（见 §0.3 I11）；"已实现/待实现"为**实施完成后**的实测值（`gen/implemented-methods.json`），非开工前基线。
+
+一致性：`173−65=108`；`108−3=105`；`11−1=10`；`10−1=9`；`86−23=63`；`63−1=62`；`84(导出 stable 通知)=63+23−2`；`105(导出 stable client)=108−3`；`170−105=65`（= 源码 experimental）；`182−5−177=0`。
 
 ---
 

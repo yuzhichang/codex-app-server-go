@@ -157,8 +157,8 @@ def build() -> str:
     total_skipped = len([m for m in declared if (m["method"], m["face"]) in whitelist])
     lines.append(
         f"**Total: {total_done} of {len(declared) - total_skipped} in-scope methods implemented** "
-        f"({total_skipped} deliberately not implemented, struck through above and in "
-        f"`gen/whitelist.json` with a reason for each)."
+        f"({total_skipped} deliberately not implemented, struck through above and listed in "
+        f"`gen/not-implemented.txt`, with a reason for each in `gen/whitelist.json`)."
     )
     lines.append("")
     lines.append(

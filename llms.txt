@@ -1,25 +1,29 @@
 # codex-go: Go SDK for the Codex app-server JSON-RPC protocol
-# Version: v0.2.0 | Protocol schema: v2 | Module: github.com/nharness/sdk/codex-go | Go 1.25+
+# Version: v0.2.0 | Aligned to codex commit 14c8b7771ab2 | Protocol schema: v2 (stable scope) | Module: github.com/zealbase/codex-app-server-go | Go 1.25+
 
 ## Install
-go get github.com/nharness/sdk/codex-go
+go get github.com/zealbase/codex-app-server-go
 
 ## Client creation
 client, err := codexgo.New(opts...)
 # Transport opts (pick one):
-#   WithStdioTransport(r, w)       -- local binary via stdin/stdout
-#   WithWSTransport(dialCtx, url)  -- WebSocket (recommended for remote)
-#   WithHTTPTransport(url)         -- WIP: HTTP+SSE; needs ws-http-bridge sidecar (else 405)
-#   WithReconnectingHTTPTransport(url)  -- WIP: same bridge requirement
-#   WithRetry(cfg)                 -- wrap current transport with retry
-# Auth opts:
-#   WithHTTPBearerToken(token)
-#   WithWSBearerToken(token)
-# Handler opts:
-#   WithApprovalHandler(h)
-#   WithRequestHandler(h)
-# Concurrency opts:
-#   WithMaxThreads(n)  -- -1=unlimited, 0=default(64)
+#   WithStdioTransport(stdin, stdout)      -- local binary via stdin/stdout
+#   WithStdioProcess(binaryPath, args...)  -- spawn the codex binary
+#   WithWSTransport(dialCtx, url)          -- WebSocket (recommended for remote)
+#   WithReconnectingWSTransport(ctx, url)  -- WebSocket with transparent socket re-dial
+#   WithUnixSocketWSTransport(ctx, socket) -- WebSocket over a unix socket
+#   WithHTTPTransport(baseURL)             -- WIP: HTTP+SSE; needs ws-http-bridge sidecar (else 405)
+#   WithReconnectingHTTPTransport(baseURL) -- WIP: same bridge requirement
+#   WithTransport(t)                       -- bring your own Transport
+#   WithRetry(cfg)                         -- wrap current transport with retry
+# Auth opts: WithHTTPBearerToken(token), WithWSBearerToken(token),
+#            WithHTTPAPIKey(key), WithWSAPIKey(key), WithAutoLogin(apiKey)
+# Handler opts: WithApprovalHandler(h), WithRequestHandler(h)
+# Reliability opts: WithAutoReconnect(), WithSessionBackfill(limit),
+#                   WithEventSubscriberTimeout(d)
+# Concurrency opts: WithMaxThreads(n)  -- -1=unlimited, 0=default(64)
+# Handshake opts: WithClientInfo(name, title, version), WithInitializeCapabilities(*InitializeCapabilities)
+# Process opts: WithProcessDir(dir), WithProcessEnv(key, value)
 
 ## High-level session API (recommended)
 thread, err := client.StartThread(ctx, opts...)   // returns *SessionThread
@@ -27,12 +31,15 @@ thread, err := client.ResumeThread(ctx, id, opts...)
 thread.Close()  // release semaphore slot
 
 # ThreadOption helpers:
-#   WithThreadModel(model), WithThreadApprovalPolicy(policy), WithThreadCWD(cwd)
-#   WithThreadEphemeral(bool), WithInitialInput(input)
+#   WithThreadModel(model), WithThreadApprovalPolicy(AskForApproval),
+#   WithThreadApprovalsReviewer(ApprovalsReviewer), WithThreadCWD(cwd),
+#   WithThreadEphemeral(bool), WithThreadPersonality(p), WithInitialInput(input)
 
-result, err := thread.Run(ctx, "prompt", opts...)   // synchronous turn
-# TurnOption: WithModel, WithApprovalPolicy, WithApprovalsReviewer, WithSandboxPolicy, WithSandboxMode,
-#   WithCWD, WithEffort, WithOutputSchema, WithInputs
+result, err := thread.Run(ctx, "prompt", opts...)     // synchronous turn, string input
+result, err := thread.RunInputs(ctx, []UserInput{...}, opts...)   // structured input
+# TurnOption: WithModel, WithApprovalPolicy(AskForApproval), WithApprovalsReviewer(ApprovalsReviewer),
+#   WithSandboxPolicy(SandboxPolicy), WithSandboxMode(SandboxMode), WithCWD, WithEffort,
+#   WithOutputSchema(schema), WithInputs(...UserInput)
 
 result.FinalAgentText() string  -- last agent-message text (searches Items, Turn.Items, DeltaText)
 result.Turn.Status              -- "completed" | "interrupted" | "failed"
@@ -43,7 +50,11 @@ result.DeltaText                -- streaming delta fallback text
 events, err := thread.RunStreamed(ctx, "prompt")  // streaming; drain or cancel ctx
 
 ## Client methods (all take context.Context)
+# Core
 Initialize(ctx, InitializeParams) (InitializeResponse, error)
+Ping(ctx) error
+Close() error
+# Thread
 ThreadStart(ctx, ThreadStartParams) (Thread, error)
 ThreadResume(ctx, ThreadResumeParams) (Thread, error)
 ThreadRead(ctx, ThreadReadParams) (Thread, error)
@@ -53,43 +64,89 @@ ThreadLoadedList(ctx) ([]string, error)
 ThreadArchive(ctx, ThreadArchiveParams) error
 ThreadUnarchive(ctx, ThreadUnarchiveParams) error
 ThreadSetName(ctx, ThreadSetNameParams) error
+ThreadDelete(ctx, ThreadDeleteRequest) error
+ThreadUnsubscribe(ctx, ThreadUnsubscribeRequest) (ThreadUnsubscribeResult, error)
+ThreadMetadataUpdate(ctx, ThreadMetadataUpdateRequest) (ThreadMetadataUpdateResult, error)
+ThreadInjectItems(ctx, ThreadInjectItemsRequest) error
+ThreadShellCommand(ctx, ThreadShellCommandRequest) error
+ThreadApproveGuardianDeniedAction(ctx, ThreadApproveGuardianDeniedActionRequest) error
 ThreadRevert(ctx, ThreadRevertParams) (ThreadRevertResponse, error)
+ThreadCompactStart(ctx, ThreadCompactStartParams) (ThreadCompactStartResponse, error)
+ThreadTurnsList(ctx, ThreadTurnsListParams) (ThreadTurnsListResponse, error)
+ThreadItemsList(ctx, ThreadItemsListParams) (ThreadItemsListResponse, error)
+ThreadGoalSet/Get(ctx, req) (ThreadGoal, error); ThreadGoalClear(ctx, req) error
+ThreadAttachmentAdd/List/OwnerList/Remove(ctx, req) (resp, error)
+# Thread sections
+ThreadSectionList/Create/Update/Delete/Move(ctx, req) (resp, error)
+# Turn
 TurnStart(ctx, TurnStartParams) (Turn, error)
 TurnInterrupt(ctx, TurnInterruptParams) error
-TurnSteer(ctx, TurnSteerParams) error
+TurnSteer(ctx, TurnSteerParams) (TurnSteerResponse, error)
 TurnRead(ctx, threadID, turnID string) (Turn, error)
-ThreadGoalSet/Get/Clear(ctx, req)
-SetModel(ctx, model) / SetApprovalPolicy(ctx, policy) / SetSandboxPolicy(ctx, policy)
+# Account / login
+AccountRead(ctx) (AccountReadResult, error)
+Logout(ctx) error
+LoginAPIKey(ctx, apiKey) error
+LoginChatGPT(ctx) (*LoginHandle, error)
+LoginDeviceCode(ctx) (*LoginHandle, error)
+CancelLoginAccount(ctx, CancelLoginAccountParams) (CancelLoginAccountResponse, error)
+GetAccountRateLimits(ctx, NullableGetAccountRateLimitsParams) (GetAccountRateLimitsResponse, error)
+GetAccountTokenUsage(ctx, NullableGetAccountTokenUsageParams) (GetAccountTokenUsageResponse, error)
+ConsumeAccountRateLimitResetCredit(ctx, req) (resp, error)
+GetWorkspaceMessages(ctx) (GetWorkspaceMessagesResponse, error)
+SendAddCreditsNudgeEmail(ctx, req) (resp, error)
+GatewayOAuthLogin/Cancel/Read(ctx, req) (resp, error)
+# Models
+ModelList(ctx, includeHidden bool) ([]ModelInfo, error)
 Models(ctx) ([]string, error)
-# Config CRUD:
-ConfigRead(ctx, ConfigReadRequest) (ConfigReadResult, error)
-ConfigValueWrite(ctx, ConfigValueWriteRequest) error
-ConfigBatchWrite(ctx, ConfigBatchWriteRequest) error
-# Skills:
-SkillsList(ctx, SkillsListRequest) (SkillsListResult, error)
-SkillsConfigWrite(ctx, SkillsConfigWriteRequest) (SkillsConfigWriteResult, error)
-SkillsExtraRootsSet(ctx, SkillsExtraRootsSetRequest) error
-# Experimental features:
-ExperimentalFeatureList(ctx, ExperimentalFeatureListRequest) (ExperimentalFeatureListResult, error)
+ModelProviderCapabilitiesRead(ctx) (ModelProviderCapabilities, error)
+# Config
+ConfigRead(ctx, ConfigReadParams) (ConfigReadResponse, error)
+ConfigValueWrite(ctx, ConfigValueWriteParams) (ConfigWriteResponse, error)
+ConfigBatchWrite(ctx, ConfigBatchWriteParams) (ConfigWriteResponse, error)
+ConfigRequirementsRead(ctx) (ConfigRequirementsReadResponse, error)
+ConfigMCPServerReload(ctx) (McpServerRefreshResponse, error)
+SetModel(ctx, model) / SetApprovalPolicy(ctx, policy) / SetSandbox(ctx, sandbox)
+# Review
+ReviewStart(ctx, ReviewStartParams) (ReviewStartResponse, error)
+# Skills / experimental features / hooks
+SkillsList(ctx, req) (SkillsListResult, error)
+SkillsConfigWrite(ctx, req) (SkillsConfigWriteResult, error)
+SkillsExtraRootsSet(ctx, req) error
+ExperimentalFeatureList(ctx, req) (ExperimentalFeatureListResult, error)
 ExperimentalFeatureEnablementSet(ctx, req) (ExperimentalFeatureEnablementSetResult, error)
-# Hooks (server-side; not the client-side hook bridge):
 HooksList(ctx, HooksListRequest) (HooksListResult, error)
-# Thread extras:
-ThreadMetadataUpdate(ctx, req) (ThreadMetadataUpdateResult{Thread}, error)
-ThreadUnsubscribe(ctx, req) (ThreadUnsubscribeResult{Status}, error)  -- status: notLoaded|notSubscribed|unsubscribed
-ThreadDelete(ctx, ThreadDeleteRequest) error
-ThreadInjectItems(ctx, req) error  -- {ThreadID, Items []json.RawMessage}
-ThreadShellCommand(ctx, req) error  -- {ThreadID, Command}; unsandboxed, preserves shell syntax
-ThreadApproveGuardianDeniedAction(ctx, req) error  -- {ThreadID, Event json.RawMessage}
-# Model provider capabilities:
-ModelProviderCapabilitiesRead(ctx) (ModelProviderCapabilities{NamespaceTools,ImageGeneration,WebSearch}, error)
-# Interactive command exec (PTY):
+# Plugins / marketplace
+MarketplaceAdd/Remove/Upgrade(ctx, req) (resp, error)
+PluginList/Installed/Reconcile/Read/SkillRead/Install/Uninstall(ctx, req) (resp, error)
+PluginShareSave/UpdateTargets/List/Checkout/Delete(ctx, req) (resp, error)
+# Apps
+AppsList/Installed/Read(ctx, req) (resp, error)
+# Filesystem
+FSReadFile(ctx, FsReadFileParams) (FsReadFileResponse, error)
+FSReadFileBytes(ctx, path) ([]byte, error)
+FSWriteFile(ctx, FsWriteFileParams) (FsWriteFileResponse, error)
+FSWriteFileBytes(ctx, path, data) error
+FSCreateDirectory/GetMetadata/ReadDirectory/Remove/Copy/Watch/Unwatch(ctx, req) (resp, error)
+# MCP
+MCPServerOauthLogin(ctx, McpServerOauthLoginParams) (McpServerOauthLoginResponse, error)
+MCPServerStatusList(ctx, ListMcpServerStatusParams) (ListMcpServerStatusResponse, error)
+MCPServerResourceRead(ctx, McpResourceReadParams) (McpResourceReadResponse, error)
+MCPServerToolCall(ctx, McpServerToolCallParams) (McpServerToolCallResponse, error)
+# Interactive command exec (PTY)
 CommandExec(ctx, CommandExecRequest) (CommandExecResult, error)
 CommandExecWrite/Resize/Terminate(ctx, req) error
 CommandExecHandle(processID) *CommandExecHandle  -- Write/CloseStdin/Resize/Terminate helpers
-# stream via CommandExecOutputDeltaEvent on Events()
-Ping(ctx) error
-Close() error
+# Other
+PermissionProfileList(ctx, req) (resp, error)
+FeedbackUpload(ctx, req) (resp, error)
+FuzzyFileSearch(ctx, req) (FuzzyFileSearchResponse, error)
+ExternalAgentConfigDetect/Import/ImportHistoryRecord(ctx, req) (resp, error)
+ExternalAgentConfigImportHistoriesRead(ctx) (resp, error)
+WindowsSandboxSetupStart(ctx, req) (resp, error)
+WindowsSandboxReadiness(ctx) (resp, error)
+# Low-level escape hatch
+Call(ctx, method, params, result) error
 
 ## Wait helpers
 WaitForTurn(ctx, threadID, turnID) (Turn, error)
@@ -99,6 +156,7 @@ WaitForStructuredOutput(ctx, threadID, turnID, &out) (Turn, error)
 ## SessionThread methods
 thread.ID() string
 thread.Run(ctx, input, opts...) (*TurnResult, error)
+thread.RunInputs(ctx, inputs, opts...) (*TurnResult, error)
 thread.RunStreamed(ctx, input, opts...) (<-chan ThreadEvent, error)
 thread.Steer(ctx, turnID, input) error
 thread.SteerInputs(ctx, turnID, inputs...) error
@@ -109,16 +167,29 @@ thread.Revert(ctx, beforeTurnID) error
 thread.Compact(ctx) error
 thread.SetGoal/GetGoal/ClearGoal(ctx, ...) error
 
+## Input builders (turn/steer payloads are []UserInput upstream, not a bare string)
+TextInput(text) UserInput
+TextInputs(text) []UserInput
+ImageInput(url) UserInput
+LocalImageInput(path) (UserInput, error)
+
+## Sandbox / approval builders
+SandboxPolicyFromMode(SandboxMode) *SandboxPolicy   // mode spellings -> tagged policy object
+ApprovalUntrusted() / ApprovalOnRequest() / ApprovalNever() / ApprovalGranular(g)  // AskForApproval
+
 ## Event subscription
 sub := client.Events()
 defer sub.Close()
 for event := range sub.C() {
     switch v := event.Value.(type) {
     case codexgo.ItemAgentMessageDeltaEvent: // v.Text
-    case codexgo.TurnCompletedEvent:         // v.TurnID, v.Status, v.Usage
+    case codexgo.TurnCompletedEvent:         // v.TurnID, v.Status, v.Turn  (no Usage: see below)
     case codexgo.ItemCompletedEvent:         // v.Item
     }
 }
+// Delivery contract: publish never blocks a producer; a slow subscriber is bounded
+// (terminal via Err()/Done(), never a silent drop). Always handle termination:
+// for { select { case ev, ok := <-sub.C(): ... ; case <-sub.Done(): return } }
 
 ## Key types
 Thread{ID, Name, Status ThreadStatus, Turns []Turn}
@@ -126,13 +197,17 @@ Turn{ID, Items []Item, ItemsView TurnItemsView, Status TurnStatus, StartedAt, Co
 Item{ID, Kind ItemKind, Payload json.RawMessage}
 TurnResult{Turn, Items []Item, Usage *ThreadTokenUsage, Error *TurnError, DeltaText string}
 ThreadTokenUsage{Last, Total TokenUsageBreakdown; ModelContextWindow int64}
+ThreadTokenUsage arrives ONLY via the thread/tokenUsage/updated notification; turn/completed
+sends {threadId, turn} and carries no usage (upstream behavior).
 
 ## Enums (wire values in quotes)
 ThreadStatus: "notLoaded" | "idle" | "active" | "systemError"
 TurnStatus: "inProgress" | "completed" | "interrupted" | "failed"
 TurnItemsView: "notLoaded" | "summary" | "full"
-ApprovalMode: "auto" | "on-request" | "never" | "always"
-SandboxMode: "read-only" | "workspace-write" | "full-auto"
+AskForApproval: "untrusted" | "on-request" | "never" | {"granular": {...}}
+ApprovalsReviewer: "user" | "auto_review" | "guardian_subagent"
+SandboxPolicy (tagged object): {"type":"readOnly"} | {"type":"workspaceWrite"} | {"type":"dangerFullAccess"} | {"type":"externalSandbox"}
+SandboxMode (mode spellings, converted by SandboxPolicyFromMode): "read-only" | "workspace-write" | "full-auto"
 ItemKind: userMessage | agentMessage | plan | reasoning | commandExecution | fileChange |
   mcpToolCall | dynamicToolCall | collabAgentToolCall | subAgentActivity | webSearch |
   imageView | imageGeneration | sleep | enteredReviewMode | exitedReviewMode |
@@ -144,10 +219,11 @@ HandleFileChangeApproval(ctx, FileChangeApprovalRequest) (FileChangeApprovalResu
 HandlePermissionsApproval(ctx, PermissionsApprovalRequest) (PermissionsApprovalResult, error)
 HandleUserInputRequest(ctx, UserInputRequest) (UserInputResult, error)
 # Decision values: accept | acceptForSession | decline | cancel (+ exec/network policy amendments)
+# ApprovalHandler timeouts are refused by default (never granted); see Dispatcher.ApprovalTimeout.
 
-## Server-push notification types
-TurnStartedEvent, TurnCompletedEvent{}, ItemStartedEvent, ItemCompletedEvent,
-ItemUpdatedEvent, TurnDiffUpdatedEvent, TurnPlanUpdatedEvent, ThreadTokenUsageUpdatedEvent,
+## Server-push notification types (62 of 63 declared-stable notifications are typed)
+TurnStartedEvent, TurnCompletedEvent, ItemStartedEvent, ItemCompletedEvent,
+TurnDiffUpdatedEvent, TurnPlanUpdatedEvent, ThreadTokenUsageUpdatedEvent,
 ThreadStartedEvent, ThreadArchivedEvent, ThreadUnarchivedEvent, ThreadClosedEvent,
 ThreadStatusChangedEvent, ThreadGoalUpdatedEvent, ThreadGoalClearedEvent,
 ServerRequestResolvedEvent, ErrorEvent,
@@ -155,7 +231,7 @@ ItemAgentMessageDeltaEvent{Text}, ItemPlanDeltaEvent{Text},
 ItemReasoningSummaryTextDeltaEvent{Text}, ItemReasoningTextDeltaEvent{Text},
 ItemCommandExecutionOutputDeltaEvent{Delta}, ItemFileChangePatchUpdatedEvent,
 ItemAutoApprovalReviewStartedEvent, ItemAutoApprovalReviewCompletedEvent
-# Extra notifications (events_extra.go) — 65/68 notifications typed:
+# Extra notifications (events_extra.go):
 ThreadDeletedEvent, ThreadNameUpdatedEvent, ThreadCompactedEvent, ThreadSettingsUpdatedEvent,
 AccountUpdatedEvent, AccountRateLimitsUpdatedEvent, WarningEvent, ConfigWarningEvent,
 DeprecationNoticeEvent, GuardianWarningEvent, WindowsWorldWritableWarningEvent,
@@ -166,8 +242,18 @@ RawResponseItemCompletedEvent, McpServerStatusUpdatedEvent, McpServerOauthLoginC
 SkillsChangedEvent, FsChangedEvent, AppListUpdatedEvent, RemoteControlStatusChangedEvent,
 ExternalAgentConfigImportCompletedEvent, ExternalAgentConfigImportProgressEvent,
 ThreadRealtime{Started,Closed,Error,ItemAdded,Sdp,OutputAudioDelta,TranscriptDelta,TranscriptDone}Event
-# Unknown methods -> RawNotificationEvent (3 schema-only notifications remain untyped)
+# Unknown methods -> RawNotificationEvent
+# Synthetic SDK events (not on the wire) use an sdk/ prefix:
+#   sdk/sessionBackfilled, sdk/reconnectStarted, sdk/reconnectSucceeded, sdk/reconnectFailed,
+#   sdk/sessionRecovered, sdk/unhandledServerRequest, sdk/pendingApprovalLost
+
+## Reliability
+# A transport reconnect restores the socket, not the session. With AutoReconnect enabled the SDK
+# re-runs initialize+initialized and re-subscribes every tracked thread via thread/resume, then
+# backfills history (thread/turns/list, default 20 turns via WithSessionBackfill).
+# Contract is at-least-once + application idempotency; upstream has no client event replay.
 
 ## Docs
-docs/index.md         -- quickstart, transport table, SessionThread guide
-docs/api-reference.md -- full signatures, types, constants
+docs/index.md          -- quickstart, transport table, SessionThread guide
+docs/api-reference.md  -- full signatures, types, constants
+docs/reconnect.md      -- reconnect / event-delivery semantics

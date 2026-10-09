@@ -1,12 +1,12 @@
 # codex-go: Full SDK Reference
-# Version: v0.2.0 | Protocol schema: v2 | Module: github.com/nharness/sdk/codex-go | Go 1.25+
+# Version: v0.2.0 | Aligned to codex commit 14c8b7771ab2 | Protocol schema: v2 (stable scope) | Module: github.com/zealbase/codex-app-server-go | Go 1.25+
 #
 # This file is the comprehensive machine-readable reference for codex-go.
 # See llms.txt for the condensed version.
 
 ## Overview
 
-codex-go is the official Go SDK for the Codex app-server JSON-RPC 2.0 protocol.
+codex-go is a typed Go SDK for the Codex app-server JSON-RPC protocol.
 It provides:
   - Transport adapters: stdio (local binary), WebSocket, HTTP SSE
   - High-level SessionThread API: synchronous Run(), streaming RunStreamed()
@@ -16,7 +16,7 @@ It provides:
 
 ## Installation
 
-    go get github.com/nharness/sdk/codex-go
+    go get github.com/zealbase/codex-app-server-go
 
 Requires Go 1.25+.
 
@@ -33,8 +33,9 @@ Requires Go 1.25+.
 
     ctx := context.Background()
     _, err = client.Initialize(ctx, codexgo.InitializeParams{
-        ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-        InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
+        ClientInfo: codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
+        // Capabilities is optional. Leave it nil (the default) to declare nothing --
+        // notably, the SDK no longer asks for experimentalApi by default (decision R2).
     })
 
     thread, _ := client.StartThread(ctx, codexgo.WithThreadModel("gpt-5.4"))
@@ -56,8 +57,9 @@ Requires Go 1.25+.
     defer client.Close()
 
     _, err = client.Initialize(ctx, codexgo.InitializeParams{
-        ClientInfo:   codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
-        InitializeCapabilities: codexgo.InitializeCapabilities{ExperimentalAPI: true},
+        ClientInfo: codexgo.ClientInfo{Name: "my-app", Version: "1.0.0"},
+        // Capabilities is optional. Leave it nil (the default) to declare nothing --
+        // notably, the SDK no longer asks for experimentalApi by default (decision R2).
     })
 
 ## Client Options
@@ -83,6 +85,15 @@ Requires Go 1.25+.
     codexgo.WithReconnectingHTTPTransport(endpoint string) Option
         WIP. Like WithHTTPTransport but auto-reconnects; same bridge requirement.
 
+    codexgo.WithReconnectingWSTransport(ctx context.Context, url string) Option
+        WebSocket transport that transparently re-dials dropped connections.
+
+    codexgo.WithUnixSocketWSTransport(ctx context.Context, socketPath string) Option
+        WebSocket over a unix domain socket.
+
+    codexgo.WithStdioProcess(binaryPath string, args ...string) Option
+        Spawn the codex binary and speak stdio to it.
+
     codexgo.WithRetry(cfg transport.RetryConfig) Option
         Wrap the current transport with retry logic.
 
@@ -93,6 +104,12 @@ Requires Go 1.25+.
 
     codexgo.WithWSBearerToken(token string) Option
         Sets Authorization: Bearer <token> on WebSocket handshake.
+
+    codexgo.WithHTTPAPIKey(key string) / codexgo.WithWSAPIKey(key string) Option
+        Send the API key as a query parameter / header instead of a Bearer token.
+
+    codexgo.WithAutoLogin(apiKey string) Option
+        Log in automatically during Initialize.
 
 ### Handler options
 
@@ -111,6 +128,28 @@ Requires Go 1.25+.
         n > 0  → exactly n concurrent threads allowed
         StartThread/ResumeThread block until a slot is available or ctx is done.
 
+### Reliability options
+
+    codexgo.WithAutoReconnect() Option
+        After a transport reconnect, re-run initialize+initialized and re-subscribe every
+        tracked thread (thread/resume). Requires a transport that reports reconnects
+        (ReconnectingWS); New returns an error otherwise rather than silently doing nothing.
+
+    codexgo.WithSessionBackfill(limit int) Option
+        Number of turns per thread to backfill after a reconnect (default 20; 0 disables).
+        Delivered as an sdk/sessionBackfilled event, keyed by turn id.
+
+    codexgo.WithEventSubscriberTimeout(d time.Duration) Option
+        How long a subscriber may stall before its subscription terminates (default 5s).
+
+### Handshake / process options
+
+    codexgo.WithClientInfo(name, title, version string) Option
+    codexgo.WithInitializeCapabilities(c *InitializeCapabilities) Option
+        Override the capabilities sent in the initialize handshake (default: none sent).
+    codexgo.WithProcessDir(dir string) Option
+    codexgo.WithProcessEnv(key, value string) Option
+
 ## High-Level API: SessionThread
 
 StartThread and ResumeThread return a *SessionThread, which:
@@ -124,10 +163,11 @@ StartThread and ResumeThread return a *SessionThread, which:
 
 ThreadOption values:
     codexgo.WithThreadModel(model string)
-    codexgo.WithThreadApprovalPolicy(policy string)
     codexgo.WithThreadApprovalPolicy(policy AskForApproval)
+    codexgo.WithThreadApprovalsReviewer(reviewer ApprovalsReviewer)
     codexgo.WithThreadCWD(cwd string)
     codexgo.WithThreadEphemeral(ephemeral bool)
+    codexgo.WithThreadPersonality(personality string)
     codexgo.WithInitialInput(input string)
         When set, StartThread/ResumeThread block until the first turn completes.
 
@@ -140,6 +180,9 @@ ThreadOption values:
         Subscribes to events before sending TurnStart to avoid race conditions.
         Returns nil error even for interrupted/failed turns; check result.Turn.Status.
 
+    result, err := thread.RunInputs(ctx context.Context, inputs []UserInput, opts ...TurnOption) (*TurnResult, error)
+        Like Run but takes structured input (text + images) instead of a single string.
+
     events, err := thread.RunStreamed(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, error)
         Streaming: returns a channel that receives ThreadEvent values until the turn ends.
         The channel is closed on turn completion or context cancellation.
@@ -148,12 +191,13 @@ ThreadOption values:
 
 TurnOption values:
     codexgo.WithModel(model string)
-    codexgo.WithApprovalPolicy(policy string)
     codexgo.WithApprovalPolicy(policy AskForApproval)
-    codexgo.WithSandbox(policy string)
-    codexgo.WithSandboxMode(mode SandboxMode)
+    codexgo.WithApprovalsReviewer(reviewer ApprovalsReviewer)
+    codexgo.WithSandboxPolicy(policy SandboxPolicy)   // tagged object, not a mode string
+    codexgo.WithSandboxMode(mode SandboxMode)         // convenience: converted to a policy
     codexgo.WithCWD(cwd string)
     codexgo.WithEffort(effort string)
+    codexgo.WithOutputSchema(schema any)
     codexgo.WithInputs(inputs ...UserInput)
 
 ### Mid-turn control
@@ -230,7 +274,7 @@ All methods take context.Context as the first argument.
 
     (c *Client) TurnStart(ctx, TurnStartParams) (Turn, error)
     (c *Client) TurnInterrupt(ctx, TurnInterruptParams) error
-    (c *Client) TurnSteer(ctx, TurnSteerParams) error
+    (c *Client) TurnSteer(ctx, TurnSteerParams) (TurnSteerResponse, error)
     (c *Client) TurnRead(ctx, threadID, turnID string) (Turn, error)
 
 ### Thread goals
@@ -243,17 +287,20 @@ All methods take context.Context as the first argument.
 
     (c *Client) SetModel(ctx, model string) error
     (c *Client) SetApprovalPolicy(ctx, policy string) error
-    (c *Client) SetSandboxPolicy(ctx, policy string) error
+    (c *Client) SetSandbox(ctx, sandbox string) error
     (c *Client) Models(ctx) ([]string, error)
+    (c *Client) ModelList(ctx, includeHidden bool) ([]ModelInfo, error)
 
 ### Config CRUD
 
-    (c *Client) ConfigRead(ctx, ConfigReadRequest) (ConfigReadResult, error)
-        ConfigReadRequest{CWD, IncludeLayers}; result {Config, Layers, Origins json.RawMessage}.
-    (c *Client) ConfigValueWrite(ctx, ConfigValueWriteRequest) error
+    (c *Client) ConfigRead(ctx, ConfigReadParams) (ConfigReadResponse, error)
+        {CWD, IncludeLayers}; result {Config, Layers, Origins json.RawMessage}.
+    (c *Client) ConfigValueWrite(ctx, ConfigValueWriteParams) (ConfigWriteResponse, error)
         {FilePath, KeyPath, Value json.RawMessage, MergeStrategy ("replace"|"upsert"), ExpectedVersion}.
-    (c *Client) ConfigBatchWrite(ctx, ConfigBatchWriteRequest) error
+    (c *Client) ConfigBatchWrite(ctx, ConfigBatchWriteParams) (ConfigWriteResponse, error)
         {FilePath, Edits json.RawMessage, ExpectedVersion, ReloadUserConfig}.
+    (c *Client) ConfigRequirementsRead(ctx) (ConfigRequirementsReadResponse, error)
+    (c *Client) ConfigMCPServerReload(ctx) (McpServerRefreshResponse, error)
 
 ### Skills
 
@@ -304,6 +351,95 @@ All methods take context.Context as the first argument.
         Handle: Write(ctx, deltaBase64) / CloseStdin(ctx) / Resize(ctx, cols, rows) / Terminate(ctx).
     Streaming: subscribe to CommandExecOutputDeltaEvent{ProcessID, Stream, DeltaBase64, CapReached} via Events().
 
+### Thread sections
+
+    (c *Client) ThreadSectionList(ctx, ThreadSectionListParams) (ThreadSectionListResponse, error)
+    (c *Client) ThreadSectionCreate(ctx, ThreadSectionCreateParams) (ThreadSectionCreateResponse, error)
+    (c *Client) ThreadSectionUpdate(ctx, ThreadSectionUpdateParams) (ThreadSectionUpdateResponse, error)
+    (c *Client) ThreadSectionDelete(ctx, ThreadSectionDeleteParams) (ThreadSectionDeleteResponse, error)
+    (c *Client) ThreadSectionMove(ctx, ThreadSectionMoveParams) (ThreadSectionMoveResponse, error)
+
+### Thread attachments and pagination
+
+    (c *Client) ThreadAttachmentAdd(ctx, ThreadAttachmentAddParams) (ThreadAttachmentAddResponse, error)
+    (c *Client) ThreadAttachmentList(ctx, ThreadAttachmentListParams) (ThreadAttachmentListResponse, error)
+    (c *Client) ThreadAttachmentOwnerList(ctx, ThreadAttachmentOwnerListParams) (ThreadAttachmentOwnerListResponse, error)
+    (c *Client) ThreadAttachmentRemove(ctx, ThreadAttachmentRemoveParams) (ThreadAttachmentRemoveResponse, error)
+    (c *Client) ThreadTurnsList(ctx, ThreadTurnsListParams) (ThreadTurnsListResponse, error)
+        Paginated turn history; used by the reconnect backfill.
+    (c *Client) ThreadItemsList(ctx, ThreadItemsListParams) (ThreadItemsListResponse, error)
+        Paginated item history for a thread.
+    (c *Client) ThreadCompactStart(ctx, ThreadCompactStartParams) (ThreadCompactStartResponse, error)
+
+### Account / login
+
+    (c *Client) AccountRead(ctx) (AccountReadResult, error)
+    (c *Client) Logout(ctx) error
+    (c *Client) LoginAPIKey(ctx, apiKey string) error
+    (c *Client) LoginChatGPT(ctx) (*LoginHandle, error)
+    (c *Client) LoginDeviceCode(ctx) (*LoginHandle, error)
+    (c *Client) CancelLoginAccount(ctx, CancelLoginAccountParams) (CancelLoginAccountResponse, error)
+    (c *Client) GetAccountRateLimits(ctx, NullableGetAccountRateLimitsParams) (GetAccountRateLimitsResponse, error)
+    (c *Client) GetAccountTokenUsage(ctx, NullableGetAccountTokenUsageParams) (GetAccountTokenUsageResponse, error)
+    (c *Client) ConsumeAccountRateLimitResetCredit(ctx, req) (resp, error)
+    (c *Client) GetWorkspaceMessages(ctx) (GetWorkspaceMessagesResponse, error)
+    (c *Client) SendAddCreditsNudgeEmail(ctx, req) (resp, error)
+    (c *Client) GatewayOAuthLogin/Cancel/Read(ctx, req) (resp, error)
+
+### Review
+
+    (c *Client) ReviewStart(ctx, ReviewStartParams) (ReviewStartResponse, error)
+
+### Plugins / marketplace
+
+    (c *Client) MarketplaceAdd/Remove/Upgrade(ctx, req) (resp, error)
+    (c *Client) PluginList/Installed/Reconcile/Read/SkillRead/Install/Uninstall(ctx, req) (resp, error)
+    (c *Client) PluginShareSave/UpdateTargets/List/Checkout/Delete(ctx, req) (resp, error)
+    # plugin/install, plugin/uninstall, marketplace/*, plugin/share/* are global-config
+    # serialized server-side: concurrent calls are queued, not run in parallel.
+
+### Apps
+
+    (c *Client) AppsList(ctx, AppsListParams) (AppsListResponse, error)
+    (c *Client) AppsInstalled(ctx, AppsInstalledParams) (AppsInstalledResponse, error)
+    (c *Client) AppsRead(ctx, AppsReadParams) (AppsReadResponse, error)
+
+### Filesystem
+
+    (c *Client) FSReadFile(ctx, FsReadFileParams) (FsReadFileResponse, error)
+    (c *Client) FSReadFileBytes(ctx, path string) ([]byte, error)          // base64 round-trip helper
+    (c *Client) FSWriteFile(ctx, FsWriteFileParams) (FsWriteFileResponse, error)
+    (c *Client) FSWriteFileBytes(ctx, path string, data []byte) error
+    (c *Client) FSCreateDirectory/GetMetadata/ReadDirectory/Remove/Copy(ctx, req) (resp, error)
+    (c *Client) FSWatch(ctx, FsWatchParams) (FsWatchResponse, error)
+        Returns a watch id; fs/changed events are routed by that id.
+    (c *Client) FSUnwatch(ctx, FsUnwatchParams) (FsUnwatchResponse, error)
+
+### MCP
+
+    (c *Client) MCPServerOauthLogin(ctx, McpServerOauthLoginParams) (McpServerOauthLoginResponse, error)
+    (c *Client) MCPServerStatusList(ctx, ListMcpServerStatusParams) (ListMcpServerStatusResponse, error)
+    (c *Client) MCPServerResourceRead(ctx, McpResourceReadParams) (McpResourceReadResponse, error)
+    (c *Client) MCPServerToolCall(ctx, McpServerToolCallParams) (McpServerToolCallResponse, error)
+
+### Other stable methods
+
+    (c *Client) PermissionProfileList(ctx, PermissionProfileListParams) (PermissionProfileListResponse, error)
+    (c *Client) FeedbackUpload(ctx, FeedbackUploadParams) (FeedbackUploadResponse, error)
+    (c *Client) FuzzyFileSearch(ctx, FuzzyFileSearchParams) (FuzzyFileSearchResponse, error)
+    (c *Client) ExternalAgentConfigDetect(ctx, ExternalAgentConfigDetectParams) (ExternalAgentConfigDetectResponse, error)
+    (c *Client) ExternalAgentConfigImport(ctx, ExternalAgentConfigImportParams) (ExternalAgentConfigImportResponse, error)
+    (c *Client) ExternalAgentConfigImportHistoryRecord(ctx, req) (resp, error)
+    (c *Client) ExternalAgentConfigImportHistoriesRead(ctx) (resp, error)
+    (c *Client) WindowsSandboxSetupStart(ctx, WindowsSandboxSetupStartParams) (WindowsSandboxSetupStartResponse, error)
+    (c *Client) WindowsSandboxReadiness(ctx) (WindowsSandboxReadinessResponse, error)
+
+### Escape hatch
+
+    (c *Client) Call(ctx, method string, params, result any) error
+        Invoke an arbitrary method by wire name (types not shown here are defined as
+        aliases over internal/protocol/schema; see `go doc` for exact params).
+
 ### Events and wait helpers
 
     (c *Client) Events() *EventSubscription
@@ -326,7 +462,7 @@ All methods take context.Context as the first argument.
             case codexgo.ItemCompletedEvent:
                 // v.Item is the completed item
             case codexgo.TurnCompletedEvent:
-                // v.Status, v.Usage, v.Turn
+                // v.Status, v.Turn  (usage arrives separately; see thread/tokenUsage/updated)
             }
         case <-ctx.Done():
             return
@@ -335,8 +471,9 @@ All methods take context.Context as the first argument.
 
 Notes:
   - Subscribe BEFORE starting a turn to avoid missing early events.
-  - The subscription buffer holds 128 events; slow consumers are dropped.
-  - Events are not replayed to late subscribers.
+  - The subscription buffer holds 128 events, but producers are never blocked and events are
+    never silently dropped: a stalled subscriber is terminated with Err()/Done() instead.
+  - Events are not replayed to late subscribers (use reconnect backfill for history).
   - sub.C() returns nil for a nil/closed subscription (blocks forever in select).
 
 ## Typed Notification Payloads
@@ -347,7 +484,6 @@ All events have ThreadID and TurnID (where applicable):
     TurnCompletedEvent{ThreadID, TurnID string; Status TurnStatus; Turn *Turn}
     ItemStartedEvent{ThreadID, TurnID string; Item *Item}
     ItemCompletedEvent{ThreadID, TurnID string; Item *Item}
-    ItemUpdatedEvent{ThreadID, TurnID string; Item *Item}
     ThreadTokenUsageUpdatedEvent{ThreadID, TurnID string; TokenUsage *ThreadTokenUsage}
     TurnDiffUpdatedEvent{ThreadID, TurnID string; Diff json.RawMessage}
     TurnPlanUpdatedEvent{ThreadID, TurnID string; Plan json.RawMessage}
@@ -390,7 +526,7 @@ All events have ThreadID and TurnID (where applicable):
         StartedAt   *time.Time
         CompletedAt *time.Time
         DurationMS  int64
-        Usage       *ThreadTokenUsage
+        // No Usage: turn/completed and turn/read carry none; see thread/tokenUsage/updated.
     }
 
     type Item struct {
@@ -423,8 +559,10 @@ All events have ThreadID and TurnID (where applicable):
     }
 
     type TurnError struct {
-        Code    string
-        Message string
+        Message           string
+        AdditionalDetails string                    // optional
+        CodexErrorInfo    *CodexErrorInfo           // optional
+        Misalignment      *MisalignmentErrorDetails // optional
     }
 
 ## Enums and Constants
@@ -446,16 +584,23 @@ TurnItemsView (wire values):
     TurnItemsViewSummary   = "summary"
     TurnItemsViewFull      = "full"
 
-ApprovalMode (wire values):
-    ApprovalModeAuto      = "auto"
-    ApprovalModeOnRequest = "on-request"
-    ApprovalModeNever     = "never"
-    ApprovalModeAlways    = "always"
+AskForApproval (wire values; built via constructors, replaces the removed ApprovalMode):
+    "untrusted" | "on-request" | "never" | {"granular": {...}}
+    codexgo.ApprovalUntrusted() / ApprovalOnRequest() / ApprovalNever()
+    codexgo.ApprovalGranular(AskForApprovalGranular)
 
-SandboxMode (wire values):
-    SandboxReadOnly        = "read-only"
-    SandboxWorkspaceWrite  = "workspace-write"
-    SandboxFullAuto        = "full-auto"
+ApprovalsReviewer (wire values):
+    ApprovalsReviewerUser             = "user"
+    ApprovalsReviewerAutoReview       = "auto_review"
+    ApprovalsReviewerGuardianSubagent = "guardian_subagent"
+
+SandboxPolicy (tagged object, replaces passing a bare mode string):
+    {"type":"readOnly"} | {"type":"workspaceWrite"} | {"type":"dangerFullAccess"} | {"type":"externalSandbox"}
+
+SandboxMode constants (mode spellings; convert with SandboxPolicyFromMode):
+    SandboxReadOnly       = "read-only"
+    SandboxWorkspaceWrite = "workspace-write"
+    SandboxFullAccess     = "danger-full-access"
 
 ItemKind constants (wire = Go constant name in camelCase):
     ItemKindUserMessage, ItemKindHookPrompt, ItemKindAgentMessage,
@@ -474,11 +619,13 @@ ItemKind constants (wire = Go constant name in camelCase):
         HandleUserInputRequest(context.Context, UserInputRequest) (UserInputResult, error)
     }
 
-    // Auto-accept all approvals:
+    // Implement ApprovalHandler and pass it in; there is no built-in auto-accept handler:
     client, _ := codexgo.New(
         codexgo.WithStdioTransport(r, w),
-        codexgo.WithApprovalHandler(codexgo.AutoAcceptApprovalHandler{}),
+        codexgo.WithApprovalHandler(myHandler),
     )
+    // With no ApprovalHandler, approval requests are answered with a protocol-valid
+    // decline (never an error), so the session continues. See the unhandled-request path.
 
 CommandExecution decision constants:
     CommandExecutionApprovalDecisionAccept
@@ -519,4 +666,5 @@ FileChange decision constants:
 
 docs/index.md         -- quickstart examples and feature overview
 docs/api-reference.md -- complete type signatures and constants
+docs/reconnect.md     -- reconnect and event-delivery semantics
 llms.txt              -- condensed machine-readable reference

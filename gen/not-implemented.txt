@@ -1,0 +1,7 @@
+# Declared-stable methods this SDK deliberately does not implement (decision R4).
+# Authoritative machine-readable form (with reasons): gen/whitelist.json
+client_request       getAuthStatus
+client_request       getConversationSummary
+client_request       gitDiffToRemote
+server_notification  rawResponse/completed
+server_request       attestation/generate

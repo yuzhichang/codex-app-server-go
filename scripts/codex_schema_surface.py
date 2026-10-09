@@ -567,6 +567,33 @@ def _report(ok: bool, label: str, detail: str = "") -> bool:
     return ok
 
 
+
+def _report_surface_fresh(pinned: str) -> bool:
+    """Fail when the vendored surface is not from the checkout's current commit."""
+    import os
+
+    src = Path(os.environ.get("CODEX_SRC", Path.home() / "github.com/openai/codex"))
+    if not (src / ".git").exists():
+        print(f"  [SKIP] surface freshness: no codex checkout at {src} (set CODEX_SRC to check)")
+        return True
+    try:
+        head = subprocess.run(["git", "-C", str(src), "rev-parse", "HEAD"],
+                              capture_output=True, text=True, check=True).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        print(f"  [SKIP] surface freshness: cannot read HEAD of {src} ({exc})")
+        return True
+    if head == pinned:
+        print(f"  [PASS] surface is from the checkout's commit ({pinned[:12]})")
+        return True
+    print(f"  [FAIL] the vendored surface is from a DIFFERENT commit than your checkout")
+    print(f"         surface: {pinned[:12]}")
+    print(f"         checkout: {head[:12]}")
+    print(f"         Every coverage result below is measured against the surface, not your")
+    print(f"         checkout, so a clean result here does not mean the SDK matches the source")
+    print(f"         in front of you. Run `make sync` against {src}.")
+    return False
+
+
 def cmd_verify(args) -> int:
     surface_doc = json.loads((GEN_DIR / "method-surface.json").read_text())
     methods = surface_doc["methods"]
@@ -580,7 +607,18 @@ def cmd_verify(args) -> int:
     excl = {(e["method"], e["face"]) for e in exclusions}
 
     ok = True
-    print(f"verify: codex {surface_doc.get('codex_commit', '?')[:12]}")
+    pinned = surface_doc.get("codex_commit", "?")
+    print(f"verify: codex {pinned[:12]}")
+
+    # The vendored surface is a SNAPSHOT of one codex commit, so every other assertion here is
+    # only as good as that snapshot. Nothing compared it to the checkout the developer actually
+    # has, which meant a moved CODEX_SRC produced a silent clean: `gap == 0` measured against
+    # protocol definitions that no longer match the source in front of you.
+    #
+    # Skipped when there is no checkout to compare against (CI has none); failing there would
+    # make the check depend on having network access to fetch a repository.
+    ok &= _report_surface_fresh(pinned)
+
 
     # (1) source - export_experimental == the registered exclusion set
     diff = all_src - exp_all

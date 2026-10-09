@@ -49,7 +49,7 @@ Every number below is generated from `gen/method-surface.json` and `gen/implemen
 | Notifications (typed decoders) | 62 | 63 |
 | Server-initiated requests (handlers) | 9 | 10 |
 
-**Total: 177 of 177 in-scope methods implemented** (5 deliberately not implemented, struck through above and in `gen/whitelist.json` with a reason for each).
+**Total: 177 of 177 in-scope methods implemented** (5 deliberately not implemented, struck through above and listed in `gen/not-implemented.txt`, with a reason for each in `gen/whitelist.json`).
 
 Methods upstream marks `#[experimental]` are out of scope by decision R2 and are listed in `gen/not-in-scope.txt`.
 <!-- coverage:end -->

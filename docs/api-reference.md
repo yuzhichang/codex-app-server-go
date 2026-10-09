@@ -2,15 +2,29 @@
 
 Package: `github.com/zealbase/codex-app-server-go`
 
+Aligned to codex commit `14c8b7771ab2`; scope = **stable** only. Method coverage is generated
+from `gen/method-surface.json` + `gen/implemented-methods.json` and enforced by
+`make conformance-strict` (see README for the current numbers). Signatures here are the
+public surface; run `go doc github.com/zealbase/codex-app-server-go` for the exhaustive,
+always-current list.
+
 ## Client
 
 ```go
 func New(opts ...Option) (*Client, error)
 func (c *Client) Close() error
+
+// Low-level escape hatch
+func (c *Client) Call(ctx context.Context, method string, params, result any) error
+
+// Core
 func (c *Client) Initialize(ctx context.Context, req InitializeParams) (InitializeResponse, error)
 func (c *Client) Ping(ctx context.Context) error
+```
 
-// Thread lifecycle (low-level)
+### Thread
+
+```go
 func (c *Client) ThreadStart(ctx context.Context, req ThreadStartParams) (Thread, error)
 func (c *Client) ThreadResume(ctx context.Context, req ThreadResumeParams) (Thread, error)
 func (c *Client) ThreadRead(ctx context.Context, req ThreadReadParams) (Thread, error)
@@ -20,70 +34,180 @@ func (c *Client) ThreadLoadedList(ctx context.Context) ([]string, error)
 func (c *Client) ThreadArchive(ctx context.Context, req ThreadArchiveParams) error
 func (c *Client) ThreadUnarchive(ctx context.Context, req ThreadUnarchiveParams) error
 func (c *Client) ThreadSetName(ctx context.Context, req ThreadSetNameParams) error
+func (c *Client) ThreadDelete(ctx context.Context, req ThreadDeleteRequest) error
+func (c *Client) ThreadUnsubscribe(ctx context.Context, req ThreadUnsubscribeRequest) (ThreadUnsubscribeResult, error)
+func (c *Client) ThreadMetadataUpdate(ctx context.Context, req ThreadMetadataUpdateRequest) (ThreadMetadataUpdateResult, error)
+func (c *Client) ThreadInjectItems(ctx context.Context, req ThreadInjectItemsRequest) error
+func (c *Client) ThreadShellCommand(ctx context.Context, req ThreadShellCommandRequest) error
+func (c *Client) ThreadApproveGuardianDeniedAction(ctx context.Context, req ThreadApproveGuardianDeniedActionRequest) error
 func (c *Client) ThreadRevert(ctx context.Context, req ThreadRevertParams) (ThreadRevertResponse, error)
-
-// Turn lifecycle (low-level)
-func (c *Client) TurnStart(ctx context.Context, req TurnStartParams) (Turn, error)
-func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptParams) error
-func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) error
-func (c *Client) TurnRead(ctx context.Context, threadID, turnID string) (Turn, error)
+func (c *Client) ThreadCompactStart(ctx context.Context, req ThreadCompactStartParams) (ThreadCompactStartResponse, error)
+func (c *Client) ThreadTurnsList(ctx context.Context, req ThreadTurnsListParams) (ThreadTurnsListResponse, error)
+func (c *Client) ThreadItemsList(ctx context.Context, req ThreadItemsListParams) (ThreadItemsListResponse, error)
 
 // Thread goals
 func (c *Client) ThreadGoalSet(ctx context.Context, req ThreadGoalSetRequest) (ThreadGoal, error)
 func (c *Client) ThreadGoalGet(ctx context.Context, req ThreadGoalGetRequest) (ThreadGoal, error)
 func (c *Client) ThreadGoalClear(ctx context.Context, req ThreadGoalClearRequest) error
 
-// Config (slash-command equivalents)
+// Thread attachments
+func (c *Client) ThreadAttachmentAdd(ctx context.Context, req ThreadAttachmentAddParams) (ThreadAttachmentAddResponse, error)
+func (c *Client) ThreadAttachmentList(ctx context.Context, req ThreadAttachmentListParams) (ThreadAttachmentListResponse, error)
+func (c *Client) ThreadAttachmentOwnerList(ctx context.Context, req ThreadAttachmentOwnerListParams) (ThreadAttachmentOwnerListResponse, error)
+func (c *Client) ThreadAttachmentRemove(ctx context.Context, req ThreadAttachmentRemoveParams) (ThreadAttachmentRemoveResponse, error)
+
+// Thread sections
+func (c *Client) ThreadSectionList(ctx context.Context, req ThreadSectionListParams) (ThreadSectionListResponse, error)
+func (c *Client) ThreadSectionCreate(ctx context.Context, req ThreadSectionCreateParams) (ThreadSectionCreateResponse, error)
+func (c *Client) ThreadSectionUpdate(ctx context.Context, req ThreadSectionUpdateParams) (ThreadSectionUpdateResponse, error)
+func (c *Client) ThreadSectionDelete(ctx context.Context, req ThreadSectionDeleteParams) (ThreadSectionDeleteResponse, error)
+func (c *Client) ThreadSectionMove(ctx context.Context, req ThreadSectionMoveParams) (ThreadSectionMoveResponse, error)
+```
+
+### Turn
+
+```go
+func (c *Client) TurnStart(ctx context.Context, req TurnStartParams) (Turn, error)
+func (c *Client) TurnInterrupt(ctx context.Context, req TurnInterruptParams) error
+func (c *Client) TurnSteer(ctx context.Context, req TurnSteerParams) (TurnSteerResponse, error)
+func (c *Client) TurnRead(ctx context.Context, threadID, turnID string) (Turn, error)
+```
+
+### Account / login
+
+```go
+func (c *Client) AccountRead(ctx context.Context) (AccountReadResult, error)
+func (c *Client) Logout(ctx context.Context) error
+func (c *Client) LoginAPIKey(ctx context.Context, apiKey string) error
+func (c *Client) LoginChatGPT(ctx context.Context) (*LoginHandle, error)
+func (c *Client) LoginDeviceCode(ctx context.Context) (*LoginHandle, error)
+func (c *Client) CancelLoginAccount(ctx context.Context, req CancelLoginAccountParams) (CancelLoginAccountResponse, error)
+func (c *Client) GetAccountRateLimits(ctx context.Context, req NullableGetAccountRateLimitsParams) (GetAccountRateLimitsResponse, error)
+func (c *Client) GetAccountTokenUsage(ctx context.Context, req NullableGetAccountTokenUsageParams) (GetAccountTokenUsageResponse, error)
+func (c *Client) ConsumeAccountRateLimitResetCredit(ctx context.Context, req ConsumeAccountRateLimitResetCreditParams) (ConsumeAccountRateLimitResetCreditResponse, error)
+func (c *Client) GetWorkspaceMessages(ctx context.Context) (GetWorkspaceMessagesResponse, error)
+func (c *Client) SendAddCreditsNudgeEmail(ctx context.Context, req SendAddCreditsNudgeEmailParams) (SendAddCreditsNudgeEmailResponse, error)
+func (c *Client) GatewayOAuthLogin(ctx context.Context) (GatewayOAuthLoginResponse, error)
+func (c *Client) GatewayOAuthCancel(ctx context.Context) (GatewayOAuthCancelResponse, error)
+func (c *Client) GatewayOAuthRead(ctx context.Context) (GatewayOAuthReadResponse, error)
+```
+
+### Models / config
+
+```go
+func (c *Client) ModelList(ctx context.Context, includeHidden bool) ([]ModelInfo, error)
+func (c *Client) Models(ctx context.Context) ([]string, error)
+func (c *Client) ModelProviderCapabilitiesRead(ctx context.Context) (ModelProviderCapabilities, error)
+
+// Slash-command equivalents
 func (c *Client) SetModel(ctx context.Context, model string) error
 func (c *Client) SetApprovalPolicy(ctx context.Context, policy string) error
-func (c *Client) SetSandboxPolicy(ctx context.Context, policy string) error
+func (c *Client) SetSandbox(ctx context.Context, sandbox string) error
 
 // Config CRUD
-func (c *Client) ConfigRead(ctx context.Context, req ConfigReadRequest) (ConfigReadResult, error)
-func (c *Client) ConfigValueWrite(ctx context.Context, req ConfigValueWriteRequest) error
-func (c *Client) ConfigBatchWrite(ctx context.Context, req ConfigBatchWriteRequest) error
+func (c *Client) ConfigRead(ctx context.Context, req ConfigReadParams) (ConfigReadResponse, error)
+func (c *Client) ConfigValueWrite(ctx context.Context, req ConfigValueWriteParams) (ConfigWriteResponse, error)
+func (c *Client) ConfigBatchWrite(ctx context.Context, req ConfigBatchWriteParams) (ConfigWriteResponse, error)
+func (c *Client) ConfigRequirementsRead(ctx context.Context) (ConfigRequirementsReadResponse, error)
+func (c *Client) ConfigMCPServerReload(ctx context.Context) (McpServerRefreshResponse, error)
+```
 
-// Skills
+### Review / skills / features / hooks
+
+```go
+func (c *Client) ReviewStart(ctx context.Context, req ReviewStartParams) (ReviewStartResponse, error)
+
 func (c *Client) SkillsList(ctx context.Context, req SkillsListRequest) (SkillsListResult, error)
 func (c *Client) SkillsConfigWrite(ctx context.Context, req SkillsConfigWriteRequest) (SkillsConfigWriteResult, error)
 func (c *Client) SkillsExtraRootsSet(ctx context.Context, req SkillsExtraRootsSetRequest) error
 
-// Experimental features
 func (c *Client) ExperimentalFeatureList(ctx context.Context, req ExperimentalFeatureListRequest) (ExperimentalFeatureListResult, error)
 func (c *Client) ExperimentalFeatureEnablementSet(ctx context.Context, req ExperimentalFeatureEnablementSetRequest) (ExperimentalFeatureEnablementSetResult, error)
 
-// Hooks (server-side; distinct from the client-side hook bridge)
 func (c *Client) HooksList(ctx context.Context, req HooksListRequest) (HooksListResult, error)
+```
 
-// Thread extras (metadata / subscription / mutations)
-func (c *Client) ThreadMetadataUpdate(ctx context.Context, req ThreadMetadataUpdateRequest) (ThreadMetadataUpdateResult, error)
-func (c *Client) ThreadUnsubscribe(ctx context.Context, req ThreadUnsubscribeRequest) (ThreadUnsubscribeResult, error)
-func (c *Client) ThreadDelete(ctx context.Context, req ThreadDeleteRequest) error
-func (c *Client) ThreadInjectItems(ctx context.Context, req ThreadInjectItemsRequest) error
-func (c *Client) ThreadShellCommand(ctx context.Context, req ThreadShellCommandRequest) error
-func (c *Client) ThreadApproveGuardianDeniedAction(ctx context.Context, req ThreadApproveGuardianDeniedActionRequest) error
+### Plugins / marketplace / apps
 
-// Model provider capabilities
-func (c *Client) ModelProviderCapabilitiesRead(ctx context.Context) (ModelProviderCapabilities, error)
+```go
+func (c *Client) MarketplaceAdd(ctx context.Context, req MarketplaceAddParams) (MarketplaceAddResponse, error)
+func (c *Client) MarketplaceRemove(ctx context.Context, req MarketplaceRemoveParams) (MarketplaceRemoveResponse, error)
+func (c *Client) MarketplaceUpgrade(ctx context.Context, req MarketplaceUpgradeParams) (MarketplaceUpgradeResponse, error)
 
-// Interactive command execution (PTY)
+func (c *Client) PluginList(ctx context.Context, req PluginListParams) (PluginListResponse, error)
+func (c *Client) PluginInstalled(ctx context.Context, req PluginInstalledParams) (PluginInstalledResponse, error)
+func (c *Client) PluginReconcile(ctx context.Context, req PluginReconcileParams) (PluginReconcileResponse, error)
+func (c *Client) PluginRead(ctx context.Context, req PluginReadParams) (PluginReadResponse, error)
+func (c *Client) PluginSkillRead(ctx context.Context, req PluginSkillReadParams) (PluginSkillReadResponse, error)
+func (c *Client) PluginShareSave(ctx context.Context, req PluginShareSaveParams) (PluginShareSaveResponse, error)
+func (c *Client) PluginShareUpdateTargets(ctx context.Context, req PluginShareUpdateTargetsParams) (PluginShareUpdateTargetsResponse, error)
+func (c *Client) PluginShareList(ctx context.Context, req PluginShareListParams) (PluginShareListResponse, error)
+func (c *Client) PluginShareCheckout(ctx context.Context, req PluginShareCheckoutParams) (PluginShareCheckoutResponse, error)
+func (c *Client) PluginShareDelete(ctx context.Context, req PluginShareDeleteParams) (PluginShareDeleteResponse, error)
+func (c *Client) PluginInstall(ctx context.Context, req PluginInstallParams) (PluginInstallResponse, error)
+func (c *Client) PluginUninstall(ctx context.Context, req PluginUninstallParams) (PluginUninstallResponse, error)
+
+func (c *Client) AppsList(ctx context.Context, req AppsListParams) (AppsListResponse, error)
+func (c *Client) AppsInstalled(ctx context.Context, req AppsInstalledParams) (AppsInstalledResponse, error)
+func (c *Client) AppsRead(ctx context.Context, req AppsReadParams) (AppsReadResponse, error)
+```
+
+### Filesystem
+
+```go
+func (c *Client) FSReadFile(ctx context.Context, req FsReadFileParams) (FsReadFileResponse, error)
+func (c *Client) FSReadFileBytes(ctx context.Context, path string) ([]byte, error) // base64 round-trip helper
+func (c *Client) FSWriteFile(ctx context.Context, req FsWriteFileParams) (FsWriteFileResponse, error)
+func (c *Client) FSWriteFileBytes(ctx context.Context, path string, data []byte) error
+func (c *Client) FSCreateDirectory(ctx context.Context, req FsCreateDirectoryParams) (FsCreateDirectoryResponse, error)
+func (c *Client) FSGetMetadata(ctx context.Context, req FsGetMetadataParams) (FsGetMetadataResponse, error)
+func (c *Client) FSReadDirectory(ctx context.Context, req FsReadDirectoryParams) (FsReadDirectoryResponse, error)
+func (c *Client) FSRemove(ctx context.Context, req FsRemoveParams) (FsRemoveResponse, error)
+func (c *Client) FSCopy(ctx context.Context, req FsCopyParams) (FsCopyResponse, error)
+func (c *Client) FSWatch(ctx context.Context, req FsWatchParams) (FsWatchResponse, error)
+func (c *Client) FSUnwatch(ctx context.Context, req FsUnwatchParams) (FsUnwatchResponse, error)
+```
+
+### MCP
+
+```go
+func (c *Client) MCPServerOauthLogin(ctx context.Context, req McpServerOauthLoginParams) (McpServerOauthLoginResponse, error)
+func (c *Client) MCPServerStatusList(ctx context.Context, req ListMcpServerStatusParams) (ListMcpServerStatusResponse, error)
+func (c *Client) MCPServerResourceRead(ctx context.Context, req McpResourceReadParams) (McpResourceReadResponse, error)
+func (c *Client) MCPServerToolCall(ctx context.Context, req McpServerToolCallParams) (McpServerToolCallResponse, error)
+```
+
+### Interactive command execution (PTY)
+
+```go
 func (c *Client) CommandExec(ctx context.Context, req CommandExecRequest) (CommandExecResult, error)
 func (c *Client) CommandExecWrite(ctx context.Context, req CommandExecWriteRequest) error
 func (c *Client) CommandExecResize(ctx context.Context, req CommandExecResizeRequest) error
 func (c *Client) CommandExecTerminate(ctx context.Context, req CommandExecTerminateRequest) error
 func (c *Client) CommandExecHandle(processID string) *CommandExecHandle // write/resize/terminate convenience
+```
 
-// Models
-func (c *Client) Models(ctx context.Context) ([]string, error)
+### Other stable methods
 
-// High-level session API
+```go
+func (c *Client) PermissionProfileList(ctx context.Context, req PermissionProfileListParams) (PermissionProfileListResponse, error)
+func (c *Client) FeedbackUpload(ctx context.Context, req FeedbackUploadParams) (FeedbackUploadResponse, error)
+func (c *Client) FuzzyFileSearch(ctx context.Context, req FuzzyFileSearchParams) (FuzzyFileSearchResponse, error)
+func (c *Client) ExternalAgentConfigDetect(ctx context.Context, req ExternalAgentConfigDetectParams) (ExternalAgentConfigDetectResponse, error)
+func (c *Client) ExternalAgentConfigImport(ctx context.Context, req ExternalAgentConfigImportParams) (ExternalAgentConfigImportResponse, error)
+func (c *Client) ExternalAgentConfigImportHistoryRecord(ctx context.Context, req ExternalAgentConfigImportHistoryRecordParams) (ExternalAgentConfigImportHistoryRecordResponse, error)
+func (c *Client) ExternalAgentConfigImportHistoriesRead(ctx context.Context) (ExternalAgentConfigImportHistoriesReadResponse, error)
+func (c *Client) WindowsSandboxSetupStart(ctx context.Context, req WindowsSandboxSetupStartParams) (WindowsSandboxSetupStartResponse, error)
+func (c *Client) WindowsSandboxReadiness(ctx context.Context) (WindowsSandboxReadinessResponse, error)
+```
+
+### High-level session API / events / wait helpers
+
+```go
 func (c *Client) StartThread(ctx context.Context, opts ...ThreadOption) (*SessionThread, error)
 func (c *Client) ResumeThread(ctx context.Context, threadID string, opts ...ThreadOption) (*SessionThread, error)
-
-// Events
 func (c *Client) Events() *EventSubscription
 
-// Wait helpers
 func (c *Client) WaitForTurn(ctx context.Context, threadID, turnID string) (Turn, error)
 func (c *Client) WaitForFinalAgentMessage(ctx context.Context, threadID, turnID string) (string, error)
 func (c *Client) WaitForStructuredOutput(ctx context.Context, threadID, turnID string, out any) (Turn, error)
@@ -99,6 +223,7 @@ func (t *SessionThread) Close()
 
 // Synchronous turn — blocks until terminal status.
 func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOption) (*TurnResult, error)
+func (t *SessionThread) RunInputs(ctx context.Context, inputs []UserInput, opts ...TurnOption) (*TurnResult, error)
 
 // Streaming turn — returns channel of events; drain or cancel ctx to release mutex.
 func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, error)
@@ -126,11 +251,11 @@ func (t *SessionThread) ClearGoal(ctx context.Context) error
 
 ```go
 type TurnResult struct {
-    Turn      Turn        // final turn state from the server
-    Items     []Item      // items captured via streaming events
+    Turn      Turn              // final turn state from the server
+    Items     []Item            // items captured via streaming events
     Usage     *ThreadTokenUsage // from thread/tokenUsage/updated; nil until it arrives
-    Error     *TurnError  // non-nil when turn status is "failed"
-    DeltaText string      // agent text from streaming deltas (fallback when Items empty)
+    Error     *TurnError        // non-nil when turn status is "failed"
+    DeltaText string            // agent text from streaming deltas (fallback when Items empty)
 }
 
 // FinalAgentText returns the last agent-message text, checking Items, Turn.Items,
@@ -141,23 +266,44 @@ func (r *TurnResult) FinalAgentText() string
 ## Options
 
 ```go
-// Transport
-func WithStdioTransport(r io.ReadCloser, w io.WriteCloser) Option
+// Transport (pick one)
+func WithStdioTransport(stdin io.ReadCloser, stdout io.WriteCloser) Option
+func WithStdioProcess(binaryPath string, args ...string) Option
 func WithTransport(t Transport) Option
-func WithWSTransport(dialCtx context.Context, endpoint string) Option
-func WithHTTPTransport(endpoint string) Option              // WIP — requires ws-http-bridge sidecar
-func WithReconnectingHTTPTransport(endpoint string) Option  // WIP — requires ws-http-bridge sidecar
-func WithRetry(cfg RetryConfig) Option
-func WithHTTPBearerToken(token string) Option
-func WithWSBearerToken(token string) Option
+func WithWSTransport(ctx context.Context, url string) Option
+func WithReconnectingWSTransport(ctx context.Context, url string) Option
+func WithUnixSocketWSTransport(ctx context.Context, socketPath string) Option
+func WithHTTPTransport(baseURL string) Option              // WIP — requires ws-http-bridge sidecar
+func WithReconnectingHTTPTransport(baseURL string) Option  // WIP — requires ws-http-bridge sidecar
+func WithRetry(cfg transport.RetryConfig) Option
 
 // NOTE: HTTP transport is work-in-progress. The Codex app-server is WebSocket-only;
 // WithHTTPTransport / WithReconnectingHTTPTransport require the ws-http-bridge sidecar
 // (plugins/codex-server/ws-http-bridge) in front of the server, else requests 405.
 
+// Auth
+func WithHTTPBearerToken(token string) Option
+func WithWSBearerToken(token string) Option
+func WithHTTPAPIKey(key string) Option
+func WithWSAPIKey(key string) Option
+func WithAutoLogin(apiKey string) Option
+
 // Handlers
 func WithApprovalHandler(handler ApprovalHandler) Option
 func WithRequestHandler(handler RequestHandler) Option
+
+// Reliability
+func WithAutoReconnect() Option
+func WithSessionBackfill(limit int) Option
+func WithEventSubscriberTimeout(d time.Duration) Option
+
+// Handshake
+func WithClientInfo(name, title, version string) Option
+func WithInitializeCapabilities(c *InitializeCapabilities) Option
+
+// Process
+func WithProcessDir(dir string) Option
+func WithProcessEnv(key, value string) Option
 
 // Concurrency
 func WithMaxThreads(n int) Option // -1 = unlimited; 0 = default (64)
@@ -167,10 +313,11 @@ func WithMaxThreads(n int) Option // -1 = unlimited; 0 = default (64)
 
 ```go
 func WithThreadModel(model string) ThreadOption
-func WithThreadApprovalPolicy(policy string) ThreadOption
 func WithThreadApprovalPolicy(policy AskForApproval) ThreadOption
+func WithThreadApprovalsReviewer(reviewer ApprovalsReviewer) ThreadOption
 func WithThreadCWD(cwd string) ThreadOption
 func WithThreadEphemeral(ephemeral bool) ThreadOption
+func WithThreadPersonality(personality string) ThreadOption
 func WithInitialInput(input string) ThreadOption // runs first turn immediately after start
 ```
 
@@ -178,13 +325,31 @@ func WithInitialInput(input string) ThreadOption // runs first turn immediately 
 
 ```go
 func WithModel(model string) TurnOption
-func WithApprovalPolicy(policy string) TurnOption
 func WithApprovalPolicy(policy AskForApproval) TurnOption
-func WithSandbox(policy string) TurnOption
-func WithSandboxMode(mode SandboxMode) TurnOption
+func WithApprovalsReviewer(reviewer ApprovalsReviewer) TurnOption
+func WithSandboxPolicy(policy SandboxPolicy) TurnOption // tagged object, not a mode string
+func WithSandboxMode(mode SandboxMode) TurnOption       // convenience: converted to a policy
 func WithCWD(cwd string) TurnOption
 func WithEffort(effort string) TurnOption
+func WithOutputSchema(schema any) TurnOption
 func WithInputs(inputs ...UserInput) TurnOption
+```
+
+## Input / policy builders
+
+Turn input is upstream `[]UserInput` (tagged objects), not a bare string:
+
+```go
+func TextInput(text string) UserInput
+func TextInputs(text string) []UserInput
+func ImageInput(url string) UserInput
+func LocalImageInput(path string) (UserInput, error)
+
+func SandboxPolicyFromMode(m SandboxMode) *SandboxPolicy
+func ApprovalUntrusted() AskForApproval
+func ApprovalOnRequest() AskForApproval
+func ApprovalNever() AskForApproval
+func ApprovalGranular(g AskForApprovalGranular) AskForApproval
 ```
 
 ## Transport
@@ -205,6 +370,8 @@ type EventSubscription struct{}
 
 func (s *EventSubscription) C() <-chan Event
 func (s *EventSubscription) Close()
+func (s *EventSubscription) Err() error          // terminal reason, nil while healthy
+func (s *EventSubscription) Done() <-chan struct{} // closed when the subscription terminates
 
 type Event struct {
     Method string
@@ -215,14 +382,17 @@ type Event struct {
 func (e Event) Decode(v any) error
 ```
 
-Typed notification payloads:
+Delivery contract: `publish` never blocks a producer; a slow subscriber is bounded and is
+terminated through `Err()`/`Done()` rather than being silently dropped. Always handle
+termination (check `Err()`, or select on `Done()`), not just the `C()` channel.
+
+Typed notification payloads (62 of the 63 declared-stable notifications are typed):
 
 ```go
 type TurnStartedEvent struct { ThreadID, TurnID string; Turn *Turn }
 type TurnCompletedEvent struct { ThreadID, TurnID string; Status TurnStatus; Turn *Turn }
 type ItemStartedEvent struct { ThreadID, TurnID string; Item *Item }
 type ItemCompletedEvent struct { ThreadID, TurnID string; Item *Item }
-type ItemUpdatedEvent struct { ThreadID, TurnID string; Item *Item }
 type ThreadTokenUsageUpdatedEvent struct { ThreadID, TurnID string; TokenUsage *ThreadTokenUsage }
 type TurnDiffUpdatedEvent struct { ThreadID, TurnID string; Diff json.RawMessage }
 type TurnPlanUpdatedEvent struct { ThreadID, TurnID string; Plan json.RawMessage }
@@ -246,9 +416,9 @@ type ItemFileChangePatchUpdatedEvent struct { ThreadID, TurnID, ItemID string; P
 type ItemFileChangeOutputDeltaEvent struct { ThreadID, TurnID, ItemID, Output, Delta string }
 type ItemAutoApprovalReviewStartedEvent struct { ThreadID, TurnID, ItemID string }
 type ItemAutoApprovalReviewCompletedEvent struct { ThreadID, TurnID, ItemID string }
-type RawNotificationEvent struct { ThreadID, TurnID, ItemID string }
+type RawNotificationEvent struct { ThreadID, TurnID, ItemID string } // unknown-method fallback
 
-// Extra notifications (events_extra.go) — 65/68 notifications are typed.
+// Extra notifications (events_extra.go)
 // NP1 thread/account lifecycle
 type ThreadDeletedEvent struct { ThreadID string }
 type ThreadNameUpdatedEvent struct { ThreadID, ThreadName string }
@@ -292,28 +462,39 @@ type ThreadRealtimeSdpEvent struct { ThreadID, SDP string }
 type ThreadRealtimeOutputAudioDeltaEvent struct { ThreadID string; Audio json.RawMessage }
 type ThreadRealtimeTranscriptDeltaEvent struct { ThreadID, Role, Delta string }
 type ThreadRealtimeTranscriptDoneEvent struct { ThreadID, Role, Text string }
+
+// Synthetic SDK events (not on the wire; sdk/ prefix):
+// sdk/sessionBackfilled, sdk/reconnectStarted, sdk/reconnectSucceeded, sdk/reconnectFailed,
+// sdk/sessionRecovered, sdk/unhandledServerRequest, sdk/pendingApprovalLost
 ```
 
 ## Core Request/Response Types
 
 ```go
 type ThreadStartParams struct {
-    Model          string `json:"model,omitempty"`
-    CWD            string `json:"cwd,omitempty"`
-    ApprovalPolicy string `json:"approvalPolicy,omitempty"`
-    Ephemeral      bool   `json:"ephemeral,omitempty"`
+    Model                 string             `json:"model,omitempty"`
+    CWD                   string             `json:"cwd,omitempty"`
+    ApprovalPolicy        *AskForApproval    `json:"approvalPolicy,omitempty"`
+    ApprovalsReviewer     *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
+    RuntimeWorkspaceRoots []string           `json:"runtimeWorkspaceRoots,omitempty"`
+    Personality           string             `json:"personality,omitempty"`
+    DynamicTools          []string           `json:"dynamicTools,omitempty"`
+    Ephemeral             bool               `json:"ephemeral,omitempty"`
+    Metadata              json.RawMessage    `json:"metadata,omitempty"`
 }
 
 type TurnStartParams struct {
-    ThreadID       string          `json:"threadId"`
-    Input          string          `json:"input,omitempty"`
-    CWD            string          `json:"cwd,omitempty"`
-    ApprovalPolicy string          `json:"approvalPolicy,omitempty"`
-    SandboxPolicy  string          `json:"sandboxPolicy,omitempty"`
-    Model          string          `json:"model,omitempty"`
-    Effort         string          `json:"effort,omitempty"`
-    Skill          string          `json:"skill,omitempty"`
-    OutputSchema   json.RawMessage `json:"outputSchema,omitempty"`
+    ThreadID            string             `json:"threadId"`
+    Input               []UserInput        `json:"input"` // required; tagged objects, not a string
+    ClientUserMessageID string             `json:"clientUserMessageId,omitempty"`
+    CWD                 string             `json:"cwd,omitempty"`
+    ApprovalPolicy      *AskForApproval    `json:"approvalPolicy,omitempty"`
+    ApprovalsReviewer   *ApprovalsReviewer `json:"approvalsReviewer,omitempty"`
+    SandboxPolicy       *SandboxPolicy     `json:"sandboxPolicy,omitempty"` // tagged object
+    Permissions         []string           `json:"permissions,omitempty"`
+    Model               string             `json:"model,omitempty"`
+    OutputSchema        json.RawMessage    `json:"outputSchema,omitempty"`
+    // ...see go doc for the full field set
 }
 ```
 
@@ -321,10 +502,15 @@ type TurnStartParams struct {
 
 ```go
 type Thread struct {
-    ID     string
-    Name   string
-    Status ThreadStatus
-    Turns  []Turn
+    ID        string
+    SessionID string
+    Status    ThreadStatus
+    Preview   string
+    CWD       string
+    CreatedAt *time.Time
+    UpdatedAt *time.Time
+    Turns     []Turn
+    // ...see go doc for the full field set
 }
 
 type Turn struct {
@@ -332,10 +518,11 @@ type Turn struct {
     Items       []Item
     ItemsView   TurnItemsView
     Status      TurnStatus
-    Usage       *ThreadTokenUsage
+    Error       json.RawMessage
     StartedAt   *time.Time
     CompletedAt *time.Time
     DurationMS  int64
+    // No Usage: turn/completed and turn/read carry none; usage is a separate notification.
 }
 
 type Item struct {
@@ -359,10 +546,27 @@ type ThreadTokenUsage struct {
     ModelContextWindow int64
 }
 
+type TurnError struct {
+    Message           string
+    AdditionalDetails string
+    CodexErrorInfo    *CodexErrorInfo
+    Misalignment      *MisalignmentErrorDetails
+}
+
 type ThreadGoal struct {
-    Objective string
+    ThreadID        string
+    Objective       string
+    Status          ThreadGoalStatus
+    CreatedAt       int64
+    UpdatedAt       int64
+    TimeUsedSeconds int64
+    TokensUsed      int64
+    TokenBudget     *int64
 }
 ```
+
+`ThreadTokenUsage` arrives only via the `thread/tokenUsage/updated` notification. Upstream
+carries usage nowhere else — `turn/completed` sends `{threadId, turn}` with no `usage`.
 
 ## Enums and Constants
 
@@ -371,8 +575,10 @@ type ThreadStatus string  // wire values: "notLoaded", "idle", "systemError", "a
 type TurnStatus string    // wire values: "inProgress", "completed", "interrupted", "failed"
 type TurnItemsView string // wire values: "notLoaded", "summary", "full"
 type ItemKind string      // wire values: see below
-type ApprovalMode string  // wire values: "auto", "on-request", "never", "always"
-type SandboxMode string   // wire values: "read-only", "workspace-write", "full-auto"
+type AskForApproval = schematypes.AskForApproval         // "untrusted" | "on-request" | "never" | {"granular": {...}}
+type ApprovalsReviewer = schematypes.ApprovalsReviewer   // "user" | "auto_review" | "guardian_subagent"
+type SandboxPolicy = schematypes.SandboxPolicy           // tagged object
+type SandboxMode = schematypes.SandboxMode               // mode spellings
 
 const (
     ThreadStatusNotLoaded   ThreadStatus = "notLoaded"
@@ -389,12 +595,20 @@ const (
     TurnItemsViewSummary   TurnItemsView = "summary"
     TurnItemsViewFull      TurnItemsView = "full"
 
-    ApprovalModeAuto      ApprovalMode = "auto"
-    ApprovalModeOnRequest ApprovalMode = "on-request"
-    ApprovalModeNever     ApprovalMode = "never"
-    ApprovalModeAlways    ApprovalMode = "always"
+    ApprovalsReviewerUser             ApprovalsReviewer = "user"
+    ApprovalsReviewerAutoReview       ApprovalsReviewer = "auto_review"
+    ApprovalsReviewerGuardianSubagent ApprovalsReviewer = "guardian_subagent"
+
+    SandboxReadOnly       = schematypes.SandboxModeReadOnly        // "read-only"
+    SandboxWorkspaceWrite = schematypes.SandboxModeWorkspaceWrite  // "workspace-write"
+    SandboxFullAccess     = schematypes.SandboxModeDangerFullAccess // "danger-full-access"
 )
 ```
+
+`SandboxPolicy` is a tagged object (`{"type":"readOnly"}` / `workspaceWrite` /
+`dangerFullAccess` / `externalSandbox`), not a mode string; build it with
+`SandboxPolicyFromMode` or the policy constructors. `ApprovalMode` (which mixed the
+approval policy with the reviewer and included values valid in neither) was removed.
 
 Item kind constants (value = wire string):
 
@@ -435,6 +649,11 @@ type RequestHandler interface {
 
 type RequestHandlerFunc func(context.Context, ServerRequest) (ServerResponse, error)
 ```
+
+With no handler configured, a known approval-class request is answered with a protocol-valid
+decline (never a JSON-RPC error), so the session continues; unknown methods get `-32601`.
+Both are reported via `sdk/unhandledServerRequest`. See `Dispatcher.ApprovalTimeout`: a
+timed-out approval is always refused, never granted.
 
 Selected approval decision constants:
 

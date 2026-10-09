@@ -77,6 +77,21 @@ FACE_KIND = {
     "client_notification": "client_notification_sender",
 }
 
+
+def not_implemented_text(whitelist: list[dict]) -> str:
+    """Human-readable mirror of gen/whitelist.json: the declared-stable methods the SDK
+    deliberately does not implement (decision R4). whitelist.json stays the machine-readable
+    source of truth (it carries the reasons); this file exists so the plan's
+    `gen/not-implemented.txt` artifact has a single, generated author."""
+    lines = [
+        "# Declared-stable methods this SDK deliberately does not implement (decision R4).",
+        "# Authoritative machine-readable form (with reasons): gen/whitelist.json",
+    ]
+    for w in sorted(whitelist, key=lambda w: (w["face"], w["method"])):
+        lines.append(f"{w['face']:20s} {w['method']}")
+    return "\n".join(lines) + "\n"
+
+
 _CONST_DECL = re.compile(r'^\s*(Method\w+)\s*=\s*"([^"]+)"', re.M)
 
 
@@ -276,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             "# Methods the SDK still wires up that upstream no longer declares (decision R3: remove them).\n"
             + "".join(f"{kind:24s} {wire}\n" for wire, kind in unknown)
         )
+        (GEN_DIR / "not-implemented.txt").write_text(not_implemented_text(whitelist))
         print(f"write: {len(implemented)} implemented method(s) recorded")
         print(f"       gap={len(gap)} unknown(stale upstream)={len(unknown)}")
         return 0
@@ -343,6 +359,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  [FAIL] wired up but no longer declared upstream (remove per R3) ({len(unknown)}): {[w for w, _ in unknown]}")
     else:
         print("  [PASS] nothing is wired up that upstream has removed")
+    # not-implemented.txt is a generated mirror of whitelist.json; a mismatch means it was
+    # hand-edited or the whitelist changed without regenerating it.
+    ni_path = GEN_DIR / "not-implemented.txt"
+    if not ni_path.is_file() or ni_path.read_text() != not_implemented_text(whitelist):
+        ok = False
+        print("  [FAIL] gen/not-implemented.txt is missing or stale (run `make coverage-write`)")
+    else:
+        print("  [PASS] gen/not-implemented.txt matches gen/whitelist.json")
     if args.strict and gap:
         ok = False
         print(f"  [FAIL] declared/implemented gap is non-empty ({len(gap)}); run `report` for the list")

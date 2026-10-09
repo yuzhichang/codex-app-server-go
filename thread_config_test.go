@@ -138,3 +138,58 @@ func TestThreadStartSendsSandboxAndInstructionOverrides(t *testing.T) {
 		t.Fatalf("instruction overrides did not reach the wire: %v", got)
 	}
 }
+
+// Resume must forward the same override set Start does. Client.ResumeThread used to build
+// ThreadResumeParams{ThreadID} only and silently drop every override, so a resumed thread
+// depended on whatever the server happened to store at thread/start (and, e.g., a per-thread
+// MCP server config could not be refreshed). ThreadResumeParams already carries these fields;
+// pin that they reach thread/resume.
+func TestResumeThreadForwardsOverrides(t *testing.T) {
+	client, mock := newClientFromMock(t)
+
+	var got map[string]any
+	mock.Handle("thread/resume", func(params json.RawMessage) (any, error) {
+		if err := json.Unmarshal(params, &got); err != nil {
+			return nil, err
+		}
+		return map[string]any{"thread": map[string]any{"id": "t1"}}, nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	thread, err := client.ResumeThread(ctx, "t1",
+		codexgo.WithThreadModel("gpt-5.4"),
+		codexgo.WithThreadModelProvider("acme"),
+		codexgo.WithThreadConfigOverride("mcp_servers.ragflow", map[string]any{
+			"url": "http://ragflow.local/mcp/codex/tok",
+		}),
+		codexgo.WithThreadSandbox(codexgo.SandboxReadOnly),
+		codexgo.WithThreadBaseInstructions("cite chunk ids"),
+	)
+	if err != nil {
+		t.Fatalf("ResumeThread: %v", err)
+	}
+	defer thread.Close()
+
+	if got["model"] != "gpt-5.4" {
+		t.Fatalf("model = %v, want gpt-5.4", got["model"])
+	}
+	if got["modelProvider"] != "acme" {
+		t.Fatalf("modelProvider = %v, want acme", got["modelProvider"])
+	}
+	if got["sandbox"] != string(codexgo.SandboxReadOnly) {
+		t.Fatalf("sandbox = %v, want %q", got["sandbox"], codexgo.SandboxReadOnly)
+	}
+	if got["baseInstructions"] != "cite chunk ids" {
+		t.Fatalf("baseInstructions = %v", got["baseInstructions"])
+	}
+	cfg, ok := got["config"].(map[string]any)
+	if !ok {
+		t.Fatalf("thread/resume carried no config overlay: %v", got["config"])
+	}
+	srv, ok := cfg["mcp_servers.ragflow"].(map[string]any)
+	if !ok || srv["url"] != "http://ragflow.local/mcp/codex/tok" {
+		t.Fatalf("mcp override did not reach thread/resume: %v", cfg)
+	}
+}

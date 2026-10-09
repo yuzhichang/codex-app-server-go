@@ -486,13 +486,20 @@ func (c *Client) StartThread(ctx context.Context, opts ...ThreadOption) (*Sessio
 
 // ResumeThread reconnects to an existing thread by ID and returns a stateful
 // SessionThread.
+//
+// The opts' override set (model, provider, config overlay / MCP servers, sandbox,
+// instructions, approval, cwd, ...) is forwarded on thread/resume, so a resumed thread
+// re-declares its configuration instead of silently depending on whatever the server
+// stored at thread/start. ThreadOption values that only make sense at start
+// (initialInput is honored; the start-only fields ThreadResumeParams does not carry are
+// ignored) behave as documented on their constructors.
 func (c *Client) ResumeThread(ctx context.Context, threadID string, opts ...ThreadOption) (*SessionThread, error) {
 	release, err := c.acquireThreadSlot(ctx)
 	if err != nil {
 		return nil, err
 	}
 	cfg := applyThreadOptions(opts)
-	_, err = c.ThreadResume(ctx, ThreadResumeParams{ThreadID: threadID})
+	_, err = c.ThreadResume(ctx, resumeParamsFromThreadOptions(threadID, cfg))
 	if err != nil {
 		release()
 		return nil, err

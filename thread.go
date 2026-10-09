@@ -136,6 +136,30 @@ func applyThreadOptions(opts []ThreadOption) threadConfig {
 	return cfg
 }
 
+// resumeParamsFromThreadOptions maps a resolved ThreadOption set onto ThreadResumeParams so
+// Client.ResumeThread forwards the same override set ThreadStart carries (model, provider,
+// config overlay/MCP servers, sandbox, instructions, approval, cwd, ...). Without this the
+// variadic opts on Client.ResumeThread were accepted but silently ignored (only initialInput
+// was used), so a resumed thread silently fell back to the server's stored config -- a trap,
+// since the resume params already expose every one of these fields.
+func resumeParamsFromThreadOptions(threadID string, cfg threadConfig) ThreadResumeParams {
+	req := cfg.req
+	return ThreadResumeParams{
+		ThreadID:              threadID,
+		ApprovalPolicy:        req.ApprovalPolicy,
+		ApprovalsReviewer:     req.ApprovalsReviewer,
+		BaseInstructions:      req.BaseInstructions,
+		DeveloperInstructions: req.DeveloperInstructions,
+		Config:                req.Config,
+		CWD:                   req.CWD,
+		Model:                 req.Model,
+		ModelProvider:         req.ModelProvider,
+		ServiceTier:           req.ServiceTier,
+		Personality:           req.Personality,
+		Sandbox:               req.Sandbox,
+	}
+}
+
 // SessionThread represents a live, stateful session on the Codex app-server.
 // Use Client.StartThread / Client.ResumeThread to obtain one.
 type SessionThread struct {
@@ -233,6 +257,12 @@ func (t *SessionThread) RunInputs(ctx context.Context, inputs []UserInput, opts 
 // The channel is closed when the turn completes or errors.
 // The caller must drain the channel to avoid blocking the event broker.
 //
+// The subscription to server events is established BEFORE TurnStart is called, so a fast
+// (mock) server that emits item/delta and turn/completed notifications before TurnStart
+// returns cannot race ahead of the subscription and lose them. This mirrors RunInputs; the
+// earlier order (TurnStart first, subscribe after) dropped events on fast servers and could
+// hang until ctx was cancelled.
+//
 // Concurrency: RunStreamed acquires an internal turn mutex that prevents two
 // turns from running concurrently on the same SessionThread. The mutex is held
 // for the entire stream duration and is released only when the goroutine exits —
@@ -246,14 +276,18 @@ func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...T
 	req := TurnStartParams{ThreadID: t.threadID, Input: TextInputs(input)}
 	applyTurnOptions(&req, opts)
 
+	// Subscribe BEFORE TurnStart (see the method doc): events emitted before TurnStart
+	// returns are buffered by the subscription instead of being dropped.
+	sub := t.client.Events()
+
 	turn, err := t.client.TurnStart(ctx, req)
 	if err != nil {
+		sub.Close()
 		t.turnMu.Unlock()
 		return nil, err
 	}
 
 	out := make(chan ThreadEvent, 128)
-	sub := t.client.Events()
 
 	go func() {
 		defer t.turnMu.Unlock()

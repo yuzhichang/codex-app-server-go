@@ -12,43 +12,49 @@ import (
 )
 
 type (
-	ClientInfo             = schematypes.ClientInfo
-	InitializeCapabilities = schematypes.InitializeCapabilities
-	InitializeParams       = schematypes.InitializeParams
-	InitializeResponse     = schematypes.InitializeResponse
-	ThreadStartParams      = schematypes.ThreadStartParams
-	ThreadResumeParams     = schematypes.ThreadResumeParams
-	ThreadReadParams       = schematypes.ThreadReadParams
-	TurnStartParams        = schematypes.TurnStartParams
-	TurnInterruptParams    = schematypes.TurnInterruptParams
-	ThreadForkParams       = schematypes.ThreadForkParams
-	ThreadListParams       = schematypes.ThreadListParams
-	ThreadArchiveParams    = schematypes.ThreadArchiveParams
-	ThreadUnarchiveParams  = schematypes.ThreadUnarchiveParams
-	ThreadSetNameParams    = schematypes.ThreadSetNameParams
-	ThreadRevertParams     = schematypes.ThreadRevertParams
-	ThreadRevertResponse   = schematypes.ThreadRevertResponse
-	TurnSteerParams        = schematypes.TurnSteerParams
-	ReviewStartParams      = schematypes.ReviewStartParams
-	SandboxPolicy          = schematypes.SandboxPolicy
-	UserInput              = schematypes.UserInput
-	TextElement            = schematypes.TextElement
-	ImageDetail            = schematypes.ImageDetail
-	ReviewStartResponse    = schematypes.ReviewStartResponse
-	TurnSteerResponse      = schematypes.TurnSteerResponse
-	ReviewTarget           = schematypes.ReviewTarget
-	ReviewDelivery         = schematypes.ReviewDelivery
-	Thread                 = protocol.Thread
-	Turn                   = protocol.Turn
-	Item                   = protocol.Item
-	ThreadStatus           = protocol.ThreadStatus
-	ThreadActiveFlag       = protocol.ThreadActiveFlag
-	TurnStatus             = protocol.TurnStatus
-	TurnItemsView          = protocol.TurnItemsView
-	ItemKind               = protocol.ItemKind
-	ThreadTokenUsage       = protocol.ThreadTokenUsage
-	TokenUsageBreakdown    = protocol.TokenUsageBreakdown
-	TurnError              = protocol.TurnError
+	ClientInfo                = schematypes.ClientInfo
+	InitializeCapabilities    = schematypes.InitializeCapabilities
+	InitializeParams          = schematypes.InitializeParams
+	InitializeResponse        = schematypes.InitializeResponse
+	ThreadStartParams         = schematypes.ThreadStartParams
+	ThreadResumeParams        = schematypes.ThreadResumeParams
+	ThreadReadParams          = schematypes.ThreadReadParams
+	TurnStartParams           = schematypes.TurnStartParams
+	TurnInterruptParams       = schematypes.TurnInterruptParams
+	ThreadForkParams          = schematypes.ThreadForkParams
+	ThreadListParams          = schematypes.ThreadListParams
+	ThreadArchiveParams       = schematypes.ThreadArchiveParams
+	ThreadUnarchiveParams     = schematypes.ThreadUnarchiveParams
+	ThreadSetNameParams       = schematypes.ThreadSetNameParams
+	ThreadRevertParams        = schematypes.ThreadRevertParams
+	ThreadRevertResponse      = schematypes.ThreadRevertResponse
+	TurnSteerParams           = schematypes.TurnSteerParams
+	ReviewStartParams         = schematypes.ReviewStartParams
+	ThreadListCwdFilter       = schematypes.ThreadListCwdFilter
+	ForcedChatgptWorkspaceIds = schematypes.ForcedChatgptWorkspaceIds
+	ConfigEdit                = schematypes.ConfigEdit
+	ConfigLayer               = schematypes.ConfigLayer
+	ThreadSourceKind          = schematypes.ThreadSourceKind
+	ThreadItem                = schematypes.ThreadItem
+	SandboxPolicy             = schematypes.SandboxPolicy
+	UserInput                 = schematypes.UserInput
+	TextElement               = schematypes.TextElement
+	ImageDetail               = schematypes.ImageDetail
+	ReviewStartResponse       = schematypes.ReviewStartResponse
+	TurnSteerResponse         = schematypes.TurnSteerResponse
+	ReviewTarget              = schematypes.ReviewTarget
+	ReviewDelivery            = schematypes.ReviewDelivery
+	Thread                    = protocol.Thread
+	Turn                      = protocol.Turn
+	Item                      = protocol.Item
+	ThreadStatus              = protocol.ThreadStatus
+	ThreadActiveFlag          = protocol.ThreadActiveFlag
+	TurnStatus                = protocol.TurnStatus
+	TurnItemsView             = protocol.TurnItemsView
+	ItemKind                  = protocol.ItemKind
+	ThreadTokenUsage          = protocol.ThreadTokenUsage
+	TokenUsageBreakdown       = protocol.TokenUsageBreakdown
+	TurnError                 = protocol.TurnError
 
 	// Filesystem RPC types (fs/*).
 	AbsolutePathBuf           = schematypes.AbsolutePathBuf
@@ -235,6 +241,9 @@ const (
 	UserInputTypeSkill      = schematypes.UserInputTypeSkill
 	UserInputTypeMention    = schematypes.UserInputTypeMention
 	ReviewDeliveryDetached  = schematypes.ReviewDeliveryDetached
+
+	// ThreadSourceKind values.
+	ThreadSourceKindSubAgentThreadSpawn = schematypes.ThreadSourceKindSubAgentThreadSpawn
 
 	MergeStrategyReplace = schematypes.MergeStrategyReplace
 	MergeStrategyUpsert  = schematypes.MergeStrategyUpsert
@@ -464,3 +473,23 @@ func ApprovalGranular(g AskForApprovalGranular) AskForApproval {
 //
 //	codexgo.TurnStartParams{ApprovalPolicy: codexgo.Ptr(codexgo.ApprovalOnRequest())}
 func Ptr[T any](v T) *T { return &v }
+
+// ThreadListCwdFilterFromString selects the string arm: one working directory.
+func ThreadListCwdFilterFromString(v string) ThreadListCwdFilter {
+	return schematypes.ThreadListCwdFilterFromString(v)
+}
+
+// ThreadListCwdFilterFromList selects the array arm: several working directories.
+func ThreadListCwdFilterFromList(v []string) ThreadListCwdFilter {
+	return schematypes.ThreadListCwdFilterFromList(v)
+}
+
+// ForcedChatgptWorkspaceIdsFromString selects the string arm.
+func ForcedChatgptWorkspaceIdsFromString(v string) ForcedChatgptWorkspaceIds {
+	return schematypes.ForcedChatgptWorkspaceIdsFromString(v)
+}
+
+// ForcedChatgptWorkspaceIdsFromList selects the array arm.
+func ForcedChatgptWorkspaceIdsFromList(v []string) ForcedChatgptWorkspaceIds {
+	return schematypes.ForcedChatgptWorkspaceIdsFromList(v)
+}

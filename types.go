@@ -12,49 +12,55 @@ import (
 )
 
 type (
-	ClientInfo                = schematypes.ClientInfo
-	InitializeCapabilities    = schematypes.InitializeCapabilities
-	InitializeParams          = schematypes.InitializeParams
-	InitializeResponse        = schematypes.InitializeResponse
-	ThreadStartParams         = schematypes.ThreadStartParams
-	ThreadResumeParams        = schematypes.ThreadResumeParams
-	ThreadReadParams          = schematypes.ThreadReadParams
-	TurnStartParams           = schematypes.TurnStartParams
-	TurnInterruptParams       = schematypes.TurnInterruptParams
-	ThreadForkParams          = schematypes.ThreadForkParams
-	ThreadListParams          = schematypes.ThreadListParams
-	ThreadArchiveParams       = schematypes.ThreadArchiveParams
-	ThreadUnarchiveParams     = schematypes.ThreadUnarchiveParams
-	ThreadSetNameParams       = schematypes.ThreadSetNameParams
-	ThreadRevertParams        = schematypes.ThreadRevertParams
-	ThreadRevertResponse      = schematypes.ThreadRevertResponse
-	TurnSteerParams           = schematypes.TurnSteerParams
-	ReviewStartParams         = schematypes.ReviewStartParams
-	ThreadListCwdFilter       = schematypes.ThreadListCwdFilter
-	ForcedChatgptWorkspaceIds = schematypes.ForcedChatgptWorkspaceIds
-	ConfigEdit                = schematypes.ConfigEdit
-	ConfigLayer               = schematypes.ConfigLayer
-	ThreadSourceKind          = schematypes.ThreadSourceKind
-	ThreadItem                = schematypes.ThreadItem
-	SandboxPolicy             = schematypes.SandboxPolicy
-	UserInput                 = schematypes.UserInput
-	TextElement               = schematypes.TextElement
-	ImageDetail               = schematypes.ImageDetail
-	ReviewStartResponse       = schematypes.ReviewStartResponse
-	TurnSteerResponse         = schematypes.TurnSteerResponse
-	ReviewTarget              = schematypes.ReviewTarget
-	ReviewDelivery            = schematypes.ReviewDelivery
-	Thread                    = protocol.Thread
-	Turn                      = protocol.Turn
-	Item                      = protocol.Item
-	ThreadStatus              = protocol.ThreadStatus
-	ThreadActiveFlag          = protocol.ThreadActiveFlag
-	TurnStatus                = protocol.TurnStatus
-	TurnItemsView             = protocol.TurnItemsView
-	ItemKind                  = protocol.ItemKind
-	ThreadTokenUsage          = protocol.ThreadTokenUsage
-	TokenUsageBreakdown       = protocol.TokenUsageBreakdown
-	TurnError                 = protocol.TurnError
+	ClientInfo                 = schematypes.ClientInfo
+	InitializeCapabilities     = schematypes.InitializeCapabilities
+	InitializeParams           = schematypes.InitializeParams
+	InitializeResponse         = schematypes.InitializeResponse
+	ThreadStartParams          = schematypes.ThreadStartParams
+	ThreadResumeParams         = schematypes.ThreadResumeParams
+	ThreadReadParams           = schematypes.ThreadReadParams
+	TurnStartParams            = schematypes.TurnStartParams
+	TurnInterruptParams        = schematypes.TurnInterruptParams
+	ThreadForkParams           = schematypes.ThreadForkParams
+	ThreadListParams           = schematypes.ThreadListParams
+	ThreadArchiveParams        = schematypes.ThreadArchiveParams
+	ThreadUnarchiveParams      = schematypes.ThreadUnarchiveParams
+	ThreadSetNameParams        = schematypes.ThreadSetNameParams
+	ThreadRevertParams         = schematypes.ThreadRevertParams
+	ThreadRevertResponse       = schematypes.ThreadRevertResponse
+	TurnSteerParams            = schematypes.TurnSteerParams
+	ReviewStartParams          = schematypes.ReviewStartParams
+	ThreadListCwdFilter        = schematypes.ThreadListCwdFilter
+	ForcedChatgptWorkspaceIds  = schematypes.ForcedChatgptWorkspaceIds
+	ConfigEdit                 = schematypes.ConfigEdit
+	ConfigLayer                = schematypes.ConfigLayer
+	ThreadSourceKind           = schematypes.ThreadSourceKind
+	ThreadItem                 = schematypes.ThreadItem
+	McpResourceReadTarget      = schematypes.McpResourceReadTarget
+	PluginListMarketplaceKind  = schematypes.PluginListMarketplaceKind
+	PluginShareDiscoverability = schematypes.PluginShareDiscoverability
+	SortDirection              = schematypes.SortDirection
+	ThreadSortKey              = schematypes.ThreadSortKey
+	ThreadSource               = schematypes.ThreadSource
+	SandboxPolicy              = schematypes.SandboxPolicy
+	UserInput                  = schematypes.UserInput
+	TextElement                = schematypes.TextElement
+	ImageDetail                = schematypes.ImageDetail
+	ReviewStartResponse        = schematypes.ReviewStartResponse
+	TurnSteerResponse          = schematypes.TurnSteerResponse
+	ReviewTarget               = schematypes.ReviewTarget
+	ReviewDelivery             = schematypes.ReviewDelivery
+	Thread                     = protocol.Thread
+	Turn                       = protocol.Turn
+	Item                       = protocol.Item
+	ThreadStatus               = protocol.ThreadStatus
+	ThreadActiveFlag           = protocol.ThreadActiveFlag
+	TurnStatus                 = protocol.TurnStatus
+	TurnItemsView              = protocol.TurnItemsView
+	ItemKind                   = protocol.ItemKind
+	ThreadTokenUsage           = protocol.ThreadTokenUsage
+	TokenUsageBreakdown        = protocol.TokenUsageBreakdown
+	TurnError                  = protocol.TurnError
 
 	// Filesystem RPC types (fs/*).
 	AbsolutePathBuf           = schematypes.AbsolutePathBuf
@@ -245,8 +251,29 @@ const (
 	// ThreadSourceKind values.
 	ThreadSourceKindSubAgentThreadSpawn = schematypes.ThreadSourceKindSubAgentThreadSpawn
 
-	MergeStrategyReplace = schematypes.MergeStrategyReplace
-	MergeStrategyUpsert  = schematypes.MergeStrategyUpsert
+	// PluginListMarketplaceKind values.
+	PluginListMarketplaceKindLocal              = schematypes.PluginListMarketplaceKindLocal
+	PluginListMarketplaceKindVertical           = schematypes.PluginListMarketplaceKindVertical
+	PluginListMarketplaceKindWorkspaceDirectory = schematypes.PluginListMarketplaceKindWorkspaceDirectory
+	PluginListMarketplaceKindSharedWithMe       = schematypes.PluginListMarketplaceKindSharedWithMe
+	PluginListMarketplaceKindCreatedByMeRemote  = schematypes.PluginListMarketplaceKindCreatedByMeRemote
+
+	// PluginShareDiscoverability values.
+	PluginShareDiscoverabilityLISTED   = schematypes.PluginShareDiscoverabilityLISTED
+	PluginShareDiscoverabilityUNLISTED = schematypes.PluginShareDiscoverabilityUNLISTED
+	PluginShareDiscoverabilityPRIVATE  = schematypes.PluginShareDiscoverabilityPRIVATE
+
+	// SortDirection values.
+	SortDirectionAsc  = schematypes.SortDirectionAsc
+	SortDirectionDesc = schematypes.SortDirectionDesc
+
+	// ThreadSortKey values.
+	ThreadSortKeyCreatedAt       = schematypes.ThreadSortKeyCreatedAt
+	ThreadSortKeyUpdatedAt       = schematypes.ThreadSortKeyUpdatedAt
+	ThreadSortKeyRecencyAt       = schematypes.ThreadSortKeyRecencyAt
+	ThreadSortKeySectionPosition = schematypes.ThreadSortKeySectionPosition
+	MergeStrategyReplace         = schematypes.MergeStrategyReplace
+	MergeStrategyUpsert          = schematypes.MergeStrategyUpsert
 
 	// MCP elicitation enum values. A type alias does not carry its constants, so the
 	// action and mode values have to be re-exported explicitly.

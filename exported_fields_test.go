@@ -66,3 +66,53 @@ func TestExportedStructFieldsAreNameable(t *testing.T) {
 		t.Fatalf("ThreadItem not usable: %+v", item)
 	}
 }
+
+// The same rule, applied to the *Params fields a caller must POPULATE. These six were found by
+// scripts/export_check.py after the two above were fixed -- they had been unusable since the
+// params types were first generated, and nothing failed because a field whose type is merely
+// unnamed still compiles; it just cannot be set.
+func TestExportedParamsFieldTypesAreNameable(t *testing.T) {
+	// thread/list: sorting.
+	direction := codexgo.SortDirectionDesc
+	sortKey := codexgo.ThreadSortKeyUpdatedAt
+	listParams := codexgo.ThreadListParams{
+		SortDirection: &direction,
+		SortKey:       &sortKey,
+	}
+	if listParams.SortDirection == nil || *listParams.SortDirection != "desc" {
+		t.Fatalf("SortDirection unusable: %+v", listParams.SortDirection)
+	}
+	if listParams.SortKey == nil || *listParams.SortKey != "updated_at" {
+		t.Fatalf("ThreadSortKey unusable: %+v", listParams.SortKey)
+	}
+
+	// thread/fork: which threads to fork from.
+	source := codexgo.ThreadSource("subAgentThreadSpawn")
+	forkParams := codexgo.ThreadForkParams{ThreadSource: &source}
+	if forkParams.ThreadSource == nil {
+		t.Fatal("ThreadSource unusable")
+	}
+
+	// mcp/resourceRead: the target is a struct the caller builds.
+	var target codexgo.McpResourceReadTarget
+	readParams := codexgo.McpResourceReadParams{Target: &target}
+	if readParams.Target == nil {
+		t.Fatal("McpResourceReadTarget unusable")
+	}
+
+	// plugin/list and plugin/share/save: enums used as inputs.
+	listing := codexgo.PluginListParams{
+		MarketplaceKinds: []codexgo.PluginListMarketplaceKind{
+			codexgo.PluginListMarketplaceKindLocal,
+			codexgo.PluginListMarketplaceKindWorkspaceDirectory,
+		},
+	}
+	if len(listing.MarketplaceKinds) != 2 {
+		t.Fatalf("PluginListMarketplaceKind unusable: %+v", listing.MarketplaceKinds)
+	}
+	discoverability := codexgo.PluginShareDiscoverabilityUNLISTED
+	shareParams := codexgo.PluginShareSaveParams{Discoverability: &discoverability}
+	if shareParams.Discoverability == nil || *shareParams.Discoverability != "UNLISTED" {
+		t.Fatalf("PluginShareDiscoverability unusable: %+v", shareParams.Discoverability)
+	}
+}

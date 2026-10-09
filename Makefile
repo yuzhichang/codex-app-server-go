@@ -5,7 +5,7 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
 CODEX_SRC ?= $(HOME)/github.com/openai/codex
 
-.PHONY: sync verify diff-cli coverage typecheck type-shape-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
+.PHONY: sync verify diff-cli coverage typecheck type-shape-check export-check generate-types generate-client generate readme-coverage conformance conformance-strict build test ci
 
 # Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
 # Deterministic: a no-op re-run must produce an empty `git diff`.
@@ -45,6 +45,16 @@ typecheck:
 type-shape-check:
 	python3 $(SDK_DIR)/scripts/type_shape_check.py report
 
+# A *Params field whose type cannot be named from outside the module is a field a caller cannot
+# set: the generated types live in internal/protocol/schema, so they have to be re-exported.
+# This is not hypothetical -- ThreadListParams.CWD and Config.ForcedChatgptWorkspaceIds silently
+# became unsettable when those types stopped being `= json.RawMessage`, and nothing failed.
+#
+# Scoped to *Params on purpose: output fields are only read, and type inference means their
+# types never have to be named, so requiring that would be ~52 unfixable warnings.
+export-check:
+	python3 $(SDK_DIR)/scripts/export_check.py report
+
 # Regenerate the schema-derived Go types. Deterministic: a no-op re-run leaves git clean.
 # (Currently scoped to the definitions the SDK was missing; see the script's header.)
 generate-types:
@@ -74,12 +84,14 @@ conformance: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py report
 	@python3 $(SDK_DIR)/scripts/type_check.py report
 	@python3 $(SDK_DIR)/scripts/type_shape_check.py report
+	@python3 $(SDK_DIR)/scripts/export_check.py report
 
 # Final gate: no gap, no untested wiring, no stale methods, no unlisted type drift.
 # This is the CI target once the work in tasks/plan-schema-alignment-and-coverage.md is done.
 conformance-strict: verify
 	@python3 $(SDK_DIR)/scripts/coverage_gate.py check --strict
 	@python3 $(SDK_DIR)/scripts/type_check.py check
+	@python3 $(SDK_DIR)/scripts/export_check.py check
 	@python3 $(SDK_DIR)/scripts/gen_readme_coverage.py --check
 
 # Rewrite the README's coverage tables from the audited artifacts. A hand-written table

@@ -271,12 +271,22 @@ func (t *SessionThread) RunInputs(ctx context.Context, inputs []UserInput, opts 
 // the channel until it is closed) to ensure the lock is released if they stop
 // consuming events before the stream ends.
 func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, error) {
+	out, _, err := t.RunStreamedTurn(ctx, input, opts...)
+	return out, err
+}
+
+// RunStreamedTurn is RunStreamed, additionally returning the turn id the server assigned.
+// The id is known synchronously — TurnStart returns it before any event is delivered — so
+// a caller that must interrupt the turn (e.g. on a timeout) has it even if it never
+// consumed an id-carrying event. The event stream and its guarantees are identical to
+// RunStreamed.
+func (t *SessionThread) RunStreamedTurn(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, string, error) {
 	t.turnMu.Lock()
 
 	req := TurnStartParams{ThreadID: t.threadID, Input: TextInputs(input)}
 	applyTurnOptions(&req, opts)
 
-	// Subscribe BEFORE TurnStart (see the method doc): events emitted before TurnStart
+	// Subscribe BEFORE TurnStart (see the RunStreamed doc): events emitted before TurnStart
 	// returns are buffered by the subscription instead of being dropped.
 	sub := t.client.Events()
 
@@ -284,7 +294,7 @@ func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...T
 	if err != nil {
 		sub.Close()
 		t.turnMu.Unlock()
-		return nil, err
+		return nil, "", err
 	}
 
 	out := make(chan ThreadEvent, 128)
@@ -322,7 +332,7 @@ func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...T
 		}
 	}()
 
-	return out, nil
+	return out, turn.ID, nil
 }
 
 // Interrupt sends a turn/interrupt for the given turnID.

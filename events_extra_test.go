@@ -87,3 +87,53 @@ func TestDecodeExtraNotifications(t *testing.T) {
 func typeName(v any) string {
 	return fmt.Sprintf("%T", v)
 }
+
+// TestErrorEventNestedDetailAndRetry pins the upstream ErrorNotification shape, which the
+// v2 schema aggregate does not export: the message is nested under `error` (a top-level
+// `message` never arrives), and `willRetry` marks a transient error the server recovers
+// from in place. Reading the flat fields produced "an error with no detail" for every
+// real error.
+func TestErrorEventNestedDetailAndRetry(t *testing.T) {
+	ev := decodeEvent(protocol.MethodError, json.RawMessage(
+		`{"threadId":"t","turnId":"u","willRetry":true,`+
+			`"error":{"message":"stream disconnected","codexErrorInfo":{"kind":"stream"},"additionalDetails":"after 30s"}}`), 0)
+	e, ok := ev.Value.(ErrorEvent)
+	if !ok {
+		t.Fatalf("decoded %T, want ErrorEvent", ev.Value)
+	}
+	if !e.WillRetry {
+		t.Error("willRetry lost")
+	}
+	if got := e.Detail(); got != "stream disconnected" {
+		t.Errorf("Detail() = %q, want the nested message", got)
+	}
+	if e.Error == nil || e.Error.AdditionalDetails != "after 30s" {
+		t.Errorf("additionalDetails lost: %+v", e.Error)
+	}
+	if got := e.ErrorCode(); got == "" {
+		t.Error("ErrorCode() should surface codexErrorInfo")
+	}
+
+	// A terminal error has no willRetry; Detail still reads the nested message.
+	term := decodeEvent(protocol.MethodError, json.RawMessage(`{"error":{"message":"boom"}}`), 0).Value.(ErrorEvent)
+	if term.WillRetry {
+		t.Error("a terminal error must not claim willRetry")
+	}
+	if got := term.Detail(); got != "boom" {
+		t.Errorf("Detail() = %q", got)
+	}
+}
+
+// terminalError is the stream rule: a retryable error does NOT end the turn, everything
+// else does.
+func TestTerminalErrorRespectsWillRetry(t *testing.T) {
+	if terminalError(ErrorEvent{WillRetry: true}) {
+		t.Error("a retryable error must not end the turn stream")
+	}
+	if !terminalError(ErrorEvent{}) {
+		t.Error("a non-retryable error must end the turn stream")
+	}
+	if !terminalError(RawNotificationEvent{}) {
+		t.Error("an undecoded error notification must be treated as terminal")
+	}
+}

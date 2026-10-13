@@ -325,7 +325,13 @@ func (t *SessionThread) RunStreamedTurn(ctx context.Context, input string, opts 
 				if event.Method == protocol.MethodTurnCompleted {
 					return
 				}
-				if event.Method == protocol.MethodError {
+				if event.Method == protocol.MethodError && terminalError(event.Value) {
+					// Only a NON-retryable error ends the turn. Upstream's
+					// ErrorNotification documents willRetry as "the app-server will
+					// retry; if true this will not interrupt a turn" — ending the stream
+					// on a transient error unsubscribed mid-turn, and a caller reacting
+					// to the close (e.g. by interrupting) then killed a turn the server
+					// was about to resume.
 					return
 				}
 			}
@@ -333,6 +339,16 @@ func (t *SessionThread) RunStreamedTurn(ctx context.Context, input string, opts 
 	}()
 
 	return out, turn.ID, nil
+}
+
+// terminalError reports whether an `error` notification ends the turn stream. Upstream
+// documents willRetry as "the app-server will retry; if true this will not interrupt a
+// turn" — so a retryable error is a notification, not a terminal state.
+func terminalError(v any) bool {
+	if e, ok := v.(ErrorEvent); ok && e.WillRetry {
+		return false
+	}
+	return true
 }
 
 // Interrupt sends a turn/interrupt for the given turnID.

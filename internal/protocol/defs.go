@@ -120,12 +120,51 @@ type TurnPlanUpdatedEvent struct {
 	Plan     json.RawMessage `json:"plan,omitempty"`
 }
 
+// ErrorEvent mirrors upstream `ErrorNotification`
+// (app-server-protocol/src/protocol/v2/notification.rs), which the v2 schema aggregate
+// does not export. Two details matter and were previously lost:
+//
+//   - the message is NESTED under `error` (TurnError), not a top-level `message`; and
+//   - `willRetry` says the server retries the turn IN PLACE — upstream documents it as
+//     "if true, this will not interrupt a turn".
 type ErrorEvent struct {
-	ThreadID string          `json:"threadId,omitempty"`
-	TurnID   string          `json:"turnId,omitempty"`
-	Message  string          `json:"message,omitempty"`
-	Code     string          `json:"code,omitempty"`
-	Data     json.RawMessage `json:"data,omitempty"`
+	ThreadID string `json:"threadId,omitempty"`
+	TurnID   string `json:"turnId,omitempty"`
+	// Error carries the detail: message, codexErrorInfo, additionalDetails.
+	Error *TurnError `json:"error,omitempty"`
+	// WillRetry marks a transient error the server recovers from on its own; such an
+	// error does not end the turn.
+	WillRetry bool `json:"willRetry,omitempty"`
+	// Message / Code / Data are the older flat shape. A v2 server nests the detail under
+	// Error instead, so a reader should use Detail() rather than Message.
+	Message string          `json:"message,omitempty"`
+	Code    string          `json:"code,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
+// Detail returns the most specific message available for this error notification.
+func (e ErrorEvent) Detail() string {
+	if e.Error != nil && e.Error.Message != "" {
+		return e.Error.Message
+	}
+	if e.Message != "" {
+		return e.Message
+	}
+	if len(e.Data) > 0 {
+		return string(e.Data)
+	}
+	return ""
+}
+
+// ErrorCode returns the upstream classification when the server sent one
+// (codexErrorInfo), falling back to the legacy flat code.
+func (e ErrorEvent) ErrorCode() string {
+	if e.Error != nil && e.Error.CodexErrorInfo != nil {
+		if raw, err := json.Marshal(e.Error.CodexErrorInfo); err == nil && len(raw) > 0 && string(raw) != "null" {
+			return string(raw)
+		}
+	}
+	return e.Code
 }
 
 type ThreadStartedEvent struct {

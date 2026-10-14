@@ -61,6 +61,7 @@ type (
 	ThreadTokenUsage           = protocol.ThreadTokenUsage
 	TokenUsageBreakdown        = protocol.TokenUsageBreakdown
 	TurnError                  = protocol.TurnError
+	CodexErrorKind             = protocol.CodexErrorKind
 
 	// Filesystem RPC types (fs/*).
 	AbsolutePathBuf           = schematypes.AbsolutePathBuf
@@ -433,6 +434,34 @@ func IsInternalServerError(err error) bool {
 func IsHttpConnectionFailed(err error) bool {
 	ce, ok := AsCodexError(err)
 	return ok && ce.ErrorType == "HttpConnectionFailed"
+}
+
+// Provider-failure classification carried on a turn failure (`error.codexErrorInfo`). See the
+// CodexErrorKind docs for the union shape and the kinds whose HTTP status is populated.
+const (
+	CodexErrorUnknown                        = protocol.CodexErrorUnknown
+	CodexErrorOther                          = protocol.CodexErrorOther
+	CodexErrorInternalServer                 = protocol.CodexErrorInternalServer
+	CodexErrorServerOverloaded               = protocol.CodexErrorServerOverloaded
+	CodexErrorTooManyFailedAttempts          = protocol.CodexErrorTooManyFailedAttempts
+	CodexErrorHTTPConnectionFailed           = protocol.CodexErrorHTTPConnectionFailed
+	CodexErrorResponseStreamConnectionFailed = protocol.CodexErrorResponseStreamConnectionFailed
+	CodexErrorResponseStreamDisconnected     = protocol.CodexErrorResponseStreamDisconnected
+	CodexErrorUnauthorized                   = protocol.CodexErrorUnauthorized
+	CodexErrorBadRequest                     = protocol.CodexErrorBadRequest
+	CodexErrorContextWindowExceeded          = protocol.CodexErrorContextWindowExceeded
+	CodexErrorUsageLimitExceeded             = protocol.CodexErrorUsageLimitExceeded
+	CodexErrorCyberPolicy                    = protocol.CodexErrorCyberPolicy
+)
+
+// ParseCodexErrorInfo decodes a raw `codexErrorInfo` value into its kind and HTTP status.
+func ParseCodexErrorInfo(raw json.RawMessage) (CodexErrorKind, int) {
+	return protocol.ParseCodexErrorInfo(raw)
+}
+
+// ClassifyTurnError classifies a failed turn's `error` payload: kind, HTTP status, message.
+func ClassifyTurnError(t *Turn) (CodexErrorKind, int, string) {
+	return protocol.ClassifyTurnError(t)
 }
 
 // Package codexgo provides a compact client for the Codex app-server.

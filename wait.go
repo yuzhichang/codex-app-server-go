@@ -188,6 +188,12 @@ func eventMatchesTurn(event Event, threadID, turnID string) bool {
 		return v.ThreadID == threadID
 	case ThreadTokenUsageUpdatedEvent:
 		return v.ThreadID == threadID
+	case ThreadCompactedEvent:
+		// Compaction may run as its own (non-steerable) turn, so its turnId can differ
+		// from the turn we are streaming; match on the thread. A thread runs one turn at
+		// a time (the caller holds the turn lock), so this cannot leak another turn's
+		// compaction.
+		return v.ThreadID == threadID
 	case TurnDiffUpdatedEvent:
 		return v.ThreadID == threadID && v.TurnID == turnID
 	case TurnPlanUpdatedEvent:

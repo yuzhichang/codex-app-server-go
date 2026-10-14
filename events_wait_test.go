@@ -239,3 +239,19 @@ func TestWaitForStructuredOutputUsesItemEvents(t *testing.T) {
 		t.Fatalf("unexpected result: turn=%+v out=%+v", turn, out)
 	}
 }
+
+// TestEventMatchesTurnForThreadCompacted pins the compaction notification into the turn
+// stream. thread/compacted used to fall through eventMatchesTurn's default (false), so a
+// caller streaming a turn never learned that Codex had compacted its context. The match is
+// THREAD-level on purpose: compaction can run as its own non-steerable turn, so its turnId
+// may differ from the turn being streamed.
+func TestEventMatchesTurnForThreadCompacted(t *testing.T) {
+	sameThreadDifferentTurn := Event{Value: ThreadCompactedEvent{ThreadID: "thread-1", TurnID: "compact-turn"}}
+	if !eventMatchesTurn(sameThreadDifferentTurn, "thread-1", "turn-1") {
+		t.Fatal("thread/compacted on the matching thread must match, even with a different turn id")
+	}
+	otherThread := Event{Value: ThreadCompactedEvent{ThreadID: "thread-2", TurnID: "turn-1"}}
+	if eventMatchesTurn(otherThread, "thread-1", "turn-1") {
+		t.Fatal("thread/compacted for another thread must not match")
+	}
+}

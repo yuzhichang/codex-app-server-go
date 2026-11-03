@@ -7,6 +7,10 @@ package schema
 // commit plus the hashes of the vendored artifacts. The machine-readable surface lives in
 // .codex-schema/manifest.json and gen/method-surface.json.
 //
+// The commit below is the ./codex submodule gitlink in this repository: bumping the pin is
+// a one-line, reviewable change, and 'make sync' refuses to run against a submodule
+// checked out at any other commit.
+//
 // Scope model: declared_stable == source methods WITHOUT #[experimental(...)]. The
 // precomputed exports are used only for reconciliation -- in particular the export does
 // NOT filter experimental ServerNotifications, so notifications can never be scoped by

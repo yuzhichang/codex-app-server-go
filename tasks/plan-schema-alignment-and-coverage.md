@@ -5,7 +5,7 @@
 | Date | 2026-10-08 (two review rounds incorporated) |
 | Target repo | `github.com/Zealbase/codex-app-server-go` |
 | Current baseline | SDK `HEAD=c319518` (2026-06-30); `VERSION=v0.1.2` (README says v0.2.0 — inconsistent) |
-| Upstream reference | `/home/zhichyu/github.com/openai/codex` @ **`14c8b777`** |
+| Upstream reference | `codex` submodule @ **`14c8b777`** (was an ambient `CODEX_SRC` path) |
 | Upstream "version" | `codex-rs/Cargo.toml:163` `version = "0.0.0"` (**no meaningful version number**, see §2.1) |
 | **Implementation scope** | **stable surface only** (= source `experimental=false`): experimental not implemented (R2); v1 deprecated and `attestation/generate` not implemented (R4) |
 | Compatibility policy | **Align strictly with upstream, keep no old names / compatibility branches** (R3) |

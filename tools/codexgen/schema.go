@@ -542,6 +542,18 @@ func cmdSync(args []string) int {
 		commit = strings.TrimSpace(string(out))
 	}
 
+	// The input must be the pinned submodule, not an arbitrary checkout: syncing from a
+	// stale or unrelated tree silently re-anchors the whole surface. The pin lives in the
+	// superproject index, so an unstaged bump is caught here as well.
+	if pin, err := pinnedSubmoduleCommit(); err != nil {
+		fmt.Fprintf(os.Stderr, "note: no %s submodule pin found (%v); anchoring on %s as given\n", submodulePath, err, shortCommit(commit))
+	} else if pin != commit {
+		fmt.Fprintf(os.Stderr, "error: --codex-src is at %s but the repository pins %s\n", shortCommit(commit), shortCommit(pin))
+		fmt.Fprintf(os.Stderr, "       Sync must run against the pinned submodule (%s). To bump the pin:\n", submodulePath)
+		fmt.Fprintf(os.Stderr, "         git -C %s checkout <commit> && git add %s && make sync\n", submodulePath, submodulePath)
+		return 2
+	}
+
 	methods, err := parseSource(readFile(sourcePath))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -776,6 +788,10 @@ func renderVersionGo(commit, schemaRev string, ds, se byFace, notInScope int) st
 // commit plus the hashes of the vendored artifacts. The machine-readable surface lives in
 // .codex-schema/manifest.json and gen/method-surface.json.
 //
+// The commit below is the ./codex submodule gitlink in this repository: bumping the pin is
+// a one-line, reviewable change, and 'make sync' refuses to run against a submodule
+// checked out at any other commit.
+//
 // Scope model: declared_stable == source methods WITHOUT #[experimental(...)]. The
 // precomputed exports are used only for reconciliation -- in particular the export does
 // NOT filter experimental ServerNotifications, so notifications can never be scoped by
@@ -947,38 +963,52 @@ func cmdVerify(args []string) int {
 	return 1
 }
 
-func reportSurfaceFresh(pinned string) bool {
-	src := os.Getenv("CODEX_SRC")
-	if src == "" {
-		home, _ := os.UserHomeDir()
-		src = filepath.Join(home, "github.com", "openai", "codex")
-	}
-	if _, err := os.Stat(filepath.Join(src, ".git")); err != nil {
-		fmt.Printf("  [SKIP] surface freshness: no codex checkout at %s (set CODEX_SRC to check)\n", src)
-		return true
-	}
-	out, err := exec.Command("git", "-C", src, "rev-parse", "HEAD").Output()
-	if err != nil {
-		fmt.Printf("  [SKIP] surface freshness: cannot read HEAD of %s (%v)\n", src, err)
-		return true
-	}
-	head := strings.TrimSpace(string(out))
-	short := func(s string) string {
-		if len(s) > 12 {
-			return s[:12]
+// submodulePath is the codex submodule: the single, committed source of the protocol
+// anchor. Its gitlink is read from the superproject's tree, so the check works with the
+// submodule never checked out (CI) and cannot be satisfied by a stale side checkout.
+const submodulePath = "codex"
+
+// pinnedSubmoduleCommit returns the commit the repository records for the codex
+// submodule. This is the anchor: bumping it is a reviewable one-line change.
+func pinnedSubmoduleCommit() (string, error) {
+	// Index first: an uncommitted `git add codex` is the pin the author intends, and it is
+	// what 'make sync' must accept before that pin is committed.
+	for _, rev := range []string{":" + submodulePath, "HEAD:" + submodulePath} {
+		out, err := exec.Command("git", "-C", root(), "rev-parse", rev).Output()
+		if err != nil {
+			continue
 		}
-		return s
+		if c := strings.TrimSpace(string(out)); c != "" {
+			return c, nil
+		}
 	}
-	if head == pinned {
-		fmt.Printf("  [PASS] surface is from the checkout's commit (%s)\n", short(pinned))
+	return "", fmt.Errorf("no submodule gitlink for %s", submodulePath)
+}
+
+func shortCommit(s string) string {
+	if len(s) > 12 {
+		return s[:12]
+	}
+	return s
+}
+
+func reportSurfaceFresh(pinned string) bool {
+	want, err := pinnedSubmoduleCommit()
+	if err != nil {
+		fmt.Printf("  [SKIP] surface freshness: %v (not a git checkout?)\n", err)
 		return true
 	}
-	fmt.Println("  [FAIL] the vendored surface is from a DIFFERENT commit than your checkout")
-	fmt.Printf("         surface: %s\n", short(pinned))
-	fmt.Printf("         checkout: %s\n", short(head))
-	fmt.Println("         Every coverage result below is measured against the surface, not your")
-	fmt.Println("         checkout, so a clean result here does not mean the SDK matches the source")
-	fmt.Printf("         in front of you. Run `make sync` against %s.\n", src)
+	short := shortCommit
+	if want == pinned {
+		fmt.Printf("  [PASS] surface matches the pinned codex submodule (%s)\n", short(want))
+		return true
+	}
+	fmt.Println("  [FAIL] the vendored surface is from a DIFFERENT commit than the submodule pin")
+	fmt.Printf("         surface:  %s\n", short(pinned))
+	fmt.Printf("         submodule: %s\n", short(want))
+	fmt.Println("         Either re-run 'make sync' (submodule already bumped) or bump the pin with")
+	fmt.Println("         'git -C codex checkout <commit>' followed by 'make sync'. Every coverage")
+	fmt.Println("         result below is measured against the surface, not the pin.")
 	return false
 }
 

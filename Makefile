@@ -2,8 +2,11 @@ SDK_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 # The protocol anchor is a codex *git commit*, not the installed codex CLI: the CLI may be
 # behind or ahead of the pinned commit (at the time of writing 0.160.0 is one method behind
-# 14c8b777). Point CODEX_SRC at a checkout of github.com/openai/codex.
-CODEX_SRC ?= $(HOME)/github.com/openai/codex
+# 14c8b777). The commit is pinned by the ./codex submodule, so the input to sync is
+# reproducible from the repository alone and cannot be a stale local checkout by accident.
+# Overridable only as a *location*, never as a version: the pin check and codexgen both
+# compare HEAD against the gitlink, so a different path must still contain the pinned commit.
+CODEX_SUBMODULE ?= $(SDK_DIR)/codex
 
 # Single Go entry point for the generation/conformance tooling (replaces the former
 # per-script Python invocations one command at a time).
@@ -11,10 +14,31 @@ GO_TOOL = cd $(SDK_DIR) && go run ./tools/codexgen
 
 .PHONY: sync verify diff-cli coverage coverage-write typecheck type-shape-check export-check enum-value-check generate-types generate-client generate readme-coverage docs docs-check conformance conformance-strict build test ci
 
-# Regenerate vendored schema artifacts + gen/*.json from a codex checkout.
-# Deterministic: a no-op re-run must produce an empty `git diff`.
-sync:
-	$(GO_TOOL) sync --codex-src $(CODEX_SRC)
+# The pin is read-only here. This target *verifies* the submodule is at the commit the index
+# records; it never fetches, checks out, or otherwise moves the pin. Bumping the codex
+# version is a separate, explicit act -- 'git -C codex checkout <commit> && git add codex'
+# reviewed as a gitlink diff -- never a side effect of running a make target.
+check-codex-submodule:
+	@if [ ! -e $(CODEX_SUBMODULE)/.git ]; then \
+		echo "ERROR: codex submodule is not checked out (the pin is unchanged; this is local state)."; \
+		echo "       Run: git submodule update --init --depth 1 codex"; exit 1; \
+	 fi
+	@want=$$(cd $(SDK_DIR) && git rev-parse :codex 2>/dev/null); \
+	 if [ -z "$$want" ]; then echo "ERROR: no codex gitlink in the index."; exit 1; fi; \
+	 have=$$(git -C $(CODEX_SUBMODULE) rev-parse HEAD); \
+	 if [ "$$want" != "$$have" ]; then \
+		echo "ERROR: codex submodule is at $$have, but the repository pins $$want."; \
+		echo "       This target does not move the pin. Restore the recorded commit:"; \
+		echo "         git submodule update codex"; \
+		echo "       To bump the pin deliberately, see 'Protocol reference' in README.md."; exit 1; \
+	 fi
+
+# Regenerate vendored schema artifacts + gen/*.json from the pinned submodule.
+# Deterministic: a no-op re-run must produce an empty `git diff`. Never moves the pin:
+# syncing a different commit is rejected rather than silently re-anchoring the surface.
+
+sync: check-codex-submodule
+	$(GO_TOOL) sync --codex-src $(CODEX_SUBMODULE)
 	gofmt -w $(SDK_DIR)/internal/protocol/schema/version.go
 
 # CI-safe reconciliation: needs no codex checkout, no `zstd`, no network. Runs the six

@@ -340,6 +340,25 @@ A pinned copy ships at
 Upstream protocol source: [`openai/codex`](https://github.com/openai/codex) —
 `codex-rs/app-server-protocol/`.
 
+The anchor is the **`codex` git submodule** (a gitlink, i.e. a pinned commit id), not a
+checkout path on the machine:
+
+```bash
+git submodule update --init --depth 1 codex   # fetch exactly the pinned commit
+make sync                                     # refuses to run if codex is at any other commit
+```
+
+The pin only moves by an explicit, committed gitlink change — never as a side effect of a
+make target (`make sync` rejects a submodule at any other commit instead of re-anchoring):
+
+```bash
+git -C codex fetch --depth 1 origin <commit>
+git -C codex checkout <commit>
+git add codex                # the gitlink diff IS the anchor change; review it
+make sync                    # now that the pin says so, vendor the schema + gen/
+make ci                      # gate surface, types, enums, coverage against it
+```
+
 ## License
 
 Licensed under the **Apache License, Version 2.0**, consistent with upstream Codex.

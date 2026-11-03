@@ -387,6 +387,10 @@ func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {
 			_, err := c.FeedbackUpload(ctx, *new(codexgo.FeedbackUploadParams))
 			return err
 		}},
+		{"FeedbackSave", "feedback/save", func(ctx context.Context, c *codexgo.Client) error {
+			_, err := c.FeedbackSave(ctx, *new(codexgo.FeedbackSaveParams))
+			return err
+		}},
 		{"CommandExec", "command/exec", func(ctx context.Context, c *codexgo.Client) error {
 			_, err := c.CommandExec(ctx, *new(codexgo.CommandExecRequest))
 			return err

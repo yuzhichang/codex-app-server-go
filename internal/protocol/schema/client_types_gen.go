@@ -475,10 +475,9 @@ type ReviewStartParams struct {
 	Delivery *ReviewDelivery `json:"delivery,omitempty"`
 }
 
-const (
-// ReviewDeliveryInline runs the review inside the current thread.
-// ReviewDeliveryDetached runs it in its own thread (see ReviewStartResponse.ReviewThreadID).
-)
+// ReviewDelivery admits only `inline`: upstream removed `detached` in codex 0.166.0
+// (protocol/v2/review.rs). A review that needs its own thread now starts one and reviews
+// inline there, so the removed value is rejected by the server rather than deprecated.
 
 // UncommittedChangesTarget reviews the working tree: staged, unstaged and untracked files.
 func UncommittedChangesTarget() ReviewTarget {

@@ -18,29 +18,29 @@ package schema
 
 const (
 	// SourceCodexCommit is the github.com/openai/codex commit all artifacts came from.
-	SourceCodexCommit = "14c8b7771ab2b617a131f5d8e55e98d18e56ed09"
+	SourceCodexCommit = "6ff1e1ca3b30fc8b914720681fcf5fe62e95f856"
 
 	// SchemaRevision is the sha256 of the vendored codex_app_server_protocol.v2.schemas.json
 	// (the upstream *stable* aggregate; it excludes the 5 methods listed in
 	// gen/export-exclusions.json).
-	SchemaRevision = "9e39bb66909635ed7794878429e683a097d479b4a9bf969891642be23b797d74"
+	SchemaRevision = "e025e54fb11354eb82767ea040b40efa17b34dfc706c9433a6115b5f4771c465"
 
 	// SchemaTitle mirrors the upstream aggregate's title for traceability.
 	SchemaTitle = "Codex app-server protocol v2 (stable)"
 
 	// DeclaredStable counts source methods WITHOUT an #[experimental] annotation, per face.
-	DeclaredStableClientRequest      = 108
+	DeclaredStableClientRequest      = 109
 	DeclaredStableServerRequest      = 10
 	DeclaredStableServerNotification = 63
 	DeclaredStableClientNotification = 1
 
 	// SourceExperimental counts methods annotated #[experimental], per face. These are
 	// out of scope by decision R2 (see gen/not-in-scope.txt).
-	SourceExperimentalClientRequest      = 65
+	SourceExperimentalClientRequest      = 73
 	SourceExperimentalServerRequest      = 1
-	SourceExperimentalServerNotification = 23
+	SourceExperimentalServerNotification = 24
 	SourceExperimentalClientNotification = 0
 
 	// NotInScopeTotal is DeclaredStable's complement: every #[experimental] method.
-	NotInScopeTotal = 89
+	NotInScopeTotal = 98
 )

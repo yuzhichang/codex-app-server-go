@@ -282,6 +282,7 @@ type McpServerStatus struct {
 	RuntimeStatus      *McpServerConnectionStatus `json:"runtimeStatus,omitempty"`
 	ServerCapabilities json.RawMessage            `json:"serverCapabilities,omitempty"`
 	ServerInfo         *McpServerInfo             `json:"serverInfo,omitempty"`
+	ToolListMeta       json.RawMessage            `json:"toolListMeta,omitempty"`
 	Tools              map[string]Tool            `json:"tools"`
 	ToolsError         string                     `json:"toolsError,omitempty"`
 }

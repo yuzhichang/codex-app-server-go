@@ -32,6 +32,22 @@
     "reason": "An arm of an externally-tagged union (serde's default representation: each variant is a single required property whose NAME is the tag). Upstream inlines these objects inside the union definition instead of giving them a $ref, so the aggregate has no definition to match. Go needs a name to hang the fields on, and the fields must stay typed rather than collapsing to map[string]any."
   },
   {
+    "name": "OtlpGrpcOtelExporter",
+    "reason": "The union arm is an inline object under OtelExporter (upstream title OtlpGrpcOtelExporter), so the aggregate has no definition to match; Go needs a name to hang the required fields on. The only difference from the upstream title is initialism normalization in goName (Http to HTTP); the JSON property name is unchanged."
+  },
+  {
+    "name": "OtlpGrpcOtelExporterOtlpGrpc",
+    "reason": "The inline object on the OtlpGrpcOtelExporter arm's otlp-grpc property, named deterministically after the parent type and the property so it survives regeneration. Upstream inlines it with no name of its own."
+  },
+  {
+    "name": "OtlpHTTPOtelExporter",
+    "reason": "The union arm is an inline object under OtelExporter (upstream title OtlpHttpOtelExporter), so the aggregate has no definition to match; Go needs a name to hang the required fields on. The only difference from the upstream title is initialism normalization in goName (Http to HTTP); the JSON property name is unchanged."
+  },
+  {
+    "name": "OtlpHTTPOtelExporterOtlpHTTP",
+    "reason": "The inline object on the OtlpHttpOtelExporter arm's otlp-http property, named deterministically after the parent type and the property so it survives regeneration. Upstream inlines it with no name of its own; the same HTTP initialism normalization applies."
+  },
+  {
     "name": "PermissionGrantScope",
     "reason": "Correct upstream name (protocol/v2/permissions.rs:789, generated from CorePermissionGrantScope); absent from the v2 aggregate. Renamed from the SDK's former 'PermissionsScope'."
   },

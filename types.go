@@ -247,7 +247,6 @@ const (
 	UserInputTypeLocalAudio = schematypes.UserInputTypeLocalAudio
 	UserInputTypeSkill      = schematypes.UserInputTypeSkill
 	UserInputTypeMention    = schematypes.UserInputTypeMention
-	ReviewDeliveryDetached  = schematypes.ReviewDeliveryDetached
 
 	// ThreadSourceKind values.
 	ThreadSourceKindSubAgentThreadSpawn = schematypes.ThreadSourceKindSubAgentThreadSpawn

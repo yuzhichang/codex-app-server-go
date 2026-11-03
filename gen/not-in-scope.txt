@@ -3,6 +3,9 @@
 client_request       account/bedrock/checkGovCloudRequirements
 client_request       account/bedrock/discover
 client_request       account/bedrock/setup
+client_request       account/gcp/setup
+client_request       accountSession/list
+client_request       accountSession/switch
 client_request       collaborationMode/list
 client_request       environment/add
 client_request       environment/info
@@ -41,6 +44,8 @@ client_request       thread/backgroundTerminals/list
 client_request       thread/backgroundTerminals/terminate
 client_request       thread/decrement_elicitation
 client_request       thread/increment_elicitation
+client_request       thread/items/read
+client_request       thread/memory/read
 client_request       thread/memoryMode/set
 client_request       thread/prediction/request
 client_request       thread/queue/add
@@ -49,12 +54,15 @@ client_request       thread/queue/list
 client_request       thread/queue/reorder
 client_request       thread/queue/start
 client_request       thread/queue/update
+client_request       thread/readState/update
 client_request       thread/realtime/appendAudio
 client_request       thread/realtime/appendSpeech
 client_request       thread/realtime/appendText
 client_request       thread/realtime/listVoices
 client_request       thread/realtime/start
 client_request       thread/realtime/stop
+client_request       thread/sample
+client_request       thread/sample/cancel
 client_request       thread/search
 client_request       thread/searchOccurrences
 client_request       thread/settings/update
@@ -75,6 +83,7 @@ server_notification  thread/environment/disconnected
 server_notification  thread/prediction/updated
 server_notification  thread/project/updated
 server_notification  thread/queue/changed
+server_notification  thread/readState/changed
 server_notification  thread/realtime/closed
 server_notification  thread/realtime/error
 server_notification  thread/realtime/item/completed

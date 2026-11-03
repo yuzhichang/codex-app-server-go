@@ -15,6 +15,7 @@ const (
 	MethodExternalAgentConfigImport              = "externalAgentConfig/import"
 	MethodExternalAgentConfigImportHistoriesRead = "externalAgentConfig/import/readHistories"
 	MethodExternalAgentConfigImportHistoryRecord = "externalAgentConfig/import/recordHistory"
+	MethodFeedbackSave                           = "feedback/save"
 	MethodFeedbackUpload                         = "feedback/upload"
 	MethodFuzzyFileSearch                        = "fuzzyFileSearch"
 	MethodFuzzyFileSearchSessionCompleted        = "fuzzyFileSearch/sessionCompleted"

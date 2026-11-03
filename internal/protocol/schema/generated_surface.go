@@ -16,7 +16,7 @@ import (
 
 // Account mirrors the upstream `Account` definition.
 //
-// Upstream declares it as a `type`-tagged union of 3 variants (amazonBedrock, apiKey, chatgpt).
+// Upstream declares it as a `type`-tagged union of 4 variants (amazonBedrock, apiKey, chatgpt, gcp).
 // It is modelled as one flat struct with an explicit Type discriminator
 // plus the union of every variant's fields, so no field is dropped and no variant is
 // rejected.
@@ -27,6 +27,7 @@ type Account struct {
 	Type                        string   `json:"type"`
 	Email                       string   `json:"email,omitempty"`
 	PlanType                    PlanType `json:"planType,omitempty"`
+	WorkspaceName               string   `json:"workspaceName,omitempty"`
 	UsesCodexManagedCredentials bool     `json:"usesCodexManagedCredentials,omitempty"`
 }
 
@@ -35,6 +36,7 @@ const (
 	AccountTypeAPIKey        = "apiKey"
 	AccountTypeChatgpt       = "chatgpt"
 	AccountTypeAmazonBedrock = "amazonBedrock"
+	AccountTypeGcp           = "gcp"
 )
 
 // MarshalJSON writes the fields belonging to the active variant, so a field required by
@@ -49,13 +51,15 @@ func (u Account) MarshalJSON() ([]byte, error) {
 		})
 	case AccountTypeChatgpt:
 		return json.Marshal(struct {
-			Type     string   `json:"type"`
-			Email    string   `json:"email"`
-			PlanType PlanType `json:"planType"`
+			Type          string   `json:"type"`
+			Email         string   `json:"email"`
+			PlanType      PlanType `json:"planType"`
+			WorkspaceName string   `json:"workspaceName,omitempty"`
 		}{
-			Type:     u.Type,
-			Email:    u.Email,
-			PlanType: u.PlanType,
+			Type:          u.Type,
+			Email:         u.Email,
+			PlanType:      u.PlanType,
+			WorkspaceName: u.WorkspaceName,
 		})
 	case AccountTypeAmazonBedrock:
 		return json.Marshal(struct {
@@ -64,6 +68,12 @@ func (u Account) MarshalJSON() ([]byte, error) {
 		}{
 			Type:                        u.Type,
 			UsesCodexManagedCredentials: u.UsesCodexManagedCredentials,
+		})
+	case AccountTypeGcp:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+		}{
+			Type: u.Type,
 		})
 	}
 	type plain Account
@@ -849,6 +859,7 @@ type ConfigRequirements struct {
 	ModelProvider                        string                         `json:"modelProvider,omitempty"`
 	ModelProviders                       map[string]any                 `json:"modelProviders,omitempty"`
 	Models                               *ModelsRequirements            `json:"models,omitempty"`
+	Otel                                 *OtelRequirements              `json:"otel,omitempty"`
 	SqliteHome                           string                         `json:"sqliteHome,omitempty"`
 }
 
@@ -919,12 +930,14 @@ type ConsumeAccountRateLimitResetCreditResponse struct {
 // Fields that disagree in type across variants, or that are themselves unions, are passed
 // through as json.RawMessage rather than guessed at.
 type ContentItem struct {
-	Type     string      `json:"type"`
-	Text     string      `json:"text,omitempty"`
-	ImageURL string      `json:"image_url,omitempty"`
-	FileID   string      `json:"file_id,omitempty"`
-	Detail   ImageDetail `json:"detail,omitempty"`
-	AudioURL string      `json:"audio_url,omitempty"`
+	Type        string            `json:"type"`
+	Text        string            `json:"text,omitempty"`
+	ImageURL    string            `json:"image_url,omitempty"`
+	FileID      string            `json:"file_id,omitempty"`
+	Detail      ImageDetail       `json:"detail,omitempty"`
+	AudioURL    string            `json:"audio_url,omitempty"`
+	Annotations []json.RawMessage `json:"annotations,omitempty"`
+	Logprobs    []json.RawMessage `json:"logprobs,omitempty"`
 }
 
 // ContentItem discriminator values, matching the upstream variant tags.
@@ -969,11 +982,15 @@ func (u ContentItem) MarshalJSON() ([]byte, error) {
 		})
 	case ContentItemTypeOutputText:
 		return json.Marshal(struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
+			Type        string            `json:"type"`
+			Text        string            `json:"text"`
+			Annotations []json.RawMessage `json:"annotations,omitempty"`
+			Logprobs    []json.RawMessage `json:"logprobs,omitempty"`
 		}{
-			Type: u.Type,
-			Text: u.Text,
+			Type:        u.Type,
+			Text:        u.Text,
+			Annotations: u.Annotations,
+			Logprobs:    u.Logprobs,
 		})
 	}
 	type plain ContentItem
@@ -1299,6 +1316,24 @@ const (
 // FeedbackRequirements mirrors the upstream `FeedbackRequirements` definition.
 type FeedbackRequirements struct {
 	Enabled bool `json:"enabled,omitempty"`
+}
+
+// FeedbackSaveParams mirrors the upstream `FeedbackSaveParams` definition.
+type FeedbackSaveParams struct {
+	Classification string              `json:"classification"`
+	ExtraLogFiles  []string            `json:"extraLogFiles,omitempty"`
+	IncludeLogs    bool                `json:"includeLogs,omitempty"`
+	Reason         string              `json:"reason,omitempty"`
+	SavePath       LegacyAppPathString `json:"savePath"`
+	Tags           map[string]string   `json:"tags,omitempty"`
+	ThreadID       string              `json:"threadId,omitempty"`
+}
+
+// FeedbackSaveResponse mirrors the upstream `FeedbackSaveResponse` definition.
+type FeedbackSaveResponse struct {
+	PromptHash string              `json:"promptHash,omitempty"`
+	SavedPath  LegacyAppPathString `json:"savedPath"`
+	ThreadID   string              `json:"threadId"`
 }
 
 // FeedbackUploadParams mirrors the upstream `FeedbackUploadParams` definition.
@@ -2064,6 +2099,7 @@ type HookMetadata struct {
 	CurrentHash            string          `json:"currentHash"`
 	DisplayOrder           int64           `json:"displayOrder"`
 	Enabled                bool            `json:"enabled"`
+	EnvironmentID          string          `json:"environmentId,omitempty"`
 	EventName              HookEventName   `json:"eventName"`
 	IsManaged              bool            `json:"isManaged"`
 	Key                    string          `json:"key"`
@@ -2117,20 +2153,20 @@ const (
 
 // HookRunSummary mirrors the upstream `HookRunSummary` definition.
 type HookRunSummary struct {
-	CompletedAt   int64             `json:"completedAt,omitempty"`
-	DisplayOrder  int64             `json:"displayOrder"`
-	DurationMs    int64             `json:"durationMs,omitempty"`
-	Entries       []HookOutputEntry `json:"entries"`
-	EventName     HookEventName     `json:"eventName"`
-	ExecutionMode HookExecutionMode `json:"executionMode"`
-	HandlerType   HookHandlerType   `json:"handlerType"`
-	ID            string            `json:"id"`
-	Scope         HookScope         `json:"scope"`
-	Source        HookSource        `json:"source,omitempty"`
-	SourcePath    AbsolutePathBuf   `json:"sourcePath"`
-	StartedAt     int64             `json:"startedAt"`
-	Status        HookRunStatus     `json:"status"`
-	StatusMessage string            `json:"statusMessage,omitempty"`
+	CompletedAt   int64               `json:"completedAt,omitempty"`
+	DisplayOrder  int64               `json:"displayOrder"`
+	DurationMs    int64               `json:"durationMs,omitempty"`
+	Entries       []HookOutputEntry   `json:"entries"`
+	EventName     HookEventName       `json:"eventName"`
+	ExecutionMode HookExecutionMode   `json:"executionMode"`
+	HandlerType   HookHandlerType     `json:"handlerType"`
+	ID            string              `json:"id"`
+	Scope         HookScope           `json:"scope"`
+	Source        HookSource          `json:"source,omitempty"`
+	SourcePath    LegacyAppPathString `json:"sourcePath"`
+	StartedAt     int64               `json:"startedAt"`
+	Status        HookRunStatus       `json:"status"`
+	StatusMessage string              `json:"statusMessage,omitempty"`
 }
 
 // HookScope mirrors the upstream `HookScope` enum.
@@ -2185,7 +2221,8 @@ type HooksListEntry struct {
 
 // HooksListParams mirrors the upstream `HooksListParams` definition.
 type HooksListParams struct {
-	Cwds []string `json:"cwds,omitempty"`
+	Cwds     []string `json:"cwds,omitempty"`
+	ThreadID string   `json:"threadId,omitempty"`
 }
 
 // HooksListResponse mirrors the upstream `HooksListResponse` definition.
@@ -2240,6 +2277,12 @@ func (u ImageGenerationFailure) MarshalJSON() ([]byte, error) {
 	}
 	type plain ImageGenerationFailure
 	return json.Marshal(plain(u))
+}
+
+// ImageGenerationInputImage mirrors the upstream `ImageGenerationInputImage` definition.
+type ImageGenerationInputImage struct {
+	Path   AbsolutePathBuf `json:"path"`
+	Sha256 string          `json:"sha256"`
 }
 
 // InAppBrowserRequirements mirrors the upstream `InAppBrowserRequirements` definition.
@@ -2781,6 +2824,167 @@ type NullableGetAccountRateLimitsParams = *GetAccountRateLimitsParams
 // NullableGetAccountTokenUsageParams mirrors the upstream `NullableGetAccountTokenUsageParams` definition.
 type NullableGetAccountTokenUsageParams = *GetAccountTokenUsageParams
 
+// OtlpHTTPOtelExporterOtlpHTTP is the inline object on OtlpHTTPOtelExporter.otlp-http, named so its fields stay typed.
+type OtlpHTTPOtelExporterOtlpHTTP struct {
+	Endpoint string            `json:"endpoint"`
+	Headers  map[string]string `json:"headers"`
+	Protocol OtelHttpProtocol  `json:"protocol"`
+	Tls      *OtelTlsConfig    `json:"tls,omitempty"`
+}
+
+// OtlpHTTPOtelExporter is the object arm of its union.
+type OtlpHTTPOtelExporter struct {
+	OtlpHTTP *OtlpHTTPOtelExporterOtlpHTTP `json:"otlp-http"`
+}
+
+// OtlpGrpcOtelExporterOtlpGrpc is the inline object on OtlpGrpcOtelExporter.otlp-grpc, named so its fields stay typed.
+type OtlpGrpcOtelExporterOtlpGrpc struct {
+	Endpoint string            `json:"endpoint"`
+	Headers  map[string]string `json:"headers"`
+	Tls      *OtelTlsConfig    `json:"tls,omitempty"`
+}
+
+// OtlpGrpcOtelExporter is the object arm of its union.
+type OtlpGrpcOtelExporter struct {
+	OtlpGrpc *OtlpGrpcOtelExporterOtlpGrpc `json:"otlp-grpc"`
+}
+
+// OtelExporter is a union of a string, a OtlpHTTPOtelExporter, a OtlpGrpcOtelExporter.
+//
+// Upstream declares it with at least one NON-object arm, so it cannot be modelled as a
+// struct with a discriminator the way the tagged unions are: a struct always encodes as
+// an object, which would lose the scalar form entirely. It therefore carries its own JSON
+// encoding. Exactly one arm is set; use the From... constructors.
+type OtelExporter struct {
+	String               *string
+	OtlpHTTPOtelExporter *OtlpHTTPOtelExporter
+	OtlpGrpcOtelExporter *OtlpGrpcOtelExporter
+}
+
+// OtelExporterFromString builds the String arm.
+func OtelExporterFromString(v string) OtelExporter { return OtelExporter{String: &v} }
+
+// OtelExporterFromOtlpHTTPOtelExporter builds the OtlpHTTPOtelExporter arm.
+func OtelExporterFromOtlpHTTPOtelExporter(v OtlpHTTPOtelExporter) OtelExporter {
+	return OtelExporter{OtlpHTTPOtelExporter: &v}
+}
+
+// OtelExporterFromOtlpGrpcOtelExporter builds the OtlpGrpcOtelExporter arm.
+func OtelExporterFromOtlpGrpcOtelExporter(v OtlpGrpcOtelExporter) OtelExporter {
+	return OtelExporter{OtlpGrpcOtelExporter: &v}
+}
+
+// MarshalJSON encodes whichever arm is set, matching the upstream wire form.
+func (u OtelExporter) MarshalJSON() ([]byte, error) {
+	set := 0
+	if u.String != nil {
+		set++
+	}
+	if u.OtlpHTTPOtelExporter != nil {
+		set++
+	}
+	if u.OtlpGrpcOtelExporter != nil {
+		set++
+	}
+	if set != 1 {
+		return nil, fmt.Errorf("OtelExporter: exactly one arm must be set, got %d", set)
+	}
+	if u.String != nil {
+		return json.Marshal(u.String)
+	}
+	if u.OtlpHTTPOtelExporter != nil {
+		return json.Marshal(u.OtlpHTTPOtelExporter)
+	}
+	if u.OtlpGrpcOtelExporter != nil {
+		return json.Marshal(u.OtlpGrpcOtelExporter)
+	}
+	return nil, errors.New("unreachable")
+}
+
+// UnmarshalJSON selects the arm by JSON token: a quoted string, a number, an array or
+// an object.
+func (u *OtelExporter) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return fmt.Errorf("OtelExporter: empty payload")
+	}
+	// Several arms are JSON objects; each is identified by its own required
+	// property, so probe for those keys rather than guessing by token alone.
+	var probe map[string]json.RawMessage
+	switch trimmed[0] {
+	case '"':
+		var v string
+		if err := json.Unmarshal(data, &v); err != nil {
+			return err
+		}
+		u.String = &v
+		return nil
+	case '{':
+		if err := json.Unmarshal(data, &probe); err != nil {
+			return err
+		}
+		// OtlpHTTPOtelExporter arm
+		if _, ok := probe["otlp-http"]; ok {
+			var v OtlpHTTPOtelExporter
+			if err := json.Unmarshal(data, &v); err != nil {
+				return err
+			}
+			u.OtlpHTTPOtelExporter = &v
+			return nil
+		}
+		// OtlpGrpcOtelExporter arm
+		if _, ok := probe["otlp-grpc"]; ok {
+			var v OtlpGrpcOtelExporter
+			if err := json.Unmarshal(data, &v); err != nil {
+				return err
+			}
+			u.OtlpGrpcOtelExporter = &v
+			return nil
+		}
+		// No required key matched. Refusing is deliberate: guessing an arm
+		// would attribute the value to the wrong variant.
+		return fmt.Errorf("OtelExporter: no object arm matches %s", trimmed)
+	default:
+		// No modelled arm matches. Refusing is deliberate: keeping nothing would drop a
+		// value the caller believes it received.
+		return fmt.Errorf("OtelExporter: unsupported arm %s", trimmed)
+	}
+}
+
+// OtelHttpProtocol mirrors the upstream `OtelHttpProtocol` enum.
+type OtelHttpProtocol string
+
+const (
+	OtelHttpProtocolBinary OtelHttpProtocol = "binary"
+	OtelHttpProtocolJSON   OtelHttpProtocol = "json"
+)
+
+// OtelRequirements mirrors the upstream `OtelRequirements` definition.
+type OtelRequirements struct {
+	Environment            string                       `json:"environment,omitempty"`
+	Exporter               *OtelExporter                `json:"exporter,omitempty"`
+	LogAgentResponses      bool                         `json:"log_agent_responses,omitempty"`
+	LogGuardianAssessments bool                         `json:"log_guardian_assessments,omitempty"`
+	LogUserPrompt          bool                         `json:"log_user_prompt,omitempty"`
+	MetricsExporter        *OtelExporter                `json:"metrics_exporter,omitempty"`
+	SpanAttributes         map[string]string            `json:"span_attributes,omitempty"`
+	ToolResult             *OtelToolResultLogConfig     `json:"tool_result,omitempty"`
+	TraceExporter          *OtelExporter                `json:"trace_exporter,omitempty"`
+	Tracestate             map[string]map[string]string `json:"tracestate,omitempty"`
+}
+
+// OtelTlsConfig mirrors the upstream `OtelTlsConfig` definition.
+type OtelTlsConfig struct {
+	CaCertificate     string `json:"ca-certificate,omitempty"`
+	ClientCertificate string `json:"client-certificate,omitempty"`
+	ClientPrivateKey  string `json:"client-private-key,omitempty"`
+}
+
+// OtelToolResultLogConfig mirrors the upstream `OtelToolResultLogConfig` definition.
+type OtelToolResultLogConfig struct {
+	MaxBytes int64 `json:"max_bytes"`
+}
+
 // OverriddenMetadata mirrors the upstream `OverriddenMetadata` definition.
 type OverriddenMetadata struct {
 	EffectiveValue  json.RawMessage     `json:"effectiveValue"`
@@ -2906,6 +3110,8 @@ const (
 	PlanTypeEdu                         PlanType = "edu"
 	PlanTypeEduPlus                     PlanType = "edu_plus"
 	PlanTypeEduPro                      PlanType = "edu_pro"
+	PlanTypeSci                         PlanType = "sci"
+	PlanTypeSciPlus                     PlanType = "sci_plus"
 	PlanTypeUnknown                     PlanType = "unknown"
 )
 
@@ -3239,15 +3445,15 @@ type ResponseItem struct {
 	Role                                   string                                 `json:"role,omitempty"`
 	Tools                                  []json.RawMessage                      `json:"tools,omitempty"`
 	Content                                json.RawMessage                        `json:"content,omitempty"`
+	EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 	InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 	Phase                                  MessagePhase                           `json:"phase,omitempty"`
+	Status                                 json.RawMessage                        `json:"status,omitempty"`
 	Author                                 string                                 `json:"author,omitempty"`
 	Recipient                              string                                 `json:"recipient,omitempty"`
-	EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 	Summary                                []ReasoningItemReasoningSummary        `json:"summary,omitempty"`
 	Action                                 json.RawMessage                        `json:"action,omitempty"`
 	CallID                                 string                                 `json:"call_id,omitempty"`
-	Status                                 json.RawMessage                        `json:"status,omitempty"`
 	Arguments                              json.RawMessage                        `json:"arguments,omitempty"`
 	EncryptedFunctionArgs                  []string                               `json:"encrypted_function_args,omitempty"`
 	Name                                   string                                 `json:"name,omitempty"`
@@ -3304,15 +3510,19 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 			ID                                     string                                 `json:"id,omitempty"`
 			Role                                   string                                 `json:"role"`
 			Content                                json.RawMessage                        `json:"content"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 			Phase                                  MessagePhase                           `json:"phase,omitempty"`
+			Status                                 json.RawMessage                        `json:"status,omitempty"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
 			Role:                                   u.Role,
 			Content:                                u.Content,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 			Phase:                                  u.Phase,
+			Status:                                 u.Status,
 		})
 	case ResponseItemTypeAgentMessage:
 		return json.Marshal(struct {
@@ -3335,38 +3545,42 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
 			Content                                json.RawMessage                        `json:"content,omitempty"`
-			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 			Summary                                []ReasoningItemReasoningSummary        `json:"summary"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
 			Content:                                u.Content,
-			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 			EncryptedContent:                       u.EncryptedContent,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 			Summary:                                u.Summary,
 		})
 	case ResponseItemTypeLocalShellCall:
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Status                                 json.RawMessage                        `json:"status"`
 			Action                                 json.RawMessage                        `json:"action"`
 			CallID                                 string                                 `json:"call_id,omitempty"`
-			Status                                 json.RawMessage                        `json:"status"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Status:                                 u.Status,
 			Action:                                 u.Action,
 			CallID:                                 u.CallID,
-			Status:                                 u.Status,
 		})
 	case ResponseItemTypeFunctionCall:
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
+			Status                                 json.RawMessage                        `json:"status,omitempty"`
 			CallID                                 string                                 `json:"call_id"`
 			Arguments                              json.RawMessage                        `json:"arguments"`
 			EncryptedFunctionArgs                  []string                               `json:"encrypted_function_args,omitempty"`
@@ -3375,7 +3589,9 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
+			Status:                                 u.Status,
 			CallID:                                 u.CallID,
 			Arguments:                              u.Arguments,
 			EncryptedFunctionArgs:                  u.EncryptedFunctionArgs,
@@ -3386,17 +3602,19 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
-			CallID                                 string                                 `json:"call_id,omitempty"`
 			Status                                 json.RawMessage                        `json:"status,omitempty"`
+			CallID                                 string                                 `json:"call_id,omitempty"`
 			Arguments                              json.RawMessage                        `json:"arguments"`
 			Execution                              string                                 `json:"execution"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
-			CallID:                                 u.CallID,
 			Status:                                 u.Status,
+			CallID:                                 u.CallID,
 			Arguments:                              u.Arguments,
 			Execution:                              u.Execution,
 		})
@@ -3422,18 +3640,20 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
-			CallID                                 string                                 `json:"call_id"`
 			Status                                 json.RawMessage                        `json:"status,omitempty"`
+			CallID                                 string                                 `json:"call_id"`
 			Name                                   string                                 `json:"name"`
 			Namespace                              string                                 `json:"namespace,omitempty"`
 			Input                                  string                                 `json:"input"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
-			CallID:                                 u.CallID,
 			Status:                                 u.Status,
+			CallID:                                 u.CallID,
 			Name:                                   u.Name,
 			Namespace:                              u.Namespace,
 			Input:                                  u.Input,
@@ -3460,36 +3680,39 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 			ID                                     string                                 `json:"id,omitempty"`
 			Tools                                  []json.RawMessage                      `json:"tools"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
-			CallID                                 string                                 `json:"call_id,omitempty"`
 			Status                                 json.RawMessage                        `json:"status"`
+			CallID                                 string                                 `json:"call_id,omitempty"`
 			Execution                              string                                 `json:"execution"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
 			Tools:                                  u.Tools,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
-			CallID:                                 u.CallID,
 			Status:                                 u.Status,
+			CallID:                                 u.CallID,
 			Execution:                              u.Execution,
 		})
 	case ResponseItemTypeWebSearchCall:
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
-			Action                                 json.RawMessage                        `json:"action,omitempty"`
 			Status                                 json.RawMessage                        `json:"status,omitempty"`
+			Action                                 json.RawMessage                        `json:"action,omitempty"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
-			Action:                                 u.Action,
 			Status:                                 u.Status,
+			Action:                                 u.Action,
 		})
 	case ResponseItemTypeImageGenerationCall:
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
+			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
 			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 			Status                                 json.RawMessage                        `json:"status"`
 			Result                                 string                                 `json:"result"`
@@ -3497,6 +3720,7 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
+			EncryptedContent:                       u.EncryptedContent,
 			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 			Status:                                 u.Status,
 			Result:                                 u.Result,
@@ -3506,13 +3730,13 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
-			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 			EncryptedContent                       string                                 `json:"encrypted_content"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
-			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 			EncryptedContent:                       u.EncryptedContent,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 		})
 	case ResponseItemTypeConfigurationUpdate:
 		return json.Marshal(struct {
@@ -3532,13 +3756,13 @@ func (u ResponseItem) MarshalJSON() ([]byte, error) {
 		return json.Marshal(struct {
 			Type                                   string                                 `json:"type"`
 			ID                                     string                                 `json:"id,omitempty"`
-			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 			EncryptedContent                       string                                 `json:"encrypted_content,omitempty"`
+			InternalChatMessageMetadataPassthrough InternalChatMessageMetadataPassthrough `json:"internal_chat_message_metadata_passthrough,omitempty"`
 		}{
 			Type:                                   u.Type,
 			ID:                                     u.ID,
-			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 			EncryptedContent:                       u.EncryptedContent,
+			InternalChatMessageMetadataPassthrough: u.InternalChatMessageMetadataPassthrough,
 		})
 	case ResponseItemTypeOther:
 		return json.Marshal(struct {
@@ -3629,8 +3853,7 @@ func (u ResponsesApiWebSearchAction) MarshalJSON() ([]byte, error) {
 type ReviewDelivery string
 
 const (
-	ReviewDeliveryInline   ReviewDelivery = "inline"
-	ReviewDeliveryDetached ReviewDelivery = "detached"
+	ReviewDeliveryInline ReviewDelivery = "inline"
 )
 
 // ReviewStartResponse mirrors the upstream `ReviewStartResponse` definition.
@@ -4522,7 +4745,10 @@ type ThreadItem struct {
 	Query                 string                             `json:"query,omitempty"`
 	Results               []json.RawMessage                  `json:"results,omitempty"`
 	Path                  LegacyAppPathString                `json:"path,omitempty"`
+	FileID                string                             `json:"fileId,omitempty"`
 	Failure               ImageGenerationFailure             `json:"failure,omitempty"`
+	GenerationID          string                             `json:"generationId,omitempty"`
+	InputImages           []ImageGenerationInputImage        `json:"inputImages,omitempty"`
 	RevisedPrompt         string                             `json:"revisedPrompt,omitempty"`
 	SavedPath             AbsolutePathBuf                    `json:"savedPath,omitempty"`
 	TransparentBackground bool                               `json:"transparentBackground,omitempty"`
@@ -4806,20 +5032,26 @@ func (u ThreadItem) MarshalJSON() ([]byte, error) {
 		})
 	case ThreadItemTypeImageGeneration:
 		return json.Marshal(struct {
-			Type                  string                 `json:"type"`
-			ID                    string                 `json:"id"`
-			Status                json.RawMessage        `json:"status"`
-			Result                json.RawMessage        `json:"result"`
-			Failure               ImageGenerationFailure `json:"failure,omitempty"`
-			RevisedPrompt         string                 `json:"revisedPrompt,omitempty"`
-			SavedPath             AbsolutePathBuf        `json:"savedPath,omitempty"`
-			TransparentBackground bool                   `json:"transparentBackground,omitempty"`
+			Type                  string                      `json:"type"`
+			ID                    string                      `json:"id"`
+			Status                json.RawMessage             `json:"status"`
+			Result                json.RawMessage             `json:"result,omitempty"`
+			FileID                string                      `json:"fileId,omitempty"`
+			Failure               ImageGenerationFailure      `json:"failure,omitempty"`
+			GenerationID          string                      `json:"generationId,omitempty"`
+			InputImages           []ImageGenerationInputImage `json:"inputImages,omitempty"`
+			RevisedPrompt         string                      `json:"revisedPrompt,omitempty"`
+			SavedPath             AbsolutePathBuf             `json:"savedPath,omitempty"`
+			TransparentBackground bool                        `json:"transparentBackground,omitempty"`
 		}{
 			Type:                  u.Type,
 			ID:                    u.ID,
 			Status:                u.Status,
 			Result:                u.Result,
+			FileID:                u.FileID,
 			Failure:               u.Failure,
+			GenerationID:          u.GenerationID,
+			InputImages:           u.InputImages,
 			RevisedPrompt:         u.RevisedPrompt,
 			SavedPath:             u.SavedPath,
 			TransparentBackground: u.TransparentBackground,
@@ -5349,6 +5581,7 @@ type ThreadUsage struct {
 	EstimatedUsageCreditsMicros int64                       `json:"estimatedUsageCreditsMicros"`
 	EstimatedUsageUsdMicros     int64                       `json:"estimatedUsageUsdMicros,omitempty"`
 	Groups                      []ThreadUsageBreakdownGroup `json:"groups"`
+	NativeUsageUsdMicros        int64                       `json:"nativeUsageUsdMicros,omitempty"`
 	ThreadID                    string                      `json:"threadId"`
 }
 
@@ -5477,6 +5710,7 @@ type TurnToolOutput struct {
 	Name      string                 `json:"name"`
 	Namespace string                 `json:"namespace,omitempty"`
 	Output    FunctionCallOutputBody `json:"output"`
+	Retain    bool                   `json:"retain,omitempty"`
 }
 
 // UserInput mirrors the upstream `UserInput` definition.

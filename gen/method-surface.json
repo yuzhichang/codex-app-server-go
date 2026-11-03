@@ -1,14 +1,14 @@
 {
-  "codex_commit": "14c8b7771ab2b617a131f5d8e55e98d18e56ed09",
+  "codex_commit": "6ff1e1ca3b30fc8b914720681fcf5fe62e95f856",
   "source": "codex-rs/app-server-protocol/src/protocol/common.rs",
   "counts": {
     "by_face": {
-      "client_request": 173,
+      "client_request": 182,
       "server_request": 11,
-      "server_notification": 86,
+      "server_notification": 87,
       "client_notification": 1
     },
-    "experimental": 89
+    "experimental": 98
   },
   "methods": [
     {
@@ -128,6 +128,30 @@
       "params_type": "ThreadForkParams",
       "response_type": "ThreadForkResponse",
       "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/sample",
+      "face": "client_request",
+      "variant": "ThreadSample",
+      "experimental": true,
+      "experimental_reason": "thread/sample",
+      "params_type": "ThreadSampleParams",
+      "response_type": "ThreadSampleResponse",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/sample/cancel",
+      "face": "client_request",
+      "variant": "ThreadSampleCancel",
+      "experimental": true,
+      "experimental_reason": "thread/sample/cancel",
+      "params_type": "ThreadSampleCancelParams",
+      "response_type": "ThreadSampleCancelResponse",
+      "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
     },
@@ -415,6 +439,18 @@
       "experimental_reason": "thread/memoryMode/set",
       "params_type": "ThreadMemoryModeSetParams",
       "response_type": "ThreadMemoryModeSetResponse",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/memory/read",
+      "face": "client_request",
+      "variant": "ThreadMemoryRead",
+      "experimental": true,
+      "experimental_reason": "thread/memory/read",
+      "params_type": "ThreadMemoryReadParams",
+      "response_type": "ThreadMemoryReadResponse",
       "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
@@ -744,6 +780,18 @@
       "export_excluded": false
     },
     {
+      "method": "thread/readState/update",
+      "face": "client_request",
+      "variant": "ThreadReadStateUpdate",
+      "experimental": true,
+      "experimental_reason": "thread/readState/update",
+      "params_type": "ThreadReadStateUpdateParams",
+      "response_type": "ThreadReadStateUpdateResponse",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
       "method": "thread/turns/list",
       "face": "client_request",
       "variant": "ThreadTurnsList",
@@ -764,6 +812,18 @@
       "params_type": "ThreadItemsListParams",
       "response_type": "ThreadItemsListResponse",
       "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/items/read",
+      "face": "client_request",
+      "variant": "ThreadItemsRead",
+      "experimental": true,
+      "experimental_reason": "thread/items/read",
+      "params_type": "ThreadItemsReadParams",
+      "response_type": "ThreadItemsReadResponse",
+      "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
     },
@@ -1692,6 +1752,18 @@
       "export_excluded": false
     },
     {
+      "method": "account/gcp/setup",
+      "face": "client_request",
+      "variant": "GcpSetup",
+      "experimental": true,
+      "experimental_reason": "account/gcp/setup",
+      "params_type": "GcpSetupParams",
+      "response_type": "GcpSetupResponse",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
       "method": "account/bedrock/checkGovCloudRequirements",
       "face": "client_request",
       "variant": "BedrockCheckGovCloudRequirements",
@@ -1712,6 +1784,30 @@
       "params_type": "CancelLoginAccountParams",
       "response_type": "CancelLoginAccountResponse",
       "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "accountSession/list",
+      "face": "client_request",
+      "variant": "AccountSessionsList",
+      "experimental": true,
+      "experimental_reason": "accountSession/list",
+      "params_type": "AccountSessionsListParams",
+      "response_type": "AccountSessionsResponse",
+      "in_export_stable": false,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "accountSession/switch",
+      "face": "client_request",
+      "variant": "AccountSessionsSwitch",
+      "experimental": true,
+      "experimental_reason": "accountSession/switch",
+      "params_type": "AccountSessionsSwitchParams",
+      "response_type": "AccountSessionsSwitchResponse",
+      "in_export_stable": false,
       "in_export_experimental": true,
       "export_excluded": false
     },
@@ -1795,6 +1891,18 @@
       "experimental_reason": null,
       "params_type": "FeedbackUploadParams",
       "response_type": "FeedbackUploadResponse",
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "feedback/save",
+      "face": "client_request",
+      "variant": "FeedbackSave",
+      "experimental": false,
+      "experimental_reason": null,
+      "params_type": "FeedbackSaveParams",
+      "response_type": "FeedbackSaveResponse",
       "in_export_stable": true,
       "in_export_experimental": true,
       "export_excluded": false
@@ -2249,6 +2357,18 @@
       "variant": "ThreadStatusChanged",
       "experimental": false,
       "experimental_reason": null,
+      "params_type": null,
+      "response_type": null,
+      "in_export_stable": true,
+      "in_export_experimental": true,
+      "export_excluded": false
+    },
+    {
+      "method": "thread/readState/changed",
+      "face": "server_notification",
+      "variant": "ThreadReadStateChanged",
+      "experimental": true,
+      "experimental_reason": "thread/readState/changed",
       "params_type": null,
       "response_type": null,
       "in_export_stable": true,

@@ -449,6 +449,7 @@ func (c *Client) ExternalAgentConfigDetect(ctx context.Context, req ExternalAgen
 func (c *Client) ExternalAgentConfigImport(ctx context.Context, req ExternalAgentConfigImportParams) (ExternalAgentConfigImportResponse, error)
 func (c *Client) ExternalAgentConfigImportHistoriesRead(ctx context.Context) (ExternalAgentConfigImportHistoriesReadResponse, error)
 func (c *Client) ExternalAgentConfigImportHistoryRecord(ctx context.Context, req ExternalAgentConfigImportHistoryRecordParams) (ExternalAgentConfigImportHistoryRecordResponse, error)
+func (c *Client) FeedbackSave(ctx context.Context, req FeedbackSaveParams) (FeedbackSaveResponse, error)
 func (c *Client) FeedbackUpload(ctx context.Context, req FeedbackUploadParams) (FeedbackUploadResponse, error)
 func (c *Client) FuzzyFileSearch(ctx context.Context, req FuzzyFileSearchParams) (FuzzyFileSearchResponse, error)
 func (c *Client) PermissionProfileList(ctx context.Context, req PermissionProfileListParams) (PermissionProfileListResponse, error)

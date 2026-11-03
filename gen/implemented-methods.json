@@ -4,7 +4,8 @@
     "face": "client_notification",
     "kind": "client_notification_sender",
     "wiring": [
-      "client.go"
+      "client.go",
+      "supervisor.go"
     ],
     "test": "account_test.go"
   },
@@ -293,6 +294,16 @@
     "test": "generated_client_methods_test.go"
   },
   {
+    "method": "feedback/save",
+    "face": "client_request",
+    "kind": "client_method",
+    "wiring": [
+      "generated_client_methods.go",
+      "internal/protocol/generated_methods.go"
+    ],
+    "test": "generated_client_methods_test.go"
+  },
+  {
     "method": "feedback/upload",
     "face": "client_request",
     "kind": "client_method",
@@ -407,7 +418,8 @@
     "face": "client_request",
     "kind": "client_method",
     "wiring": [
-      "client.go"
+      "client.go",
+      "supervisor.go"
     ],
     "test": "account_test.go"
   },
@@ -832,7 +844,8 @@
     "kind": "client_method",
     "wiring": [
       "client.go",
-      "client_test_helpers.go"
+      "client_test_helpers.go",
+      "supervisor.go"
     ],
     "test": "client_extended_test.go"
   },
@@ -880,7 +893,8 @@
     "kind": "client_method",
     "wiring": [
       "generated_client_methods.go",
-      "internal/protocol/generated_methods.go"
+      "internal/protocol/generated_methods.go",
+      "supervisor.go"
     ],
     "test": "generated_client_methods_test.go"
   },

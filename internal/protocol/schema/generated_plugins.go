@@ -160,6 +160,13 @@ type ApplicationNetworkRequirements struct {
 // ApplicationRequirements mirrors the upstream `ApplicationRequirements` definition.
 type ApplicationRequirements struct {
 	Network *ApplicationNetworkRequirements `json:"network,omitempty"`
+	Storage *ApplicationStorageRequirements `json:"storage,omitempty"`
+}
+
+// ApplicationStorageRequirements mirrors the upstream `ApplicationStorageRequirements` definition.
+type ApplicationStorageRequirements struct {
+	DefaultProjectParent     *LegacyAppPathString `json:"defaultProjectParent,omitempty"`
+	ProjectlessWorkspaceRoot *LegacyAppPathString `json:"projectlessWorkspaceRoot,omitempty"`
 }
 
 // ApprovalsReviewer mirrors the upstream `ApprovalsReviewer` enum.
@@ -240,6 +247,8 @@ type ConnectorMetadata struct {
 type HookEventName string
 
 const (
+	HookEventNamePreModelRequest   HookEventName = "preModelRequest"
+	HookEventNamePostModelRequest  HookEventName = "postModelRequest"
 	HookEventNamePreToolUse        HookEventName = "preToolUse"
 	HookEventNamePermissionRequest HookEventName = "permissionRequest"
 	HookEventNamePostToolUse       HookEventName = "postToolUse"

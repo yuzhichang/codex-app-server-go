@@ -1,43 +1,43 @@
 {
-  "codex_commit": "14c8b7771ab2b617a131f5d8e55e98d18e56ed09",
+  "codex_commit": "6ff1e1ca3b30fc8b914720681fcf5fe62e95f856",
   "generated_by": "tools/codexgen sync",
   "scope_model": "declared_stable = source non-experimental; exports used for reconciliation",
   "artifacts": {
-    "internal/protocol/schema/codex_app_server_protocol.v2.schemas.json": "9e39bb66909635ed7794878429e683a097d479b4a9bf969891642be23b797d74",
-    "internal/protocol/schema/version.go": "6cd6345390c9372b116fb8bb175981cfbeb4b97ada3fb798d3f095d383afdf92",
-    ".codex-schema/exports/stable-methods.json": "ebf4bddce59d064913d4ab3fb51a7626e366808b5155193f097018f2bc87aa1f",
-    ".codex-schema/exports/experimental-methods.json": "2a6122845b2f7eb1857b39a60affa509786520c83a8f8c8b3743d34f58b6f4e2",
-    "gen/method-surface.json": "9bfa964223be83ac7f128c0b8856d373e3a84e4415106129c4c05dc342aeb284",
+    "internal/protocol/schema/codex_app_server_protocol.v2.schemas.json": "e025e54fb11354eb82767ea040b40efa17b34dfc706c9433a6115b5f4771c465",
+    "internal/protocol/schema/version.go": "337899ef8de96780a0ebcf86f19c0706e69aa9bb23885780fac4442a471f66f8",
+    ".codex-schema/exports/stable-methods.json": "43b67fded8bf71c94b727c92bea31cb69749628084ac38221fd5e31a264dbd22",
+    ".codex-schema/exports/experimental-methods.json": "a3f1fd57ff07910e9af707349ce3d8a9f8910b17ec8472012306a4421f252268",
+    "gen/method-surface.json": "ca4a216d848056dc4644849e772e750c6e9b3e74f743c56813a62173d1edc7ca",
     "gen/export-exclusions.json": "c29ba85acd28e4e66c33d99fb15e4efacfaaa1cac4141e552f81a48648b4d768"
   },
   "measured": {
     "source": {
-      "client_request": 173,
+      "client_request": 182,
       "server_request": 11,
-      "server_notification": 86,
+      "server_notification": 87,
       "client_notification": 1
     },
     "source_experimental": {
-      "client_request": 65,
+      "client_request": 73,
       "server_request": 1,
-      "server_notification": 23,
+      "server_notification": 24,
       "client_notification": 0
     },
     "export_stable": {
-      "client_request": 105,
+      "client_request": 106,
       "server_request": 10,
-      "server_notification": 84,
+      "server_notification": 85,
       "client_notification": 1
     },
     "export_experimental": {
-      "client_request": 170,
+      "client_request": 179,
       "server_request": 11,
-      "server_notification": 84,
+      "server_notification": 85,
       "client_notification": 1
     }
   },
   "declared_stable": {
-    "client_request": 108,
+    "client_request": 109,
     "server_request": 10,
     "server_notification": 63,
     "client_notification": 1

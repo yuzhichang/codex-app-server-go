@@ -27,6 +27,8 @@ type (
 	ExternalAgentConfigImportHistoryRecordResponse = schematypes.ExternalAgentConfigImportHistoryRecordResponse
 	ExternalAgentConfigImportParams                = schematypes.ExternalAgentConfigImportParams
 	ExternalAgentConfigImportResponse              = schematypes.ExternalAgentConfigImportResponse
+	FeedbackSaveParams                             = schematypes.FeedbackSaveParams
+	FeedbackSaveResponse                           = schematypes.FeedbackSaveResponse
 	FeedbackUploadParams                           = schematypes.FeedbackUploadParams
 	FeedbackUploadResponse                         = schematypes.FeedbackUploadResponse
 	FuzzyFileSearchParams                          = schematypes.FuzzyFileSearchParams
@@ -343,6 +345,17 @@ func (c *Client) FeedbackUpload(ctx context.Context, req FeedbackUploadParams) (
 	var resp FeedbackUploadResponse
 	if err := c.transport.Call(ctx, protocol.MethodFeedbackUpload, req, &resp); err != nil {
 		return FeedbackUploadResponse{}, err
+	}
+	return resp, nil
+}
+
+// FeedbackSave calls `feedback/save`.
+//
+// Generated binding. See gen/method-surface.json for the authoritative surface.
+func (c *Client) FeedbackSave(ctx context.Context, req FeedbackSaveParams) (FeedbackSaveResponse, error) {
+	var resp FeedbackSaveResponse
+	if err := c.transport.Call(ctx, protocol.MethodFeedbackSave, req, &resp); err != nil {
+		return FeedbackSaveResponse{}, err
 	}
 	return resp, nil
 }

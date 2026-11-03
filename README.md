@@ -13,7 +13,7 @@
 
 <!-- coverage:start -->
 
-Aligned to codex commit `14c8b7771ab2b617a131f5d8e55e98d18e56ed09`; scope = **stable** only.
+Aligned to codex commit `6ff1e1ca3b30fc8b914720681fcf5fe62e95f856`; scope = **stable** only.
 
 Every number below is generated from `gen/method-surface.json` and `gen/implemented-methods.json`, and enforced by `make conformance-strict`.
 
@@ -40,7 +40,7 @@ Every number below is generated from `gen/method-surface.json` and `gen/implemen
 | External agent config | 4 | 4 | `externalAgentConfig/detect` · `externalAgentConfig/import` · `externalAgentConfig/import/readHistories` · `externalAgentConfig/import/recordHistory` |
 | Permissions | 1 | 1 | `permissionProfile/list` |
 | Windows sandbox | 2 | 2 | `windowsSandbox/readiness` · `windowsSandbox/setupStart` |
-| Other | 2 | 5 | `feedback/upload` · `fuzzyFileSearch` · `getAuthStatus` · `getConversationSummary` · `gitDiffToRemote` |
+| Other | 3 | 6 | `feedback/save` · `feedback/upload` · `fuzzyFileSearch` · `getAuthStatus` · `getConversationSummary` · `gitDiffToRemote` |
 
 ### Server → client
 
@@ -49,7 +49,7 @@ Every number below is generated from `gen/method-surface.json` and `gen/implemen
 | Notifications (typed decoders) | 62 | 63 |
 | Server-initiated requests (handlers) | 9 | 10 |
 
-**Total: 177 of 177 in-scope methods implemented** (5 deliberately not implemented, struck through above and listed in `gen/not-implemented.txt`, with a reason for each in `gen/whitelist.json`).
+**Total: 178 of 178 in-scope methods implemented** (5 deliberately not implemented, struck through above and listed in `gen/not-implemented.txt`, with a reason for each in `gen/whitelist.json`).
 
 Methods upstream marks `#[experimental]` are out of scope by decision R2 and are listed in `gen/not-in-scope.txt`.
 <!-- coverage:end -->

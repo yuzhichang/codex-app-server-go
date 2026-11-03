@@ -250,6 +250,7 @@ func (t *SessionThread) Revert(ctx context.Context, beforeTurnID string) error
 func (t *SessionThread) Run(ctx context.Context, input string, opts ...TurnOption) (*TurnResult, error)
 func (t *SessionThread) RunInputs(ctx context.Context, inputs []UserInput, opts ...TurnOption) (*TurnResult, error)
 func (t *SessionThread) RunStreamed(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, error)
+func (t *SessionThread) RunStreamedTurn(ctx context.Context, input string, opts ...TurnOption) (<-chan ThreadEvent, string, error)
 func (t *SessionThread) SetGoal(ctx context.Context, goal string) error
 func (t *SessionThread) SetName(ctx context.Context, name string) error
 func (t *SessionThread) Steer(ctx context.Context, turnID, input string) error

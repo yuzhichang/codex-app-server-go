@@ -16,7 +16,7 @@ import (
 	"os/signal"
 	"strings"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 func main() {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 type Option func(*clientConfig) error
@@ -17,7 +17,7 @@ type Option func(*clientConfig) error
 //
 // It is a var so releases can inject it at build time instead of hand-editing a literal:
 //
-//	go build -ldflags "-X github.com/zealbase/codex-app-server-go.Version=$(cat VERSION)"
+//	go build -ldflags "-X github.com/yuzhichang/codex-app-server-go.Version=$(cat VERSION)"
 var Version = "0.2.0"
 
 // defaultClientName is used when WithClientInfo is not supplied.

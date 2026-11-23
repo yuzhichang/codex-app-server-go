@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/process"
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/process"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 // modelCatalogTTL is how long a successfully-fetched model catalog is cached.

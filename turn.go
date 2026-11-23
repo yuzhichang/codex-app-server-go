@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // TurnResult holds the outcome of a completed turn.

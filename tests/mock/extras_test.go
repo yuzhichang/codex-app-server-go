@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 func TestPing(t *testing.T) {

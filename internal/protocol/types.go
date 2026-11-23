@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
 )
 
 var ErrUnsupportedServerRequest = errors.New("protocol: unsupported server request")

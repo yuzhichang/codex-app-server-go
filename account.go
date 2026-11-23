@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // PlanType is the ChatGPT subscription plan associated with an account.

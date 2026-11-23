@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // This file defines typed events for the "extra" server-push notifications added

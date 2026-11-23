@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // skipIfUnsupported skips when the server reports the RPC as not implemented.

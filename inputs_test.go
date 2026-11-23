@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
-	"github.com/zealbase/codex-app-server-go/internal/testutil"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
+	"github.com/yuzhichang/codex-app-server-go/internal/testutil"
 )
 
 func TestWithInputsWireFormat(t *testing.T) {

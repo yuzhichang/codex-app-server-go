@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // fakeTransportWithErrors wraps fakeTransport to support error injection and metrics.

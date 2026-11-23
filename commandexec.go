@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // CommandExecTerminalSize is a PTY size in character cells.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
 )
 
 // Config RPCs.

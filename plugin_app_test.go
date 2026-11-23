@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // Every plugin/marketplace/app RPC must reach its exact upstream wire method. These are

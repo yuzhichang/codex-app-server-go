@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 type (

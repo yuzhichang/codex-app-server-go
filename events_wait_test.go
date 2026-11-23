@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 type fakeNotificationTransport struct {

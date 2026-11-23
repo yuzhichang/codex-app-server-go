@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // TestTurnInterrupt starts a long-running turn and calls TurnInterrupt while it is

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // TestMultiStepRun sends two sequential turns to the same thread and verifies

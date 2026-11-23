@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // The method a "normal" (non-recovery) call issues in these tests.

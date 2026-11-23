@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zealbase/codex-app-server-go/internal/hookbridge"
+	"github.com/yuzhichang/codex-app-server-go/internal/hookbridge"
 )
 
 // TestShimIntegration builds the codex-sdk-hook-shim binary, starts a Listener,
@@ -20,7 +20,7 @@ func TestShimIntegration(t *testing.T) {
 	tmp := t.TempDir()
 	shimBin := filepath.Join(tmp, "codex-sdk-hook-shim")
 
-	build := exec.Command("go", "build", "-o", shimBin, "github.com/zealbase/codex-app-server-go/cmd/codex-sdk-hook-shim")
+	build := exec.Command("go", "build", "-o", shimBin, "github.com/yuzhichang/codex-app-server-go/cmd/codex-sdk-hook-shim")
 	build.Env = os.Environ()
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build shim: %v\n%s", err, out)

@@ -1,4 +1,4 @@
-module github.com/zealbase/codex-app-server-go
+module github.com/yuzhichang/codex-app-server-go
 
 go 1.25.0
 

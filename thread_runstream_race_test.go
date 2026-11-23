@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 // streamRaceTransport emits a turn's server notifications DURING the turn/start RPC,

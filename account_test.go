@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
-	"github.com/zealbase/codex-app-server-go/internal/testutil"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
+	"github.com/yuzhichang/codex-app-server-go/internal/testutil"
 )
 
 func newAccountTestClient(t *testing.T, mock *testutil.MockServer, clientConn net.Conn) *codexgo.Client {

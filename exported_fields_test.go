@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // A field of an exported struct is useless if its TYPE cannot be named from outside the module.

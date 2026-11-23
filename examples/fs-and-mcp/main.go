@@ -18,7 +18,7 @@ import (
 	"os/signal"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 func main() {

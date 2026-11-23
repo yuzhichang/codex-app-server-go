@@ -258,7 +258,7 @@ func gcWriteConsts(newConsts [][2]string) {
 	writeFile(p, strings.Join(lines, "\n")+"\n")
 }
 
-const gcSchemaImport = "\tschematypes \"github.com/zealbase/codex-app-server-go/internal/protocol/schema\""
+const gcSchemaImport = "\tschematypes \"github.com/yuzhichang/codex-app-server-go/internal/protocol/schema\""
 
 func gcWriteMethods(aliases map[string]bool, methodsSrc []string) {
 	lines := []string{
@@ -273,7 +273,7 @@ func gcWriteMethods(aliases map[string]bool, methodsSrc []string) {
 	}
 	var imports []string
 	if len(methodsSrc) > 0 {
-		imports = append(imports, "\t\"context\"", "", "\t\"github.com/zealbase/codex-app-server-go/internal/protocol\"")
+		imports = append(imports, "\t\"context\"", "", "\t\"github.com/yuzhichang/codex-app-server-go/internal/protocol\"")
 	}
 	if len(aliases) > 0 {
 		imports = append(imports, gcSchemaImport)
@@ -314,7 +314,7 @@ func gcWriteTests(tests []string, notificationCases [][2]string) {
 		"\t\"encoding/json\"",
 		"\t\"testing\"",
 		"",
-		"\tcodexgo \"github.com/zealbase/codex-app-server-go\"",
+		"\tcodexgo \"github.com/yuzhichang/codex-app-server-go\"",
 		")",
 		"",
 		"func TestGeneratedClientMethodsUseUpstreamWireMethods(t *testing.T) {",

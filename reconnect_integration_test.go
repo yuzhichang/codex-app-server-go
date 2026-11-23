@@ -13,7 +13,7 @@ import (
 
 	"nhooyr.io/websocket"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // A minimal app-server: replies to requests, records what it was asked, and can drop the

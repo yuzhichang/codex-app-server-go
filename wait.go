@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 const defaultWaitPollInterval = 750 * time.Millisecond

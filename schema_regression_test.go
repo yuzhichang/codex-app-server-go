@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // Upstream sends integer Unix seconds for thread timestamps, so thread/revert's response must

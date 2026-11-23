@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // TestInitializeCallFails verifies error handling when Call fails.

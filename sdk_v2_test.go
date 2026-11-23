@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
-	"github.com/zealbase/codex-app-server-go/internal/testutil"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
+	"github.com/yuzhichang/codex-app-server-go/internal/testutil"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 // pipeConn adapts a net.Conn to io.ReadCloser / io.WriteCloser.

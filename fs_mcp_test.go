@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
-	"github.com/zealbase/codex-app-server-go/internal/testutil"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
+	"github.com/yuzhichang/codex-app-server-go/internal/testutil"
 )
 
 // recorded returns a handler that records the params it received and replies with reply.

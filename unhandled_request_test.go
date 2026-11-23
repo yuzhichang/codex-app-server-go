@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // Plan §5.8 / T2.13. A server-initiated request the SDK cannot route to a configured handler

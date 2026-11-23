@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 // Internal tests for the session supervisor. They live in package codexgo rather than

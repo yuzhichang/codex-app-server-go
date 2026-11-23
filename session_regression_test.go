@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
 )
 
 // threadIDTransport answers thread/start and thread/fork with a fixed thread id and nothing

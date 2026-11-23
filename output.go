@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/jsonx"
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/jsonx"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 func (c *Client) WaitForFinalAgentMessage(ctx context.Context, threadID, turnID string) (string, error) {

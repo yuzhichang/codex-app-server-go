@@ -3,7 +3,7 @@ package protocol
 import (
 	"encoding/json"
 
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
 )
 
 // Approval decision enum aliases -- canonical definitions live in the generated schema package.

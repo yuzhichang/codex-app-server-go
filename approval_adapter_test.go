@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // errorApprovals is an ApprovalHandler that always returns an error.

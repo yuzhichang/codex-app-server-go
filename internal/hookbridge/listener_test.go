@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zealbase/codex-app-server-go/internal/hookbridge"
+	"github.com/yuzhichang/codex-app-server-go/internal/hookbridge"
 )
 
 func TestListenerAllowRoundTrip(t *testing.T) {

@@ -9,8 +9,8 @@ package codexgo
 import (
 	"context"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
 )
 
 // Type aliases for params/response types the root package did not yet expose.

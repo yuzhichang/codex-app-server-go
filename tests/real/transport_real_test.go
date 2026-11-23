@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 // HTTP transport is a work-in-progress feature. The Codex app-server only speaks

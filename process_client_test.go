@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // TestHelperProcess is not a real test: when invoked with GO_HELPER_PROCESS=1 it

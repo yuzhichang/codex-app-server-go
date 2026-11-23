@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
-	schematypes "github.com/zealbase/codex-app-server-go/internal/protocol/schema"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
+	schematypes "github.com/yuzhichang/codex-app-server-go/internal/protocol/schema"
 )
 
 // Synthetic method names for supervisor-reported events.

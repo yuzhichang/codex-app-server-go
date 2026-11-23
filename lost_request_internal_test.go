@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zealbase/codex-app-server-go/internal/transport"
+	"github.com/yuzhichang/codex-app-server-go/internal/transport"
 )
 
 // newInternalTestClient builds a client over the recording stub transport, which doubles as

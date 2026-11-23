@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // skipIfNoEndpoint skips the calling test unless CODEX_REAL_ENDPOINT is set.

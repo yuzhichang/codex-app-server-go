@@ -3,7 +3,7 @@ package codexgo
 import (
 	"context"
 
-	"github.com/zealbase/codex-app-server-go/internal/protocol"
+	"github.com/yuzhichang/codex-app-server-go/internal/protocol"
 )
 
 // Plugin and marketplace RPCs.

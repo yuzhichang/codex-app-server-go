@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // autoApprover accepts every server-initiated approval request.

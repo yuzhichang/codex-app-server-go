@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 	"golang.org/x/sync/errgroup"
 )
 

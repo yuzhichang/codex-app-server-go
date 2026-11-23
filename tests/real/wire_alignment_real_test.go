@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	codexgo "github.com/zealbase/codex-app-server-go"
+	codexgo "github.com/yuzhichang/codex-app-server-go"
 )
 
 // D1 verification against a real server (required by the plan's T1.4: the jsonrpc removal
